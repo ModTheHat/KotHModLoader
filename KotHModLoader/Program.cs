@@ -40,9 +40,12 @@ void Load()
         assetsManagersModded[a] = new AssetsManager();
         assetsManagersModded[a].LoadClassPackage("lz4.tpk");
         afilesInstModded[a] = assetsManagersModded[a].LoadAssetsFile(file.Name, true);
-        afilesModded[a] = afilesInstModded[a].file;
-        assetsManagersModded[a].LoadClassDatabaseFromPackage(afilesModded[a].Metadata.UnityVersion);
-        str = str + ", " + file.Name;
+        if (afilesInstModded[a] != null)
+        {
+            afilesModded[a] = afilesInstModded[a].file;
+            assetsManagersModded[a].LoadClassDatabaseFromPackage(afilesModded[a].Metadata.UnityVersion);
+            str = str + ", " + file.Name;
+        }
     }
     Console.WriteLine(str);
 
