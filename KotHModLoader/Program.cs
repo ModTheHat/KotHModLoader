@@ -8,7 +8,12 @@ void Load()
     var assetsManagerVanilla = new AssetsManager();
     assetsManagerVanilla.LoadClassPackage("lz4.tpk");
 
-    var afileInst = assetsManagerVanilla.LoadAssetsFile("../KingOfTheHat_Data/resources.assets", true);
+    if (!File.Exists("../KingOfTheHat_Data/resources.assets.VANILLA"))
+        File.Copy("../KingOfTheHat_Data/resources.assets", "../KingOfTheHat_Data/resources.assets.VANILLA");
+
+    File.Delete("../KingOfTheHat_Data/resources.assets");
+
+    var afileInst = assetsManagerVanilla.LoadAssetsFile("../KingOfTheHat_Data/resources.assets.VANILLA", true);
     var afile = afileInst.file;
 
     assetsManagerVanilla.LoadClassDatabaseFromPackage(afile.Metadata.UnityVersion);
@@ -64,7 +69,7 @@ void Load()
         i++;
     }
 
-    var writer = new AssetsFileWriter("resources.assets" + ".mod");
+    var writer = new AssetsFileWriter("../KingOfTheHat_Data/resources.assets");
     afile.Write(writer, 0, replacers);
     writer.Close();
 
