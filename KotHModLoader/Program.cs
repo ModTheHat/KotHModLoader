@@ -33,12 +33,12 @@ void Load()
     for (int a = 0; a < Files.Length; a++)
     {
         FileInfo file = Files[a];
-        Console.WriteLine(file.Name);
         assetsManagersModded[a] = new AssetsManager();
         assetsManagersModded[a].LoadClassPackage("lz4.tpk");
         afilesInstModded[a] = assetsManagersModded[a].LoadAssetsFile("../Mods/" + file.Name, true);
         if (assetsManagersModded[a] != null)
         {
+            Console.WriteLine("Mod: " + file.Name);
             afilesModded[a] = afilesInstModded[a].file;
             assetsManagersModded[a].LoadClassDatabaseFromPackage(afilesModded[a].Metadata.UnityVersion);
         }

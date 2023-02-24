@@ -64,8 +64,6 @@ namespace AssetsTools.NET.Extra
             if (FileLookup.TryGetValue(lookupKey, out AssetsFileInstance fileInst))
                 return fileInst;
 
-            Console.WriteLine(File.Exists(path));
-
             if(File.Exists(path))
                 return LoadAssetsFile(File.OpenRead(path), loadDeps);
 
