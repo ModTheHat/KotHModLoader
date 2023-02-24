@@ -1,19 +1,24 @@
 ﻿using AssetsTools.NET;
 using AssetsTools.NET.Extra;
-using System.IO;
+
+string _resDir = "../KingOfTheHat_Data/";
+string _resVanilla = "resources.assets.VANILLA";
+string _resNoFlavor = "resources.assets";
+string _classPackage = "lz4.tpk";
+string _modsDir = "../Mods/";
 
 void Load()
 {
     //Vanilla manager
     var assetsManagerVanilla = new AssetsManager();
-    assetsManagerVanilla.LoadClassPackage("lz4.tpk");
+    assetsManagerVanilla.LoadClassPackage(_classPackage);
 
-    if (!File.Exists("../KingOfTheHat_Data/resources.assets.VANILLA"))
-        File.Copy("../KingOfTheHat_Data/resources.assets", "../KingOfTheHat_Data/resources.assets.VANILLA");
+    if (!File.Exists(_resDir + _resVanilla))
+        File.Copy(_resDir + _resNoFlavor, _resDir + _resVanilla);
 
-    File.Delete("../KingOfTheHat_Data/resources.assets");
+    File.Delete(_resDir + _resNoFlavor);
 
-    var afileInst = assetsManagerVanilla.LoadAssetsFile("../KingOfTheHat_Data/resources.assets.VANILLA", true);
+    var afileInst = assetsManagerVanilla.LoadAssetsFile(_resDir + _resVanilla, true);
     var afile = afileInst.file;
 
     assetsManagerVanilla.LoadClassDatabaseFromPackage(afile.Metadata.UnityVersion);
@@ -33,17 +38,21 @@ void Load()
     for (int a = 0; a < Files.Length; a++)
     {
         FileInfo file = Files[a];
-        assetsManagersModded[a] = new AssetsManager();
-        assetsManagersModded[a].LoadClassPackage("lz4.tpk");
-        afilesInstModded[a] = assetsManagersModded[a].LoadAssetsFile("../Mods/" + file.Name, true);
-        if (assetsManagersModded[a] != null)
+        if (!file.Name.Contains(".disabled"))
         {
-            Console.WriteLine("Mod: " + file.Name);
-            afilesModded[a] = afilesInstModded[a].file;
-            assetsManagersModded[a].LoadClassDatabaseFromPackage(afilesModded[a].Metadata.UnityVersion);
+            assetsManagersModded[a] = new AssetsManager();
+            assetsManagersModded[a].LoadClassPackage(_classPackage);
+            afilesInstModded[a] = assetsManagersModded[a].LoadAssetsFile(_modsDir + file.Name, true);
+            if (assetsManagersModded[a] != null)
+            {
+                Console.WriteLine("Mod: " + file.Name);
+                afilesModded[a] = afilesInstModded[a].file;
+                assetsManagersModded[a].LoadClassDatabaseFromPackage(afilesModded[a].Metadata.UnityVersion);
+            }
         }
     }
 
+    //Build replacers for merging resources.assets
     List<string> alreadyModded = new List<string>();
     var replacers = new List<AssetsReplacer>();
     int i = 0;
@@ -54,22 +63,25 @@ void Load()
 
         for (int j = 0; j < assetsManagersModded.Length; j++)
         {
-            var goInfoModded = afilesModded[j].GetAssetsOfType(AssetClassID.Texture2D)[i];
-            var goBaseModded = assetsManagersModded[j].GetBaseField(afilesInstModded[j], goInfoModded);
-            if (goBaseModded["image data"].Value.ToString() != goBaseVanilla["image data"].Value.ToString() && !alreadyModded.Contains(goBaseVanilla["m_Name"].AsString))
+            if (afilesInstModded[j] != null)
             {
-                Console.WriteLine(goBaseVanilla["m_Name"].AsString + " has changed.");
+                var goInfoModded = afilesModded[j].GetAssetsOfType(AssetClassID.Texture2D)[i];
+                var goBaseModded = assetsManagersModded[j].GetBaseField(afilesInstModded[j], goInfoModded);
+                if (goBaseModded["image data"].Value.ToString() != goBaseVanilla["image data"].Value.ToString() && !alreadyModded.Contains(goBaseVanilla["m_Name"].AsString))
+                {
+                    Console.WriteLine(goBaseVanilla["m_Name"].AsString + " has changed.");
 
-                goBaseVanilla["image data"].Value = goBaseModded["image data"].Value;
+                    goBaseVanilla["image data"].Value = goBaseModded["image data"].Value;
 
-                replacers.Add(new AssetsReplacerFromMemory(afile, goInfo, goBaseVanilla));
-                alreadyModded.Add(goBaseVanilla["m_Name"].AsString);
+                    replacers.Add(new AssetsReplacerFromMemory(afile, goInfo, goBaseVanilla));
+                    alreadyModded.Add(goBaseVanilla["m_Name"].AsString);
+                }
             }
         }
         i++;
     }
 
-    var writer = new AssetsFileWriter("../KingOfTheHat_Data/resources.assets");
+    var writer = new AssetsFileWriter(_resDir + _resNoFlavor);
     afile.Write(writer, 0, replacers);
     writer.Close();
 
