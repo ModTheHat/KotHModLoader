@@ -15,13 +15,13 @@ void Load()
     //
 
     //Modded manager
-    var assetsManagerModded = new AssetsManager();
-    assetsManagerModded.LoadClassPackage("lz4.tpk");
+    //var assetsManagerModded = new AssetsManager();
+    //assetsManagerModded.LoadClassPackage("lz4.tpk");
 
-    var afileInstModded = assetsManagerModded.LoadAssetsFile("resources.assets.KIARAJUMPOPENMOUTH", true);
-    var afileModded = afileInstModded.file;
+    //var afileInstModded = assetsManagerModded.LoadAssetsFile("resources.assets.KIARAJUMPOPENMOUTH", true);
+    //var afileModded = afileInstModded.file;
 
-    assetsManagerModded.LoadClassDatabaseFromPackage(afileModded.Metadata.UnityVersion);
+    //assetsManagerModded.LoadClassDatabaseFromPackage(afileModded.Metadata.UnityVersion);
     //
 
     //Mods folder
@@ -37,37 +37,42 @@ void Load()
     for (int a = 0; a < Files.Length; a++)
     {
         FileInfo file = Files[a];
+        Console.WriteLine(file.Name);
         assetsManagersModded[a] = new AssetsManager();
         assetsManagersModded[a].LoadClassPackage("lz4.tpk");
-        afilesInstModded[a] = assetsManagersModded[a].LoadAssetsFile(file.Name, true);
-        if (afilesInstModded[a] != null)
-        {
-            afilesModded[a] = afilesInstModded[a].file;
-            assetsManagersModded[a].LoadClassDatabaseFromPackage(afilesModded[a].Metadata.UnityVersion);
-            str = str + ", " + file.Name;
-        }
+        afilesInstModded[a] = assetsManagersModded[a].LoadAssetsFile("../Mods/" + file.Name, true);
+        afilesModded[a] = afilesInstModded[a].file;
+        assetsManagersModded[a].LoadClassDatabaseFromPackage(afilesModded[a].Metadata.UnityVersion);
+        str = str + ", " + file.Name;
     }
     Console.WriteLine(str);
 
     Console.WriteLine("vanilla " + afile.GetAssetsOfType(AssetClassID.Texture2D).Count);
-    Console.WriteLine("modded " + afileModded.GetAssetsOfType(AssetClassID.Texture2D).Count);
+   // Console.WriteLine("modded " + afileModded.GetAssetsOfType(AssetClassID.Texture2D).Count);
+
+    List<string> alreadyModded = new List<string>();
 
     var replacers = new List<AssetsReplacer>();
     int i = 0;
     foreach (var goInfo in afile.GetAssetsOfType(AssetClassID.Texture2D))
     {
         var goBaseVanilla = assetsManagerVanilla.GetBaseField(afileInst, goInfo);
-        var goInfoModded = afileModded.GetAssetsOfType(AssetClassID.Texture2D)[i];
-        var goBaseModded = assetsManagerModded.GetBaseField(afileInstModded, goInfoModded);
         var name = goBaseVanilla["m_Name"].AsString;
 
-        if (goBaseModded["image data"].Value.ToString() != goBaseVanilla["image data"].Value.ToString())
+        for (int j = 0; j < assetsManagersModded.Length; j++)
         {
-            Console.WriteLine(goBaseVanilla["m_Name"].AsString);
-            goBaseVanilla["image data"].Value = goBaseModded["image data"].Value;
-        }
+            var goInfoModded = afilesModded[j].GetAssetsOfType(AssetClassID.Texture2D)[i];
+            var goBaseModded = assetsManagersModded[j].GetBaseField(afilesInstModded[j], goInfoModded);
+            if (goBaseModded["image data"].Value.ToString() != goBaseVanilla["image data"].Value.ToString() && !alreadyModded.Contains(goBaseVanilla["m_Name"].AsString))
+            {
+                Console.WriteLine(goBaseVanilla["m_Name"].AsString);
+                goBaseVanilla["image data"].Value = goBaseModded["image data"].Value;
 
-        replacers.Add(new AssetsReplacerFromMemory(afile, goInfo, goBaseVanilla));
+                replacers.Add(new AssetsReplacerFromMemory(afile, goInfo, goBaseVanilla));
+
+                alreadyModded.Add(goBaseVanilla["m_Name"].AsString);
+            }
+        }
 
         i++;
     }
