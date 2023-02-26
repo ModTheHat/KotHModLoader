@@ -6,5 +6,9 @@
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
   </PropertyGroup>
+	
+<ItemGroup>
+	<ProjectReference Include="..\AssetTools.NET\AssetsTools.NET.csproj" />
+</ItemGroup>
 
 </Project>

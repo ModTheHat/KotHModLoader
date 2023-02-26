@@ -1,17 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace KotHModLoaderGUI
 {
@@ -20,9 +9,30 @@ namespace KotHModLoaderGUI
     /// </summary>
     public partial class MainWindow : Window
     {
+        private ResourcesManager _resMgr = new ResourcesManager();
+        private string[] _files;
+
         public MainWindow()
         {
             InitializeComponent();
+
+            _files = _resMgr.LoadManagers();
+            foreach(string file in _files)
+            {
+                lstNames.Items.Add(file);
+            }
+        }
+
+        private void ButtonBuildMods_Click(object sender, RoutedEventArgs e)
+        {
+            _resMgr.BuildMods();
+        }
+
+        private void ToggleModActive(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            ListBox lstBox = (ListBox)(sender);
+            //lstNames.Items.Add(lstBox.SelectedItem);
+            _resMgr.ToggleModActive(lstBox.SelectedItem.ToString());
         }
     }
 }
