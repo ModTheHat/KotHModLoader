@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using static AssetsTools.NET.Texture.TextureFile;
 
 namespace KotHModLoaderGUI
 {
@@ -97,6 +98,16 @@ namespace KotHModLoaderGUI
                     case "array":
                         var a = info.AsArray;
                         lstAssetInfo.Items.Add(a);
+                        break;
+                    case "TypelessData":
+                        var t = (Byte[])info.AsObject;
+                        foreach (var o in t)
+                        {
+                            lstAssetInfo.Items.Add(o);
+                        }
+                        break;
+                    case "StreamingInfo":
+                        lstAssetInfo.Items.Add("offset " + info["offset"].AsString + ", size " + info["size"].AsString + ", path " + info["path"].AsString);
                         break;
                 }
             }
