@@ -11,20 +11,28 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
-        
-        <Label Grid.Column="1">Mods</Label>
+
+        <Label Grid.Column="0">Mods</Label>
         <ListBox Grid.Row="1" x:Name="lstNames" MouseDoubleClick="ToggleModActive" />
-        
+
         <StackPanel Grid.Row="1" Grid.Column="1" Margin="5,0,0,0">
+            <Button x:Name="btnAdd" Click="ButtonBuildMods_Click" Content="Build Mods"/>
             <TextBox x:Name="txtName" />
-            <Button x:Name="btnAdd" Margin="0,5,0,0" Click="ButtonBuildMods_Click" Content="Build Mods"/>
         </StackPanel>
+
+        <Label Grid.Row="2">Vanilla Assets</Label>
+        <ListBox Grid.Row="3" x:Name="lstVanilla" SelectionChanged="DisplayAssetInfo"/>
+
+        <Label Grid.Row="2" Grid.Column="1">Asset Information</Label>
+        <ListBox Grid.Row="3" Grid.Column="1" x:Name="lstAssetInfo"/>
 
     </Grid>
 

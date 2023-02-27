@@ -125,7 +125,7 @@ namespace KotHModLoaderGUI
 
         private string UnloadModdedManagers()
         {
-            string s = "asss";
+            string s = "";
             for (int j = 0; j < _assetsManagersModded.Length; j++)
             {
                 if (!_files[j].Name.Contains(".disabled"))
@@ -147,6 +147,41 @@ namespace KotHModLoaderGUI
                File.Move(_modsDir + fileName, _modsDir + (fileName.Contains(".disabled") ? fileName.Replace(".disabled", "") : fileName + ".disabled"));
             }
             return s;
+        }
+
+        public List<string> GetVanillaAssets()
+        {
+            LoadVanillaManager();
+
+            List<string> assets = new List<string>();
+
+            foreach (var goInfo in _afileVanilla.GetAssetsOfType(AssetClassID.Texture2D))
+            {
+                var goBaseVanilla = _assetsManagerVanilla.GetBaseField(_afileInstVanilla, goInfo);
+                var name = goBaseVanilla["m_Name"].AsString;
+
+                assets.Add(name);
+            }
+
+                return assets;
+        }
+
+        public AssetTypeValueField GetAssetInfo(string assetName)
+        {
+            //List<string> infos = new List<string>();
+
+            foreach (var goInfo in _afileVanilla.GetAssetsOfType(AssetClassID.Texture2D))
+            {
+                var goBaseVanilla = _assetsManagerVanilla.GetBaseField(_afileInstVanilla, goInfo);
+                var name = goBaseVanilla["m_Name"].AsString;
+
+                if(name == assetName)
+                {
+                    return goBaseVanilla;
+                }
+            }
+            
+            return null;
         }
     }
 }

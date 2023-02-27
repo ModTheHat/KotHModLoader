@@ -1,4 +1,7 @@
-﻿using System.IO;
+﻿using AssetsTools.NET;
+using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -21,6 +24,8 @@ namespace KotHModLoaderGUI
             {
                 lstNames.Items.Add(file);
             }
+
+            DisplayVanillaCatalog();
         }
 
         private void ButtonBuildMods_Click(object sender, RoutedEventArgs e)
@@ -39,6 +44,63 @@ namespace KotHModLoaderGUI
             {
                 lstNames.Items.Add(file);
             }
+        }
+
+        private void DisplayVanillaCatalog()
+        {
+            lstVanilla.Items.Clear();
+
+            List<string> assets = _resMgr.GetVanillaAssets();
+
+            foreach (string asset in assets)
+            {
+                lstVanilla.Items.Add(asset);
+            }
+        }
+
+        private void DisplayAssetInfo(object sender, SelectionChangedEventArgs e)
+        {
+            ListBox lstBox = (ListBox)(sender);
+            string assetName = lstBox.SelectedItem.ToString();
+
+            AssetTypeValueField infos = _resMgr.GetAssetInfo(assetName);
+
+            lstAssetInfo.Items.Clear();
+
+            foreach (var info in infos)
+            {
+                //var test = (info[info.FieldName]).As;
+                lstAssetInfo.Items.Add(info.FieldName + " " + info.TypeName);
+
+                switch (info.TypeName)
+                {
+                    case "string":
+                        var s = info.AsString;
+                        lstAssetInfo.Items.Add(s);
+                        break;
+                    case "int":
+                        var i = info.AsInt;
+                        lstAssetInfo.Items.Add(i);
+                        break;
+                    case "unsigned int":
+                        var ui = info.AsUInt;
+                        lstAssetInfo.Items.Add(ui);
+                        break;
+                    case "bool":
+                        var b = info.AsBool;
+                        lstAssetInfo.Items.Add(b);
+                        break;
+                    case "float":
+                        var f = info.AsFloat;
+                        lstAssetInfo.Items.Add(f);
+                        break;
+                    case "array":
+                        var a = info.AsArray;
+                        lstAssetInfo.Items.Add(a);
+                        break;
+                }
+            }
+            lstAssetInfo.Items.Add("why");
         }
     }
 }
