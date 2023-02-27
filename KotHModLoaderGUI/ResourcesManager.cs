@@ -31,7 +31,14 @@ namespace KotHModLoaderGUI
         //Load Vanilla and Mods Resources.assets
         public string[] LoadManagers()
         {
-            //Vanilla manager
+            LoadVanillaManager();
+
+            return LoadModdedManagers();
+        }
+
+        //Vanilla manager
+        private void LoadVanillaManager()
+        {
             _assetsManagerVanilla = new AssetsManager();
             _assetsManagerVanilla.LoadClassPackage(_classPackage);
 
@@ -44,16 +51,16 @@ namespace KotHModLoaderGUI
             _afileVanilla = _afileInstVanilla.file;
 
             _assetsManagerVanilla.LoadClassDatabaseFromPackage(_afileVanilla.Metadata.UnityVersion);
-            //
+        }
 
-            //Mods folder managers
-            _dirInfoMod = new DirectoryInfo(@"..\Mods");
+        //Mods folder managers
+        public string[] LoadModdedManagers()
+        {
             _files = _dirInfoMod.GetFiles("*");
 
             _assetsManagersModded = new AssetsManager[_files.Length];
             _afilesInstModded = new AssetsFileInstance[_files.Length];
             _afilesModded = new AssetsFile[_files.Length];
-            //
 
             //Build managers for resources.assets mods
             string[] modList = new string[_files.Length];
@@ -68,19 +75,18 @@ namespace KotHModLoaderGUI
                     _afilesInstModded[a] = _assetsManagersModded[a].LoadAssetsFile(_modsDir + file.Name, true);
                     if (_assetsManagersModded[a] != null)
                     {
-                        Console.WriteLine("Mod: " + file.Name);
                         _afilesModded[a] = _afilesInstModded[a].file;
                         _assetsManagersModded[a].LoadClassDatabaseFromPackage(_afilesModded[a].Metadata.UnityVersion);
                     }
-                    //_assetsManagersModded[a].UnloadAll();
                 }
             }
-
             return modList;
         }
 
-        public void BuildMods()
+        public string BuildMods()
         {
+            LoadModdedManagers();
+
             //Build replacers for merging resources.assets
             List<string> alreadyModded = new List<string>();
             var replacers = new List<AssetsReplacer>();
@@ -113,14 +119,34 @@ namespace KotHModLoaderGUI
             var writer = new AssetsFileWriter(_resDir + _resNoFlavor);
             _afileVanilla.Write(writer, 0, replacers);
             writer.Close();
+
+            return UnloadModdedManagers();
         }
 
-        public void ToggleModActive(string fileName)
+        private string UnloadModdedManagers()
         {
+            string s = "asss";
+            for (int j = 0; j < _assetsManagersModded.Length; j++)
+            {
+                if (!_files[j].Name.Contains(".disabled"))
+                if (_assetsManagersModded[j].Files.Count > 0)
+                {
+                    _assetsManagersModded[j].UnloadAll();
+                }
+                if (_assetsManagersModded[j] != null)
+                    s = s + _assetsManagersModded[j].Files.Count;
+            }
+            return s;
+        }
+
+        public string ToggleModActive(string fileName)
+        {
+            string s = UnloadModdedManagers();
             if (File.Exists(_modsDir + fileName))
             {
-                File.Move(_modsDir + fileName, _modsDir + (fileName.Contains(".disabled") ? fileName.Replace(".disabled", "") : fileName + ".disabled"));
+               File.Move(_modsDir + fileName, _modsDir + (fileName.Contains(".disabled") ? fileName.Replace(".disabled", "") : fileName + ".disabled"));
             }
+            return s;
         }
     }
 }

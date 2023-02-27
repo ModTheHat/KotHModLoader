@@ -25,14 +25,20 @@ namespace KotHModLoaderGUI
 
         private void ButtonBuildMods_Click(object sender, RoutedEventArgs e)
         {
-            _resMgr.BuildMods();
+            lstNames.Items.Add(_resMgr.BuildMods());
         }
 
         private void ToggleModActive(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ListBox lstBox = (ListBox)(sender);
             //lstNames.Items.Add(lstBox.SelectedItem);
-            _resMgr.ToggleModActive(lstBox.SelectedItem.ToString());
+            lstNames.Items.Add(_resMgr.ToggleModActive(lstBox.SelectedItem.ToString()));
+            _files = _resMgr.LoadModdedManagers();
+            lstNames.Items.Clear();
+            foreach (string file in _files)
+            {
+                lstNames.Items.Add(file);
+            }
         }
     }
 }
