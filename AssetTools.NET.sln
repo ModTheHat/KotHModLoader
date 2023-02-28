@@ -13,9 +13,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AssetsTools.NET.Tests", "As
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AssetsTools.NET.Texture", "AssetsTools.NET.Texture\AssetsTools.NET.Texture.csproj", "{5BF2E24D-C5EB-4AB8-94CD-D83BD9CDB4AC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KotHModLoader", "KotHModLoader\KotHModLoader.csproj", "{9C8A179A-6527-4C7D-8791-3AE415D1A39B}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KotHModLoaderGUI", "KotHModLoaderGUI\KotHModLoaderGUI.csproj", "{FDEF45BD-5181-4515-843C-B4F912804A10}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KotHModLoaderGUI", "KotHModLoaderGUI\KotHModLoaderGUI.csproj", "{FDEF45BD-5181-4515-843C-B4F912804A10}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -65,14 +63,6 @@ Global
 		{5BF2E24D-C5EB-4AB8-94CD-D83BD9CDB4AC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5BF2E24D-C5EB-4AB8-94CD-D83BD9CDB4AC}.Release|x64.ActiveCfg = Release|Any CPU
 		{5BF2E24D-C5EB-4AB8-94CD-D83BD9CDB4AC}.Release|x64.Build.0 = Release|Any CPU
-		{9C8A179A-6527-4C7D-8791-3AE415D1A39B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9C8A179A-6527-4C7D-8791-3AE415D1A39B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9C8A179A-6527-4C7D-8791-3AE415D1A39B}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{9C8A179A-6527-4C7D-8791-3AE415D1A39B}.Debug|x64.Build.0 = Debug|Any CPU
-		{9C8A179A-6527-4C7D-8791-3AE415D1A39B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9C8A179A-6527-4C7D-8791-3AE415D1A39B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9C8A179A-6527-4C7D-8791-3AE415D1A39B}.Release|x64.ActiveCfg = Release|Any CPU
-		{9C8A179A-6527-4C7D-8791-3AE415D1A39B}.Release|x64.Build.0 = Release|Any CPU
 		{FDEF45BD-5181-4515-843C-B4F912804A10}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{FDEF45BD-5181-4515-843C-B4F912804A10}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FDEF45BD-5181-4515-843C-B4F912804A10}.Debug|x64.ActiveCfg = Debug|Any CPU
