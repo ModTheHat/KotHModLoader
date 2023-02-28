@@ -15,18 +15,24 @@ namespace KotHModLoaderGUI
     {
         private ResourcesManager _resMgr = new ResourcesManager();
         private string[] _files;
+        private ModManager _modManager = new ModManager();
+        private string _activeMod = "";
 
         public MainWindow()
         {
             InitializeComponent();
 
-            _files = _resMgr.LoadManagers();
-            foreach(string file in _files)
+            _resMgr.LoadManagers();
+            _files = _modManager.BuildModsDatabase();
+            foreach (string file in _files)
             {
                 lstNames.Items.Add(file);
             }
 
             DisplayVanillaCatalog();
+
+            console.Items.Clear();
+            console.Items.Add("Loaded");
         }
 
         private void ButtonBuildMods_Click(object sender, RoutedEventArgs e)
@@ -112,6 +118,39 @@ namespace KotHModLoaderGUI
                 }
             }
             lstAssetInfo.Items.Add("why");
+        }
+
+        private void DisplayModInfo(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            ListBox lstBox = (ListBox)(sender);
+            string modName = lstBox.SelectedItem.ToString();
+
+            FileInfo[] infos = _modManager.GetModFiles(modName);
+
+            lstModInfo.Items.Clear();
+            foreach (var info in infos)
+            {
+                lstModInfo.Items.Add(info.Name);
+            }
+
+            _activeMod = modName;
+        }
+
+        private void DisplayModFileInfo(object sender, SelectionChangedEventArgs e)
+        {
+            ListBox lstBox = (ListBox)(sender);
+            string fileName = lstBox.SelectedItem.ToString();
+            DirectoryInfo folder = _modManager.DirInfoMod;
+            FileInfo[] files = folder.GetFiles(fileName, SearchOption.AllDirectories);
+            FileInfo file = files[0];
+
+            lstModFileInfo.Items.Clear();
+            byte[] byteArray = _modManager.ConvertImageToBytesArray(file);
+            foreach (byte b in byteArray)
+            {
+                lstModFileInfo.Items.Add(b);
+            }
+            lstModFileInfo.Items.Add(files.Length);
         }
     }
 }
