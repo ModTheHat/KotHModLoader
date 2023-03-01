@@ -101,24 +101,21 @@ namespace KotHModLoaderGUI
             Bitmap myBitmap = new Bitmap(file.FullName);
 
             
-            byte[] rgba = new byte[4 * myBitmap.Width * myBitmap.Height + 2];
+            byte[] rgba = new byte[4 * myBitmap.Width * myBitmap.Height];
 
-            for (int i = 0; i < myBitmap.Width; i++)
+            for (int j = 0; j < myBitmap.Height; j++)
             {
-                for (int j = 0; j < myBitmap.Height; j++)
+                for (int i = 0; i < myBitmap.Width; i++)
                 {
                     // Get the color of a pixel within myBitmap.
                     Color pixelColor = myBitmap.GetPixel(i, j);
 
-                    rgba[i * j * 4] = pixelColor.R;
-                    rgba[i * j * 4 + 1] = pixelColor.G;
-                    rgba[i * j * 4 + 2] = pixelColor.B;
-                    rgba[i * j * 4 + 3] = pixelColor.A;
+                    rgba[(i + ((myBitmap.Height - 1 - j) * myBitmap.Width)) * 4] = pixelColor.R;
+                    rgba[(i + ((myBitmap.Height - 1 - j) * myBitmap.Width)) * 4 + 1] = pixelColor.G;
+                    rgba[(i + ((myBitmap.Height - 1 - j) * myBitmap.Width)) * 4 + 2] = pixelColor.B;
+                    rgba[(i + ((myBitmap.Height - 1 - j) * myBitmap.Width)) * 4 + 3] = pixelColor.A;
                 }
             }
-
-            rgba[rgba.Length - 2] = (byte)myBitmap.Width;
-            rgba[rgba.Length - 1] = (byte)myBitmap.Height;
 
             return rgba;
         }

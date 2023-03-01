@@ -147,9 +147,14 @@ namespace KotHModLoaderGUI
 
             lstModFileInfo.Items.Clear();
             byte[] byteArray = _modManager.GetPixel_Example(file);
+            int i = 0;
+            int j = 1;
             foreach (byte b in byteArray)
             {
-                lstModFileInfo.Items.Add(b);
+                lstModFileInfo.Items.Add((i == 0 ? j + " " : "") + (i == 0 ? "r: " : (i == 1 ? "g: " : (i == 2 ? "b: " : "a: "))) + b);
+                i++;
+                j = i == 4 ? j + 1 : j;
+                i = i == 4 ? 0 : i;
             }
             lstModFileInfo.Items.Add(files.Length);
 
