@@ -3,6 +3,8 @@ using System.IO;
 using System.Text;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using System.Drawing;
+using System.Windows.Forms;
 
 namespace KotHModLoaderGUI
 {
@@ -82,10 +84,43 @@ namespace KotHModLoaderGUI
             //pictureBox1.Image = bitmap;
             //Color pixel5by10 = bitmap.GetPixel(5, 10);
             byte[] tst = File.ReadAllBytes(file.FullName);
+            //ImageConversion.LoadImage(tst, file);
             //byte[] tst = new byte[1];
             //tst[0] = 1;
             //BitmapImage fgdf = new BitmapImage();
             return tst;
+        }
+        //public static byte[] converterDemo(Image x)
+        //{
+        //    AssetsTools.NET.Texture.TextureFile.Encode();
+        //}
+        public byte[] GetPixel_Example(FileInfo file)
+        {
+
+            // Create a Bitmap object from an image file.
+            Bitmap myBitmap = new Bitmap(file.FullName);
+
+            
+            byte[] rgba = new byte[4 * myBitmap.Width * myBitmap.Height + 2];
+
+            for (int i = 0; i < myBitmap.Width; i++)
+            {
+                for (int j = 0; j < myBitmap.Height; j++)
+                {
+                    // Get the color of a pixel within myBitmap.
+                    Color pixelColor = myBitmap.GetPixel(i, j);
+
+                    rgba[i * j * 4] = pixelColor.R;
+                    rgba[i * j * 4 + 1] = pixelColor.G;
+                    rgba[i * j * 4 + 2] = pixelColor.B;
+                    rgba[i * j * 4 + 3] = pixelColor.A;
+                }
+            }
+
+            rgba[rgba.Length - 2] = (byte)myBitmap.Width;
+            rgba[rgba.Length - 1] = (byte)myBitmap.Height;
+
+            return rgba;
         }
     }
 }

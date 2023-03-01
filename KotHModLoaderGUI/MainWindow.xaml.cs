@@ -111,6 +111,7 @@ namespace KotHModLoaderGUI
                         {
                             lstAssetInfo.Items.Add(o);
                         }
+                        lstAssetInfo.Items.Add(t.Length);
                         break;
                     case "StreamingInfo":
                         lstAssetInfo.Items.Add("offset " + info["offset"].AsString + ", size " + info["size"].AsString + ", path " + info["path"].AsString);
@@ -145,12 +146,14 @@ namespace KotHModLoaderGUI
             FileInfo file = files[0];
 
             lstModFileInfo.Items.Clear();
-            byte[] byteArray = _modManager.ConvertImageToBytesArray(file);
+            byte[] byteArray = _modManager.GetPixel_Example(file);
             foreach (byte b in byteArray)
             {
                 lstModFileInfo.Items.Add(b);
             }
             lstModFileInfo.Items.Add(files.Length);
+
+            _resMgr.ModVanillaTextureFromFileName(fileName, byteArray);
         }
     }
 }

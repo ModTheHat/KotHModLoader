@@ -83,7 +83,31 @@ namespace KotHModLoaderGUI
             return modList;
         }
 
-        public string BuildMods()
+        public void ModVanillaTextureFromFileName(string filename, byte[] dataImage)
+        {
+            var replacers = new List<AssetsReplacer>();
+
+            foreach (var goInfo in _afileVanilla.GetAssetsOfType(AssetClassID.Texture2D))
+            {
+                var goBaseVanilla = _assetsManagerVanilla.GetBaseField(_afileInstVanilla, goInfo);
+                var name = goBaseVanilla["m_Name"].AsString;
+
+                if(filename.Contains(name))
+                {
+                    AssetTypeValue value = new AssetTypeValue(dataImage, false);
+                   // value.;
+                    goBaseVanilla["image data"].Value = value;
+
+                    replacers.Add(new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla));
+                }
+            }
+
+            var writer = new AssetsFileWriter(_resDir + _resNoFlavor);
+            _afileVanilla.Write(writer, 0, replacers);
+            writer.Close();
+        }
+
+            public string BuildMods()
         {
             LoadModdedManagers();
 

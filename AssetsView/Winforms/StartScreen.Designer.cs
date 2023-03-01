@@ -244,7 +244,7 @@
             this.assetList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.assetList.BackgroundColor = System.Drawing.SystemColors.Control;
+            //this.assetList.BackgroundColor = System.Drawing.SystemColors.Control; //TODO BUG
             this.assetList.CellBorderStyle = System.Windows.Forms.DataGridViewCellBorderStyle.None;
             this.assetList.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.assetList.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
