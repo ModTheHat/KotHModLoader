@@ -13,10 +13,12 @@ namespace KotHModLoaderGUI
     /// </summary>
     public partial class MainWindow : Window
     {
-        private ResourcesManager _resMgr = new ResourcesManager();
+        private static ResourcesManager _resMgr = new ResourcesManager();
         private string[] _files;
         private ModManager _modManager = new ModManager();
         private string _activeMod = "";
+
+        public static ResourcesManager ResMgr => _resMgr;
 
         public MainWindow()
         {
@@ -37,13 +39,12 @@ namespace KotHModLoaderGUI
 
         private void ButtonBuildMods_Click(object sender, RoutedEventArgs e)
         {
-            lstNames.Items.Add(_resMgr.BuildMods());
+            _modManager.BuildMods();
         }
 
         private void ToggleModActive(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ListBox lstBox = (ListBox)(sender);
-            //lstNames.Items.Add(lstBox.SelectedItem);
             lstNames.Items.Add(_resMgr.ToggleModActive(lstBox.SelectedItem.ToString()));
             _files = _resMgr.LoadModdedManagers();
             lstNames.Items.Clear();
@@ -118,7 +119,6 @@ namespace KotHModLoaderGUI
                         break;
                 }
             }
-            lstAssetInfo.Items.Add("why");
         }
 
         private void DisplayModInfo(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -146,7 +146,7 @@ namespace KotHModLoaderGUI
             FileInfo file = files[0];
 
             lstModFileInfo.Items.Clear();
-            byte[] byteArray = _modManager.GetPixel_Example(file);
+            byte[] byteArray = _modManager.GetRGBA(file);
             int i = 0;
             int j = 1;
             foreach (byte b in byteArray)
@@ -159,6 +159,22 @@ namespace KotHModLoaderGUI
             lstModFileInfo.Items.Add(files.Length);
 
             _resMgr.ModVanillaTextureFromFileName(fileName, byteArray);
+        }
+
+        private void DisplayModInfo(object sender, SelectionChangedEventArgs e)
+        {
+            ListBox lstBox = (ListBox)(sender);
+            string modName = lstBox.SelectedItem.ToString();
+
+            FileInfo[] infos = _modManager.GetModFiles(modName);
+
+            lstModInfo.Items.Clear();
+            foreach (var info in infos)
+            {
+                lstModInfo.Items.Add(info.Name);
+            }
+
+            _activeMod = modName;
         }
     }
 }

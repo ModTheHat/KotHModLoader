@@ -8,7 +8,7 @@ using System.Windows.Forms;
 
 namespace KotHModLoaderGUI
 {
-    internal class ModManager
+    public class ModManager
     {
         private DirectoryInfo _dirInfoMod = new DirectoryInfo(@"..\Mods(new structure)");
         private DirectoryInfo[] _folders;
@@ -53,6 +53,17 @@ namespace KotHModLoaderGUI
             return foldersNames;
         }
 
+        public void BuildMods()
+        {
+            foreach(Mod mod in _modsList)
+            {
+                foreach (FileInfo file in mod.Files)
+                {
+                    MainWindow.ResMgr.ModVanillaTextureFromFileName(file.Name, GetRGBA(file));
+                }
+            }
+        }
+
         private Mod FindMod(string name)
         {
             foreach (Mod mod in _modsList) 
@@ -78,37 +89,19 @@ namespace KotHModLoaderGUI
             return files;
         }
 
-        public byte[] ConvertImageToBytesArray(FileInfo file)
+        //Return byte array of rgba value for all pixels; start from bottom left to top right
+        public byte[] GetRGBA(FileInfo file)
         {
-            //File bitmap = new File(file.FullName);
-            //pictureBox1.Image = bitmap;
-            //Color pixel5by10 = bitmap.GetPixel(5, 10);
-            byte[] tst = File.ReadAllBytes(file.FullName);
-            //ImageConversion.LoadImage(tst, file);
-            //byte[] tst = new byte[1];
-            //tst[0] = 1;
-            //BitmapImage fgdf = new BitmapImage();
-            return tst;
-        }
-        //public static byte[] converterDemo(Image x)
-        //{
-        //    AssetsTools.NET.Texture.TextureFile.Encode();
-        //}
-        public byte[] GetPixel_Example(FileInfo file)
-        {
-
-            // Create a Bitmap object from an image file.
             Bitmap myBitmap = new Bitmap(file.FullName);
-
-            
+                        
             byte[] rgba = new byte[4 * myBitmap.Width * myBitmap.Height];
+            Color pixelColor;
 
             for (int j = 0; j < myBitmap.Height; j++)
             {
                 for (int i = 0; i < myBitmap.Width; i++)
                 {
-                    // Get the color of a pixel within myBitmap.
-                    Color pixelColor = myBitmap.GetPixel(i, j);
+                    pixelColor = myBitmap.GetPixel(i, j);
 
                     rgba[(i + ((myBitmap.Height - 1 - j) * myBitmap.Width)) * 4] = pixelColor.R;
                     rgba[(i + ((myBitmap.Height - 1 - j) * myBitmap.Width)) * 4 + 1] = pixelColor.G;

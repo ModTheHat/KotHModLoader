@@ -23,7 +23,7 @@
 
         <Label Grid.Column="0">Mods</Label>
         <!--ListBox Grid.Row="1" x:Name="lstNames" MouseDoubleClick="ToggleModActive" /-->
-        <ListBox Grid.Row="1" x:Name="lstNames" MouseDoubleClick="DisplayModInfo"/>
+        <ListBox Grid.Row="1" x:Name="lstNames" SelectionChanged="DisplayModInfo"/>
 
         <Label Grid.Column="1">Mod Information</Label>
         <ListBox Grid.Row="1" Grid.Column="1" x:Name="lstModInfo" SelectionChanged="DisplayModFileInfo" />

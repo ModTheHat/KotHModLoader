@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using AssetsTools.NET;
 using AssetsTools.NET.Extra;
-//using static System.Net.WebRequestMethods;
 
 namespace KotHModLoaderGUI
 {
-    internal class ResourcesManager
+    public class ResourcesManager
     {
         string _resDir = "../KingOfTheHat_Data/";
         string _resVanilla = "resources.assets.VANILLA";
@@ -95,10 +92,13 @@ namespace KotHModLoaderGUI
                 if(filename.Contains(name))
                 {
                     AssetTypeValue value = new AssetTypeValue(dataImage, false);
-                   // value.;
-                    goBaseVanilla["image data"].Value = value;
 
-                    replacers.Add(new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla));
+                    if (goBaseVanilla["m_CompleteImageSize"].AsInt == dataImage.Length)
+                    {
+                        goBaseVanilla["image data"].Value = value;
+
+                        replacers.Add(new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla));
+                    }
                 }
             }
 
@@ -192,8 +192,6 @@ namespace KotHModLoaderGUI
 
         public AssetTypeValueField GetAssetInfo(string assetName)
         {
-            //List<string> infos = new List<string>();
-
             foreach (var goInfo in _afileVanilla.GetAssetsOfType(AssetClassID.Texture2D))
             {
                 var goBaseVanilla = _assetsManagerVanilla.GetBaseField(_afileInstVanilla, goInfo);
