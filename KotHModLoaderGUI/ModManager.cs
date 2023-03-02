@@ -54,9 +54,9 @@ namespace KotHModLoaderGUI
             return foldersNames;
         }
 
-        public void BuildMods()
+        public string BuildMods()
         {
-            MainWindow.ResMgr.BuildActiveModsTextures(_modsList);
+            return MainWindow.ResMgr.BuildActiveModsTextures(_modsList);
         }
 
         private Mod FindMod(string name)

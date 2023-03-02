@@ -12,6 +12,7 @@ namespace KotHModLoaderGUI
     {
         string _resDir = "../KingOfTheHat_Data/";
         string _resVanilla = "resources.assets.VANILLA";
+        //string _resVanilla = "StreamingAssets/aa/StandaloneWindows/defaultlocalgroup_assets_all_a6ca6ecdc93afbba6372a699e3258dc3.bundle";
         string _resNoFlavor = "resources.assets";
         string _classPackage = "lz4.tpk";
         string _modsDir = "../Mods/";
@@ -82,10 +83,12 @@ namespace KotHModLoaderGUI
             return modList;
         }
 
+        List<string> _alreadyModded;
         List<AssetsReplacer> _replacers;
-        public void BuildActiveModsTextures(List<Mod> mods)
+        public string BuildActiveModsTextures(List<Mod> mods)
         {
             _replacers = new List<AssetsReplacer>();
+            _alreadyModded = new List<string>();
 
             foreach (var mod in mods)
             {
@@ -99,9 +102,11 @@ namespace KotHModLoaderGUI
             var writer = new AssetsFileWriter(_resDir + _resNoFlavor);
             _afileVanilla.Write(writer, 0, _replacers);
             writer.Close();
+
+            return "Mods textures replaced.";
         }
 
-        private void ModVanillaTextureFromFileName(string filename, byte[] dataImage)
+        private string ModVanillaTextureFromFileName(string filename, byte[] dataImage)
         {
             foreach (var goInfo in _afileVanilla.GetAssetsOfType(AssetClassID.Texture2D))
             {
@@ -112,14 +117,17 @@ namespace KotHModLoaderGUI
                 {
                     AssetTypeValue value = new AssetTypeValue(dataImage, false);
 
-                    if (goBaseVanilla["m_CompleteImageSize"].AsInt == dataImage.Length)
+                    if (goBaseVanilla["m_CompleteImageSize"].AsInt == dataImage.Length && !_alreadyModded.Contains(name))
                     {
                         goBaseVanilla["image data"].Value = value;
 
-                        _replacers.Add(new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla));
+                        AssetsReplacerFromMemory replacer = new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla);
+                        _replacers.Add(replacer);
+                        _alreadyModded.Add(name);
                     }
                 }
             }
+            return null;
         }
 
             public string BuildMods()

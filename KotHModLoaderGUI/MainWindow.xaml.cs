@@ -29,8 +29,9 @@ namespace KotHModLoaderGUI
 
             DisplayVanillaCatalog();
 
-            console.Items.Clear();
-            console.Items.Add("Loaded");
+            console.Text = ".disabled Mods won't be added to the game.\n\n" +
+                "Double click on a Mod in the Mods tab to toggle between enabled and disabled.\n\n" +
+                "When you're happy with the enabled mods list, click on Build Mods to add them to the game.";
         }
 
         private void DisplayMods()
@@ -45,20 +46,20 @@ namespace KotHModLoaderGUI
 
         private void ButtonBuildMods_Click(object sender, RoutedEventArgs e)
         {
-            _modManager.BuildMods();
+            console.Text += _modManager.BuildMods();
         }
 
         private void ToggleModActive(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ListBox lstBox = (ListBox)(sender);
-            //lstBox.Items.Add("count " + lstBox.Items.Count);
-            _modManager.ToggleModActive(new DirectoryInfo(_modManager.DirInfoMod + @"\" + lstBox.SelectedItem.ToString()));
-            //lstBox.Items.Add(lstBox.Items.IndexOf(lstBox.SelectedItem) + " use " + lstBox.Items.IsInUse);
-            //lstBox.Items.Clear();
-            //lstBox.Items.RemoveAt(lstBox.Items.IndexOf(lstBox.SelectedItem));
-            //lstNames.Items.Add(_modManager.ToggleModActive(new DirectoryInfo(_modManager.DirInfoMod + @"\" + lstBox.SelectedItem.ToString())));
-            DisplayMods();
-            _modManager.BuildModsDatabase();
+            if (lstBox.SelectedIndex > -1)
+            {
+                _modManager.ToggleModActive(new DirectoryInfo(_modManager.DirInfoMod + @"\" + lstBox.SelectedItem.ToString()));
+
+                DisplayMods();
+
+                _modManager.BuildModsDatabase();
+            }
         }
 
         private void DisplayVanillaCatalog()
@@ -131,17 +132,20 @@ namespace KotHModLoaderGUI
         private void DisplayModInfo(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ListBox lstBox = (ListBox)(sender);
-            string modName = lstBox.SelectedItem.ToString();
-
-            FileInfo[] infos = _modManager.GetModFiles(modName);
-
-            lstModInfo.Items.Clear();
-            foreach (var info in infos)
+            if (lstBox.SelectedIndex > -1)
             {
-                lstModInfo.Items.Add(info.Name);
-            }
+                string modName = lstBox.SelectedItem.ToString();
 
-            _activeMod = modName;
+                FileInfo[] infos = _modManager.GetModFiles(modName);
+
+                lstModInfo.Items.Clear();
+                foreach (var info in infos)
+                {
+                    lstModInfo.Items.Add(info.Name);
+                }
+
+                _activeMod = modName;
+            }
         }
 
         private void DisplayModFileInfo(object sender, SelectionChangedEventArgs e)
