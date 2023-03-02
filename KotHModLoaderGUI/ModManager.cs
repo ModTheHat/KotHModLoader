@@ -41,6 +41,7 @@ namespace KotHModLoaderGUI
         //Go through all mods in mods folder and add them to manager mods list
         public string[] BuildModsDatabase()
         {
+            _modsList.Clear();
             _folders = _dirInfoMod.GetDirectories("*");
             string[] foldersNames = new string[_folders.Length];
             for (int i = 0; i < _folders.Length; i++)
@@ -55,13 +56,7 @@ namespace KotHModLoaderGUI
 
         public void BuildMods()
         {
-            foreach(Mod mod in _modsList)
-            {
-                foreach (FileInfo file in mod.Files)
-                {
-                    MainWindow.ResMgr.ModVanillaTextureFromFileName(file.Name, GetRGBA(file));
-                }
-            }
+            MainWindow.ResMgr.BuildActiveModsTextures(_modsList);
         }
 
         private Mod FindMod(string name)
@@ -88,29 +83,13 @@ namespace KotHModLoaderGUI
 
             return files;
         }
-
-        //Return byte array of rgba value for all pixels; start from bottom left to top right
-        public byte[] GetRGBA(FileInfo file)
+        public string ToggleModActive(DirectoryInfo modDir)
         {
-            Bitmap myBitmap = new Bitmap(file.FullName);
-                        
-            byte[] rgba = new byte[4 * myBitmap.Width * myBitmap.Height];
-            Color pixelColor;
-
-            for (int j = 0; j < myBitmap.Height; j++)
+            if (Directory.Exists(modDir.FullName))
             {
-                for (int i = 0; i < myBitmap.Width; i++)
-                {
-                    pixelColor = myBitmap.GetPixel(i, j);
-
-                    rgba[(i + ((myBitmap.Height - 1 - j) * myBitmap.Width)) * 4] = pixelColor.R;
-                    rgba[(i + ((myBitmap.Height - 1 - j) * myBitmap.Width)) * 4 + 1] = pixelColor.G;
-                    rgba[(i + ((myBitmap.Height - 1 - j) * myBitmap.Width)) * 4 + 2] = pixelColor.B;
-                    rgba[(i + ((myBitmap.Height - 1 - j) * myBitmap.Width)) * 4 + 3] = pixelColor.A;
-                }
+                Directory.Move(modDir.FullName, modDir.FullName.Contains(".disabled") ? modDir.FullName.Replace(".disabled", "") : modDir.FullName + ".disabled");
             }
-
-            return rgba;
+            return modDir.Name;
         }
     }
 }

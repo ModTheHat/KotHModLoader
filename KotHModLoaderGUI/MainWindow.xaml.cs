@@ -14,7 +14,7 @@ namespace KotHModLoaderGUI
     public partial class MainWindow : Window
     {
         private static ResourcesManager _resMgr = new ResourcesManager();
-        private string[] _files;
+        private string[] _folders;
         private ModManager _modManager = new ModManager();
         private string _activeMod = "";
 
@@ -25,16 +25,22 @@ namespace KotHModLoaderGUI
             InitializeComponent();
 
             _resMgr.LoadManagers();
-            _files = _modManager.BuildModsDatabase();
-            foreach (string file in _files)
-            {
-                lstNames.Items.Add(file);
-            }
+            DisplayMods();
 
             DisplayVanillaCatalog();
 
             console.Items.Clear();
             console.Items.Add("Loaded");
+        }
+
+        private void DisplayMods()
+        {
+            lstNames.Items.Clear();
+            _folders = _modManager.BuildModsDatabase();
+            foreach (string folder in _folders)
+            {
+                lstNames.Items.Add(folder);
+            }
         }
 
         private void ButtonBuildMods_Click(object sender, RoutedEventArgs e)
@@ -45,13 +51,14 @@ namespace KotHModLoaderGUI
         private void ToggleModActive(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ListBox lstBox = (ListBox)(sender);
-            lstNames.Items.Add(_resMgr.ToggleModActive(lstBox.SelectedItem.ToString()));
-            _files = _resMgr.LoadModdedManagers();
-            lstNames.Items.Clear();
-            foreach (string file in _files)
-            {
-                lstNames.Items.Add(file);
-            }
+            //lstBox.Items.Add("count " + lstBox.Items.Count);
+            _modManager.ToggleModActive(new DirectoryInfo(_modManager.DirInfoMod + @"\" + lstBox.SelectedItem.ToString()));
+            //lstBox.Items.Add(lstBox.Items.IndexOf(lstBox.SelectedItem) + " use " + lstBox.Items.IsInUse);
+            //lstBox.Items.Clear();
+            //lstBox.Items.RemoveAt(lstBox.Items.IndexOf(lstBox.SelectedItem));
+            //lstNames.Items.Add(_modManager.ToggleModActive(new DirectoryInfo(_modManager.DirInfoMod + @"\" + lstBox.SelectedItem.ToString())));
+            DisplayMods();
+            _modManager.BuildModsDatabase();
         }
 
         private void DisplayVanillaCatalog()
@@ -140,41 +147,45 @@ namespace KotHModLoaderGUI
         private void DisplayModFileInfo(object sender, SelectionChangedEventArgs e)
         {
             ListBox lstBox = (ListBox)(sender);
-            string fileName = lstBox.SelectedItem.ToString();
-            DirectoryInfo folder = _modManager.DirInfoMod;
-            FileInfo[] files = folder.GetFiles(fileName, SearchOption.AllDirectories);
-            FileInfo file = files[0];
-
             lstModFileInfo.Items.Clear();
-            byte[] byteArray = _modManager.GetRGBA(file);
-            int i = 0;
-            int j = 1;
-            foreach (byte b in byteArray)
+            if (lstBox.SelectedIndex > -1)
             {
-                lstModFileInfo.Items.Add((i == 0 ? j + " " : "") + (i == 0 ? "r: " : (i == 1 ? "g: " : (i == 2 ? "b: " : "a: "))) + b);
-                i++;
-                j = i == 4 ? j + 1 : j;
-                i = i == 4 ? 0 : i;
-            }
-            lstModFileInfo.Items.Add(files.Length);
+                string fileName = lstBox.SelectedItem.ToString();
+                DirectoryInfo folder = _modManager.DirInfoMod;
+                FileInfo[] files = folder.GetFiles(fileName, SearchOption.AllDirectories);
+                FileInfo file = files[0];
 
-            _resMgr.ModVanillaTextureFromFileName(fileName, byteArray);
+                byte[] byteArray = _resMgr.GetRGBA(file);
+                int i = 0;
+                int j = 1;
+                foreach (byte b in byteArray)
+                {
+                    lstModFileInfo.Items.Add((i == 0 ? j + " " : "") + (i == 0 ? "r: " : (i == 1 ? "g: " : (i == 2 ? "b: " : "a: "))) + b);
+                    i++;
+                    j = i == 4 ? j + 1 : j;
+                    i = i == 4 ? 0 : i;
+                }
+                lstModFileInfo.Items.Add(files.Length);
+            }
         }
 
         private void DisplayModInfo(object sender, SelectionChangedEventArgs e)
         {
             ListBox lstBox = (ListBox)(sender);
-            string modName = lstBox.SelectedItem.ToString();
-
-            FileInfo[] infos = _modManager.GetModFiles(modName);
-
-            lstModInfo.Items.Clear();
-            foreach (var info in infos)
+            if (lstBox.SelectedIndex > -1)
             {
-                lstModInfo.Items.Add(info.Name);
-            }
+                string modName = lstBox.SelectedItem.ToString();
 
-            _activeMod = modName;
+                FileInfo[] infos = _modManager.GetModFiles(modName);
+
+                lstModInfo.Items.Clear();
+                foreach (var info in infos)
+                {
+                    lstModInfo.Items.Add(info.Name);
+                }
+
+                _activeMod = modName;
+            }
         }
     }
 }

@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using AssetsTools.NET;
 using AssetsTools.NET.Extra;
+using static KotHModLoaderGUI.ModManager;
 
 namespace KotHModLoaderGUI
 {
@@ -80,10 +82,27 @@ namespace KotHModLoaderGUI
             return modList;
         }
 
-        public void ModVanillaTextureFromFileName(string filename, byte[] dataImage)
+        List<AssetsReplacer> _replacers;
+        public void BuildActiveModsTextures(List<Mod> mods)
         {
-            var replacers = new List<AssetsReplacer>();
+            _replacers = new List<AssetsReplacer>();
 
+            foreach (var mod in mods)
+            {
+                if(!mod.Name.Contains(".disabled"))
+                    foreach (FileInfo file in mod.Files)
+                    {
+                        ModVanillaTextureFromFileName(file.Name, GetRGBA(file));
+                    }
+            }
+
+            var writer = new AssetsFileWriter(_resDir + _resNoFlavor);
+            _afileVanilla.Write(writer, 0, _replacers);
+            writer.Close();
+        }
+
+        private void ModVanillaTextureFromFileName(string filename, byte[] dataImage)
+        {
             foreach (var goInfo in _afileVanilla.GetAssetsOfType(AssetClassID.Texture2D))
             {
                 var goBaseVanilla = _assetsManagerVanilla.GetBaseField(_afileInstVanilla, goInfo);
@@ -97,14 +116,10 @@ namespace KotHModLoaderGUI
                     {
                         goBaseVanilla["image data"].Value = value;
 
-                        replacers.Add(new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla));
+                        _replacers.Add(new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla));
                     }
                 }
             }
-
-            var writer = new AssetsFileWriter(_resDir + _resNoFlavor);
-            _afileVanilla.Write(writer, 0, replacers);
-            writer.Close();
         }
 
             public string BuildMods()
@@ -163,16 +178,6 @@ namespace KotHModLoaderGUI
             return s;
         }
 
-        public string ToggleModActive(string fileName)
-        {
-            string s = UnloadModdedManagers();
-            if (File.Exists(_modsDir + fileName))
-            {
-               File.Move(_modsDir + fileName, _modsDir + (fileName.Contains(".disabled") ? fileName.Replace(".disabled", "") : fileName + ".disabled"));
-            }
-            return s;
-        }
-
         public List<string> GetVanillaAssets()
         {
             LoadVanillaManager();
@@ -204,6 +209,30 @@ namespace KotHModLoaderGUI
             }
             
             return null;
+        }
+
+        //Return byte array of rgba value for all pixels; start from bottom left to top right
+        public byte[] GetRGBA(FileInfo file)
+        {
+            Bitmap myBitmap = new Bitmap(file.FullName);
+
+            byte[] rgba = new byte[4 * myBitmap.Width * myBitmap.Height];
+            Color pixelColor;
+
+            for (int j = 0; j < myBitmap.Height; j++)
+            {
+                for (int i = 0; i < myBitmap.Width; i++)
+                {
+                    pixelColor = myBitmap.GetPixel(i, j);
+
+                    rgba[(i + ((myBitmap.Height - 1 - j) * myBitmap.Width)) * 4] = pixelColor.R;
+                    rgba[(i + ((myBitmap.Height - 1 - j) * myBitmap.Width)) * 4 + 1] = pixelColor.G;
+                    rgba[(i + ((myBitmap.Height - 1 - j) * myBitmap.Width)) * 4 + 2] = pixelColor.B;
+                    rgba[(i + ((myBitmap.Height - 1 - j) * myBitmap.Width)) * 4 + 3] = pixelColor.A;
+                }
+            }
+
+            return rgba;
         }
     }
 }
