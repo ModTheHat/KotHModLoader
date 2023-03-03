@@ -16,6 +16,7 @@ namespace KotHModLoaderGUI
         string _resNoFlavor = "resources.assets";
         string _classPackage = "lz4.tpk";
         string _modsDir = "../Mods/";
+        private List<string> _unassignedTextureFiles = new List<string>();
 
         private FileInfo[] _files;
         private DirectoryInfo _dirInfoMod = new DirectoryInfo(@"..\Mods");
@@ -28,10 +29,23 @@ namespace KotHModLoaderGUI
         private AssetsFileInstance[] _afilesInstModded;
         private AssetsFile[] _afilesModded;
 
+        public List<string> UnassignedTextureFiles
+        {
+            get { return _unassignedTextureFiles; }
+            set { _unassignedTextureFiles = value; }
+        }
+
         //Load Vanilla and Mods Resources.assets
         public string[] LoadManagers()
         {
             LoadVanillaManager();
+
+            foreach (var goInfo in _afileVanilla.GetAssetsOfType(AssetClassID.Texture2D))
+            {
+                var goBaseVanilla = _assetsManagerVanilla.GetBaseField(_afileInstVanilla, goInfo);
+                var name = goBaseVanilla["m_Name"].AsString;
+                _unassignedTextureFiles.Add(name);
+            }
 
             return LoadModdedManagers();
         }
@@ -241,6 +255,21 @@ namespace KotHModLoaderGUI
             }
 
             return rgba;
+        }
+        public AssetTypeValueField GetVanillaDataImage(string assetName)
+        {
+            foreach (var goInfo in _afileVanilla.GetAssetsOfType(AssetClassID.Texture2D))
+            {
+                var goBaseVanilla = _assetsManagerVanilla.GetBaseField(_afileInstVanilla, goInfo);
+                var name = goBaseVanilla["m_Name"].AsString;
+
+                if (name == assetName)
+                {
+                    return goBaseVanilla;
+                }
+            }
+
+            return null;
         }
     }
 }

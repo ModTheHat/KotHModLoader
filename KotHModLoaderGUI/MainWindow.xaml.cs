@@ -1,10 +1,14 @@
 ﻿using AssetsTools.NET;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media.Imaging;
 using static AssetsTools.NET.Texture.TextureFile;
+using static KotHModLoaderGUI.ModManager;
 
 namespace KotHModLoaderGUI
 {
@@ -129,17 +133,18 @@ namespace KotHModLoaderGUI
             }
         }
 
-        private void DisplayModInfo(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        FileInfo[] _displayedModFilesInfo;
+        private void DisplayModInfo(object sender, SelectionChangedEventArgs e)
         {
             ListBox lstBox = (ListBox)(sender);
             if (lstBox.SelectedIndex > -1)
             {
                 string modName = lstBox.SelectedItem.ToString();
 
-                FileInfo[] infos = _modManager.GetModFiles(modName);
+                _displayedModFilesInfo = _modManager.GetModFiles(modName);
 
                 lstModInfo.Items.Clear();
-                foreach (var info in infos)
+                foreach (var info in _displayedModFilesInfo)
                 {
                     lstModInfo.Items.Add(info.Name);
                 }
@@ -158,37 +163,121 @@ namespace KotHModLoaderGUI
                 DirectoryInfo folder = _modManager.DirInfoMod;
                 FileInfo[] files = folder.GetFiles(fileName, SearchOption.AllDirectories);
                 FileInfo file = files[0];
+                ModFile modFile = _modManager.FindModFile(fileName);
 
-                byte[] byteArray = _resMgr.GetRGBA(file);
-                int i = 0;
-                int j = 1;
-                foreach (byte b in byteArray)
+                //byte[] byteArray = _resMgr.GetRGBA(file);
+                //Image ya = GetDataPicture(file.);
+                AssetTypeValueField vanillaAssetInfo = _resMgr.GetVanillaDataImage(modFile.AssignedVanillaFile);
+                if (vanillaAssetInfo["image data"].AsByteArray.Length > 0)
                 {
-                    lstModFileInfo.Items.Add((i == 0 ? j + " " : "") + (i == 0 ? "r: " : (i == 1 ? "g: " : (i == 2 ? "b: " : "a: "))) + b);
-                    i++;
-                    j = i == 4 ? j + 1 : j;
-                    i = i == 4 ? 0 : i;
+                    Bitmap vanillaImage = GetDataPicture(vanillaAssetInfo["m_Width"].AsInt, vanillaAssetInfo["m_Height"].AsInt, vanillaAssetInfo["image data"].AsByteArray);
+                    VanillaImageViewer.Source = ToBitmapImage(vanillaImage);
                 }
+                //System.Windows.Controls.Image im = new System.Windows.Controls.Image();
+                //im.Source = 
+       
+                Uri fileUri = new Uri(file.FullName);
+                ModdedImageViewer.Source = new BitmapImage(fileUri);
+                //int i = 0;
+                //int j = 1;
+                //foreach (byte b in byteArray)
+                //{
+                //    lstModFileInfo.Items.Add((i == 0 ? j + " " : "") + (i == 0 ? "r: " : (i == 1 ? "g: " : (i == 2 ? "b: " : "a: "))) + b);
+                //    i++;
+                //    j = i == 4 ? j + 1 : j;
+                //    i = i == 4 ? 0 : i;
+                //}
                 lstModFileInfo.Items.Add(files.Length);
+                lstModFileInfo.Items.Add("mod file name: " + fileName);
+                lstModFileInfo.Items.Add("assigned to vanilla file: " + modFile.AssignedVanillaFile);
+                //lstModFileInfo.Items.Add("assigned to vanilla file: ");
             }
         }
 
-        private void DisplayModInfo(object sender, SelectionChangedEventArgs e)
+        private static BitmapImage LoadImage(byte[] imageData)
+        {
+            if (imageData == null || imageData.Length == 0) return null;
+            var image = new BitmapImage();
+            using (var mem = new MemoryStream(imageData))
+            {
+                mem.Position = 0;
+                image.BeginInit();
+                image.CreateOptions = BitmapCreateOptions.PreservePixelFormat;
+                image.CacheOption = BitmapCacheOption.OnLoad;
+                image.UriSource = null;
+                image.StreamSource = mem;
+                image.EndInit();
+            }
+            image.Freeze();
+            return image;
+        }
+        
+        public Bitmap GetDataPicture(int w, int h, byte[] data)
+        {
+            Bitmap pic = new Bitmap(w, h, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+            for (int x = 0; x < w; x++)
+            {
+                for (int y = 0; y < h; y++)
+                {
+                    int arrayIndex = y * w + x;
+                    Color c = Color.FromArgb(
+                       data[arrayIndex + 3],
+                       data[arrayIndex],
+                       data[arrayIndex + 1],
+                       data[arrayIndex + 2]
+                    );
+                    pic.SetPixel(x, y, c);
+                }
+            }
+
+            return pic;
+        }
+        
+        public static BitmapImage ToBitmapImage(Bitmap bitmap)
+        {
+            using (var memory = new MemoryStream())
+            {
+                bitmap.Save(memory, ImageFormat.Png);
+                memory.Position = 0;
+
+                var bitmapImage = new BitmapImage();
+                bitmapImage.BeginInit();
+                bitmapImage.StreamSource = memory;
+                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapImage.EndInit();
+                bitmapImage.Freeze();
+
+                return bitmapImage;
+            }
+        }
+
+        private void ToggleModFileActive(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ListBox lstBox = (ListBox)(sender);
             if (lstBox.SelectedIndex > -1)
             {
-                string modName = lstBox.SelectedItem.ToString();
+                
 
-                FileInfo[] infos = _modManager.GetModFiles(modName);
+                console.Text += "\n" + _modManager.ToggleModFileActive(_displayedModFilesInfo[lstBox.SelectedIndex]);
+                //DisplayMods();
 
-                lstModInfo.Items.Clear();
-                foreach (var info in infos)
+                //_modManager.BuildModsDatabase();
+                //ListBox lstBox = (ListBox)(sender);
+                if (lstNames.SelectedIndex > -1)
                 {
-                    lstModInfo.Items.Add(info.Name);
-                }
+                    string modName = lstNames.SelectedItem.ToString();
 
-                _activeMod = modName;
+                    _displayedModFilesInfo = _modManager.GetModFiles(modName);
+
+                    lstModInfo.Items.Clear();
+                    foreach (var info in _displayedModFilesInfo)
+                    {
+                        lstModInfo.Items.Add(info.Name);
+                    }
+
+                    _activeMod = modName;
+                }
             }
         }
     }

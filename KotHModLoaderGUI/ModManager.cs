@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Linq;
 
 namespace KotHModLoaderGUI
 {
@@ -15,6 +16,18 @@ namespace KotHModLoaderGUI
 
         public DirectoryInfo DirInfoMod => _dirInfoMod;
 
+        public struct ModFile
+        {
+            public FileInfo File;
+            public string AssignedVanillaFile;
+
+            public ModFile(FileInfo file, string assigned = "")
+            {
+                File = file;
+                AssignedVanillaFile = assigned;
+            }
+        }
+
         public struct Mod
         {
             public string Name;
@@ -23,6 +36,7 @@ namespace KotHModLoaderGUI
             public string Author;
             public DirectoryInfo ModDirectoryInfo;
             public FileInfo[] Files;
+            public ModFile[] ModFiles;
 
             public Mod(DirectoryInfo dirInfo, string description = "", string version = "", string author = "unknown")
             {
@@ -32,6 +46,7 @@ namespace KotHModLoaderGUI
                 Author = author;
                 Name = dirInfo.Name;
                 Files = GetFilesInfo(ModDirectoryInfo);
+                ModFiles = GetModFilesInfo(ModDirectoryInfo);
             }
         }
 
@@ -77,12 +92,61 @@ namespace KotHModLoaderGUI
             return files;
         }
 
+        public ModFile FindModFile(string filename)
+        {
+            foreach (Mod mod in _modsList)
+            {
+                foreach(ModFile file in mod.ModFiles)
+                {
+                    if(file.File != null)
+                    if(filename.Contains(file.File.Name)) return file;
+                }
+            }
+            return new ModFile();
+        }
+
         private static FileInfo[] GetFilesInfo(DirectoryInfo folder)
         {
             FileInfo[] files = folder.GetFiles("*.png", SearchOption.AllDirectories);
+            files = files.Concat(folder.GetFiles("*.disabled", SearchOption.AllDirectories)).ToArray();
 
             return files;
         }
+        private static ModFile[] GetModFilesInfo(DirectoryInfo folder)
+        {
+            FileInfo[] fileInfos = GetFilesInfo(folder);
+            ModFile[] files = new ModFile[fileInfos.Length];
+
+            for(int i = 0; i < fileInfos.Length;i++)
+            {
+                ModFile file = files[i];
+                file.File = fileInfos[i];
+                file.AssignedVanillaFile = AssignVanillaFile(fileInfos[i]);
+                //file.AssignedVanillaFile = i.ToString();
+                files[i] = file;
+            }
+
+            return files;
+        }
+
+        private static string AssignVanillaFile(FileInfo file)
+        {
+            List<string> unassigned = MainWindow.ResMgr.UnassignedTextureFiles;
+
+            foreach (string unassignedFile in unassigned)
+            {
+                //return unassignedFile;
+                if (file.Name.Contains(unassignedFile))
+                {
+                    MainWindow.ResMgr.UnassignedTextureFiles.Remove(unassignedFile);
+
+                    return unassignedFile;
+                }
+            }
+
+            return "nothing";
+        }
+
         public string ToggleModActive(DirectoryInfo modDir)
         {
             if (Directory.Exists(modDir.FullName))
@@ -90,6 +154,16 @@ namespace KotHModLoaderGUI
                 Directory.Move(modDir.FullName, modDir.FullName.Contains(".disabled") ? modDir.FullName.Replace(".disabled", "") : modDir.FullName + ".disabled");
             }
             return modDir.Name;
+        }
+        public string ToggleModFileActive(FileInfo fileInfo)
+        {
+            string path = "../" + fileInfo.FullName.Substring(fileInfo.FullName.IndexOf("Mods(new structure)"));
+            if (File.Exists(path))
+            {
+                File.Copy(path, path.Contains(".disabled") ? path.Replace(".disabled", "") : path + ".disabled");
+            }
+
+            return path;
         }
     }
 }
