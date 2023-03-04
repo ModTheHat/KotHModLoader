@@ -8,8 +8,6 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using static AssetsTools.NET.Texture.TextureFile;
 using static KotHModLoaderGUI.ModManager;
 
 namespace KotHModLoaderGUI

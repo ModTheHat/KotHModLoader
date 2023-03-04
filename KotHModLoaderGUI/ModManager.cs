@@ -1,14 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using System.Windows.Controls;
-using System.Windows.Media.Imaging;
-using System.Drawing;
-using System.Windows.Forms;
 using System.Linq;
-using System.Reflection;
-using System.Diagnostics;
-using System;
 
 namespace KotHModLoaderGUI
 {
