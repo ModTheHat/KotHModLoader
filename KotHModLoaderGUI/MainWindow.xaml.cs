@@ -58,11 +58,11 @@ namespace KotHModLoaderGUI
             ListBox lstBox = (ListBox)(sender);
             if (lstBox.SelectedIndex > -1)
             {
-                _modManager.ToggleModActive(new DirectoryInfo(_modManager.DirInfoMod + @"\" + lstBox.SelectedItem.ToString()));
+                console.Text += _modManager.ToggleModActive(new DirectoryInfo(_modManager.DirInfoMod + @"\" + lstBox.SelectedItem.ToString()));
 
+                //_modManager.BuildModsDatabase();
                 DisplayMods();
-
-                _modManager.BuildModsDatabase();
+                DisplaySelectedModInfo();
             }
         }
 
@@ -140,6 +140,28 @@ namespace KotHModLoaderGUI
             if (lstBox.SelectedIndex > -1)
             {
                 string modName = lstBox.SelectedItem.ToString();
+
+                lstModFileInfo.Items.Clear();
+                VanillaImageViewer.Source = null;
+                ModdedImageViewer.Source = null;
+
+                _displayedModFilesInfo = _modManager.GetModFiles(modName);
+
+                lstModInfo.Items.Clear();
+                foreach (var info in _displayedModFilesInfo)
+                {
+                    lstModInfo.Items.Add(info.Name);
+                }
+
+                _activeMod = modName;
+            }
+        }
+
+        private void DisplaySelectedModInfo()
+        {
+            if (lstNames.SelectedIndex > -1)
+            {
+                string modName = lstNames.SelectedItem.ToString();
 
                 lstModFileInfo.Items.Clear();
                 VanillaImageViewer.Source = null;
@@ -241,13 +263,8 @@ namespace KotHModLoaderGUI
             ListBox lstBox = (ListBox)(sender);
             if (lstBox.SelectedIndex > -1)
             {
-                
-
                 console.Text += "\n" + _modManager.ToggleModFileActive(_displayedModFilesInfo[lstBox.SelectedIndex]);
-                //DisplayMods();
 
-                //_modManager.BuildModsDatabase();
-                //ListBox lstBox = (ListBox)(sender);
                 if (lstNames.SelectedIndex > -1)
                 {
                     string modName = lstNames.SelectedItem.ToString();
@@ -262,6 +279,8 @@ namespace KotHModLoaderGUI
 
                     _activeMod = modName;
                 }
+                _modManager.BuildModsDatabase();
+                DisplaySelectedModInfo();
             }
         }
     }

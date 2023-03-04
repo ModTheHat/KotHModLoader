@@ -56,7 +56,6 @@ namespace KotHModLoaderGUI
             string[] foldersNames = new string[_folders.Length];
             for (int i = 0; i < _folders.Length; i++)
             {
-                //TODO: VALIDATE IF FOLDER CONTAINS A MOD
                 DirectoryInfo folder = _folders[i];
                 foldersNames[i] = folder.Name;
                 _modsList.Add(new Mod(folder));
@@ -117,7 +116,6 @@ namespace KotHModLoaderGUI
                 ModFile file = files[i];
                 file.File = fileInfos[i];
                 file.AssignedVanillaFile = AssignVanillaFile(fileInfos[i]);
-                //file.AssignedVanillaFile = i.ToString();
                 files[i] = file;
             }
 
@@ -142,11 +140,67 @@ namespace KotHModLoaderGUI
             return "nothing";
         }
 
+        private bool IsDirectoryWritable(string dirPath, bool throwIfFails = false)
+        {
+            try
+            {
+                using (FileStream fs = File.Create(
+                    Path.Combine(
+                        dirPath,
+                        Path.GetRandomFileName()
+                    ),
+                    1,
+                    FileOptions.DeleteOnClose)
+                )
+                { }
+                return true;
+            }
+            catch
+            {
+                if (throwIfFails)
+                    throw;
+                else
+                    return false;
+            }
+        }
+
+        private bool IsFileLocked(FileInfo file)
+        {
+            try
+            {
+                using (FileStream stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.None))
+                {
+                    stream.Close();
+                }
+            }
+            catch (IOException)
+            {
+                //the file is unavailable because it is:
+                //still being written to
+                //or being processed by another thread
+                //or does not exist (has already been processed)
+                return true;
+            }
+
+            //file is not locked
+            return false;
+        }
+
         public string ToggleModActive(DirectoryInfo modDir)
         {
             if (Directory.Exists(modDir.FullName))
             {
-                Directory.Move(modDir.FullName, modDir.FullName.Contains(".disabled") ? modDir.FullName.Replace(".disabled", "") : modDir.FullName + ".disabled");
+                DirectoryInfo[] folders = modDir.GetDirectories("*");
+                foreach (DirectoryInfo folder in folders)
+                {
+                    if (!IsDirectoryWritable(folder.FullName))
+                        return "\nImpossible to write to " + folder.Name + " folder.\nDo you have this subfolder open somewhere?";
+                }
+
+                if (IsDirectoryWritable(modDir.FullName))
+                {
+                    Directory.Move(modDir.FullName, modDir.FullName.Contains(".disabled") ? modDir.FullName.Replace(".disabled", "") : modDir.FullName + ".disabled");
+                }
             }
             return modDir.Name;
         }

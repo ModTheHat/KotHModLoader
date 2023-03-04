@@ -22,7 +22,6 @@
         </Grid.ColumnDefinitions>
 
         <Label Grid.Column="0">Mods</Label>
-        <!--ListBox Grid.Row="1" x:Name="lstNames" SelectionChanged="DisplayModInfo" MouseDoubleClick="ToggleModActive"/-->
         <ListBox Grid.Row="1" x:Name="lstNames" SelectionChanged="DisplayModInfo" MouseDoubleClick="ToggleModActive"/>
 
         <Label Grid.Column="1">Mod Information</Label>

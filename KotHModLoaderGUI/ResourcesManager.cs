@@ -12,7 +12,6 @@ namespace KotHModLoaderGUI
     {
         string _resDir = "../KingOfTheHat_Data/";
         string _resVanilla = "resources.assets.VANILLA";
-        //string _resVanilla = "StreamingAssets/aa/StandaloneWindows/defaultlocalgroup_assets_all_a6ca6ecdc93afbba6372a699e3258dc3.bundle";
         string _resNoFlavor = "resources.assets";
         string _classPackage = "lz4.tpk";
         string _modsDir = "../Mods/";
@@ -47,7 +46,7 @@ namespace KotHModLoaderGUI
                 _unassignedTextureFiles.Add(name);
             }
 
-            return LoadModdedManagers();
+            return null;
         }
 
         //Vanilla manager
@@ -109,7 +108,8 @@ namespace KotHModLoaderGUI
                 if(!mod.Name.Contains(".disabled"))
                     foreach (FileInfo file in mod.Files)
                     {
-                        ModVanillaTextureFromFileName(file.Name, GetRGBA(file));
+                        if(!file.Name.Contains(".disabled"))
+                            ModVanillaTextureFromFileName(file.Name, GetRGBA(file));
                     }
             }
 
@@ -142,62 +142,6 @@ namespace KotHModLoaderGUI
                 }
             }
             return null;
-        }
-
-            public string BuildMods()
-        {
-            LoadModdedManagers();
-
-            //Build replacers for merging resources.assets
-            List<string> alreadyModded = new List<string>();
-            var replacers = new List<AssetsReplacer>();
-            int i = 0;
-            foreach (var goInfo in _afileVanilla.GetAssetsOfType(AssetClassID.Texture2D))
-            {
-                var goBaseVanilla = _assetsManagerVanilla.GetBaseField(_afileInstVanilla, goInfo);
-                var name = goBaseVanilla["m_Name"].AsString;
-
-                for (int j = 0; j < _assetsManagersModded.Length; j++)
-                {
-                    if (_afilesInstModded[j] != null)
-                    {
-                        var goInfoModded = _afilesModded[j].GetAssetsOfType(AssetClassID.Texture2D)[i];
-                        var goBaseModded = _assetsManagersModded[j].GetBaseField(_afilesInstModded[j], goInfoModded);
-                        if (goBaseModded["image data"].Value.ToString() != goBaseVanilla["image data"].Value.ToString() && !alreadyModded.Contains(goBaseVanilla["m_Name"].AsString))
-                        {
-                            Console.WriteLine(goBaseVanilla["m_Name"].AsString + " has changed.");
-
-                            goBaseVanilla["image data"].Value = goBaseModded["image data"].Value;
-
-                            replacers.Add(new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla));
-                            alreadyModded.Add(goBaseVanilla["m_Name"].AsString);
-                        }
-                    }
-                }
-                i++;
-            }
-
-            var writer = new AssetsFileWriter(_resDir + _resNoFlavor);
-            _afileVanilla.Write(writer, 0, replacers);
-            writer.Close();
-
-            return UnloadModdedManagers();
-        }
-
-        private string UnloadModdedManagers()
-        {
-            string s = "";
-            for (int j = 0; j < _assetsManagersModded.Length; j++)
-            {
-                if (!_files[j].Name.Contains(".disabled"))
-                if (_assetsManagersModded[j].Files.Count > 0)
-                {
-                    _assetsManagersModded[j].UnloadAll();
-                }
-                if (_assetsManagersModded[j] != null)
-                    s = s + _assetsManagersModded[j].Files.Count;
-            }
-            return s;
         }
 
         public List<string> GetVanillaAssets()
