@@ -6,6 +6,7 @@ using System.Windows.Media.Imaging;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Linq;
+using System.Reflection;
 
 namespace KotHModLoaderGUI
 {
@@ -149,9 +150,10 @@ namespace KotHModLoaderGUI
 
         public string ToggleModActive(DirectoryInfo modDir)
         {
-            if (Directory.Exists(modDir.FullName))
+            string path = "../" + modDir.FullName.Substring(modDir.FullName.IndexOf("Mods(new structure)"));
+            if (Directory.Exists(path))
             {
-                Directory.Move(modDir.FullName, modDir.FullName.Contains(".disabled") ? modDir.FullName.Replace(".disabled", "") : modDir.FullName + ".disabled");
+                Directory.Move(path, path.Contains(".disabled") ? path.Replace(".disabled", "") : path + ".disabled");
             }
             return modDir.Name;
         }
@@ -160,7 +162,7 @@ namespace KotHModLoaderGUI
             string path = "../" + fileInfo.FullName.Substring(fileInfo.FullName.IndexOf("Mods(new structure)"));
             if (File.Exists(path))
             {
-                File.Copy(path, path.Contains(".disabled") ? path.Replace(".disabled", "") : path + ".disabled");
+                File.Move(path, path.Contains(".disabled") ? path.Replace(".disabled", "") : path + ".disabled");
             }
 
             return path;

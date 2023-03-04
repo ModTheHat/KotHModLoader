@@ -1,4 +1,5 @@
 ﻿using AssetsTools.NET;
+using Mono.Cecil;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -7,6 +8,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
 using static AssetsTools.NET.Texture.TextureFile;
 using static KotHModLoaderGUI.ModManager;
 
@@ -58,6 +60,7 @@ namespace KotHModLoaderGUI
             ListBox lstBox = (ListBox)(sender);
             if (lstBox.SelectedIndex > -1)
             {
+                _modFileImg = new BitmapImage();
                 _modManager.ToggleModActive(new DirectoryInfo(_modManager.DirInfoMod + @"\" + lstBox.SelectedItem.ToString()));
 
                 DisplayMods();
@@ -153,6 +156,7 @@ namespace KotHModLoaderGUI
             }
         }
 
+        BitmapImage _modFileImg;
         private void DisplayModFileInfo(object sender, SelectionChangedEventArgs e)
         {
             ListBox lstBox = (ListBox)(sender);
@@ -164,33 +168,38 @@ namespace KotHModLoaderGUI
                 FileInfo[] files = folder.GetFiles(fileName, SearchOption.AllDirectories);
                 FileInfo file = files[0];
                 ModFile modFile = _modManager.FindModFile(fileName);
-
+                
                 //byte[] byteArray = _resMgr.GetRGBA(file);
                 //Image ya = GetDataPicture(file.);
                 AssetTypeValueField vanillaAssetInfo = _resMgr.GetVanillaDataImage(modFile.AssignedVanillaFile);
-                if (vanillaAssetInfo["image data"].AsByteArray.Length > 0)
+                if (vanillaAssetInfo != null)
                 {
-                    Bitmap vanillaImage = GetDataPicture(vanillaAssetInfo["m_Width"].AsInt, vanillaAssetInfo["m_Height"].AsInt, vanillaAssetInfo["image data"].AsByteArray);
-                    VanillaImageViewer.Source = ToBitmapImage(vanillaImage);
+                    if (vanillaAssetInfo["image data"].AsByteArray.Length > 0)
+                    {
+                        Bitmap vanillaImage = GetDataPicture(vanillaAssetInfo["m_Width"].AsInt, vanillaAssetInfo["m_Height"].AsInt, vanillaAssetInfo["image data"].AsByteArray);
+                        VanillaImageViewer.Source = ToBitmapImage(vanillaImage);
+                    }
                 }
-                //System.Windows.Controls.Image im = new System.Windows.Controls.Image();
-                //im.Source = 
-       
-                Uri fileUri = new Uri(file.FullName);
-                ModdedImageViewer.Source = new BitmapImage(fileUri);
-                //int i = 0;
-                //int j = 1;
-                //foreach (byte b in byteArray)
-                //{
-                //    lstModFileInfo.Items.Add((i == 0 ? j + " " : "") + (i == 0 ? "r: " : (i == 1 ? "g: " : (i == 2 ? "b: " : "a: "))) + b);
-                //    i++;
-                //    j = i == 4 ? j + 1 : j;
-                //    i = i == 4 ? 0 : i;
-                //}
+
+                string path = @"..\" + file.FullName.Substring(file.FullName.IndexOf("Mods(new structure)"));
+                //Uri fileUri = new Uri(file.FullName);
+                //_modFileImg = new BitmapImage(fileUri);
+                using (FileStream fs = new FileStream(file.FullName, FileMode.Open))
+                {
+                    _modFileImg = new BitmapImage();
+                    _modFileImg.BeginInit();
+                    _modFileImg.StreamSource = fs;
+                    _modFileImg.CacheOption = BitmapCacheOption.OnLoad;
+                    _modFileImg.EndInit();
+                    fs.Close();
+                }
+
+
+                ModdedImageViewer.Source = _modFileImg;
+
                 lstModFileInfo.Items.Add(files.Length);
                 lstModFileInfo.Items.Add("mod file name: " + fileName);
                 lstModFileInfo.Items.Add("assigned to vanilla file: " + modFile.AssignedVanillaFile);
-                //lstModFileInfo.Items.Add("assigned to vanilla file: ");
             }
         }
 
