@@ -7,6 +7,8 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Linq;
 using System.Reflection;
+using System.Diagnostics;
+using System;
 
 namespace KotHModLoaderGUI
 {
@@ -150,22 +152,22 @@ namespace KotHModLoaderGUI
 
         public string ToggleModActive(DirectoryInfo modDir)
         {
-            string path = "../" + modDir.FullName.Substring(modDir.FullName.IndexOf("Mods(new structure)"));
-            if (Directory.Exists(path))
+            if (Directory.Exists(modDir.FullName))
             {
-                Directory.Move(path, path.Contains(".disabled") ? path.Replace(".disabled", "") : path + ".disabled");
+                Directory.Move(modDir.FullName, modDir.FullName.Contains(".disabled") ? modDir.FullName.Replace(".disabled", "") : modDir.FullName + ".disabled");
             }
             return modDir.Name;
         }
         public string ToggleModFileActive(FileInfo fileInfo)
         {
-            string path = "../" + fileInfo.FullName.Substring(fileInfo.FullName.IndexOf("Mods(new structure)"));
-            if (File.Exists(path))
+            if (File.Exists(fileInfo.FullName))
             {
-                File.Move(path, path.Contains(".disabled") ? path.Replace(".disabled", "") : path + ".disabled");
+                if(fileInfo.FullName.LastIndexOf(".disabled") <= fileInfo.FullName.LastIndexOf(@"\"))
+                    File.Move(fileInfo.FullName, fileInfo.FullName + ".disabled");
+                else
+                    File.Move(fileInfo.FullName, fileInfo.FullName.Substring(0, fileInfo.FullName.LastIndexOf(".disabled")));
             }
-
-            return path;
+            return fileInfo.FullName;
         }
     }
 }

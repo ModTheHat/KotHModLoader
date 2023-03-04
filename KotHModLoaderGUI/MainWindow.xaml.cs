@@ -60,7 +60,6 @@ namespace KotHModLoaderGUI
             ListBox lstBox = (ListBox)(sender);
             if (lstBox.SelectedIndex > -1)
             {
-                _modFileImg = new BitmapImage();
                 _modManager.ToggleModActive(new DirectoryInfo(_modManager.DirInfoMod + @"\" + lstBox.SelectedItem.ToString()));
 
                 DisplayMods();
@@ -144,6 +143,10 @@ namespace KotHModLoaderGUI
             {
                 string modName = lstBox.SelectedItem.ToString();
 
+                lstModFileInfo.Items.Clear();
+                VanillaImageViewer.Source = null;
+                ModdedImageViewer.Source = null;
+
                 _displayedModFilesInfo = _modManager.GetModFiles(modName);
 
                 lstModInfo.Items.Clear();
@@ -156,7 +159,6 @@ namespace KotHModLoaderGUI
             }
         }
 
-        BitmapImage _modFileImg;
         private void DisplayModFileInfo(object sender, SelectionChangedEventArgs e)
         {
             ListBox lstBox = (ListBox)(sender);
@@ -169,8 +171,6 @@ namespace KotHModLoaderGUI
                 FileInfo file = files[0];
                 ModFile modFile = _modManager.FindModFile(fileName);
                 
-                //byte[] byteArray = _resMgr.GetRGBA(file);
-                //Image ya = GetDataPicture(file.);
                 AssetTypeValueField vanillaAssetInfo = _resMgr.GetVanillaDataImage(modFile.AssignedVanillaFile);
                 if (vanillaAssetInfo != null)
                 {
@@ -181,21 +181,16 @@ namespace KotHModLoaderGUI
                     }
                 }
 
-                string path = @"..\" + file.FullName.Substring(file.FullName.IndexOf("Mods(new structure)"));
-                //Uri fileUri = new Uri(file.FullName);
-                //_modFileImg = new BitmapImage(fileUri);
                 using (FileStream fs = new FileStream(file.FullName, FileMode.Open))
                 {
-                    _modFileImg = new BitmapImage();
+                    BitmapImage _modFileImg = new BitmapImage();
                     _modFileImg.BeginInit();
                     _modFileImg.StreamSource = fs;
                     _modFileImg.CacheOption = BitmapCacheOption.OnLoad;
                     _modFileImg.EndInit();
                     fs.Close();
+                    ModdedImageViewer.Source = _modFileImg;
                 }
-
-
-                ModdedImageViewer.Source = _modFileImg;
 
                 lstModFileInfo.Items.Add(files.Length);
                 lstModFileInfo.Items.Add("mod file name: " + fileName);
@@ -203,24 +198,6 @@ namespace KotHModLoaderGUI
             }
         }
 
-        private static BitmapImage LoadImage(byte[] imageData)
-        {
-            if (imageData == null || imageData.Length == 0) return null;
-            var image = new BitmapImage();
-            using (var mem = new MemoryStream(imageData))
-            {
-                mem.Position = 0;
-                image.BeginInit();
-                image.CreateOptions = BitmapCreateOptions.PreservePixelFormat;
-                image.CacheOption = BitmapCacheOption.OnLoad;
-                image.UriSource = null;
-                image.StreamSource = mem;
-                image.EndInit();
-            }
-            image.Freeze();
-            return image;
-        }
-        
         public Bitmap GetDataPicture(int w, int h, byte[] data)
         {
             Bitmap pic = new Bitmap(w, h, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
