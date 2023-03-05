@@ -52,7 +52,7 @@ namespace KotHModLoaderGUI
 
         private void ButtonBuildMods_Click(object sender, RoutedEventArgs e)
         {
-            console.Text += _modManager.BuildMods();
+            console.Text = _modManager.BuildMods();
         }
 
         private void ToggleModActive(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -87,52 +87,61 @@ namespace KotHModLoaderGUI
 
             AssetTypeValueField infos = _resMgr.GetAssetInfo(assetName);
 
-            lstAssetInfo.Items.Clear();
+            textAssetInfo.Text = "";
 
             foreach (var info in infos)
             {
                 //var test = (info[info.FieldName]).As;
-                lstAssetInfo.Items.Add(info.FieldName + " " + info.TypeName);
+                textAssetInfo.Text += info.FieldName + "(" + info.TypeName + "): ";
 
                 switch (info.TypeName)
                 {
                     case "string":
                         var s = info.AsString;
-                        lstAssetInfo.Items.Add(s);
+                        textAssetInfo.Text += s;
                         break;
                     case "int":
                         var i = info.AsInt;
-                        lstAssetInfo.Items.Add(i);
+                        textAssetInfo.Text += i;
                         break;
                     case "unsigned int":
                         var ui = info.AsUInt;
-                        lstAssetInfo.Items.Add(ui);
+                        textAssetInfo.Text += ui;
                         break;
                     case "bool":
                         var b = info.AsBool;
-                        lstAssetInfo.Items.Add(b);
+                        textAssetInfo.Text += b;
                         break;
                     case "float":
                         var f = info.AsFloat;
-                        lstAssetInfo.Items.Add(f);
+                        textAssetInfo.Text += f;
                         break;
                     case "array":
                         var a = info.AsArray;
-                        lstAssetInfo.Items.Add(a);
+                        textAssetInfo.Text += a;
                         break;
                     case "TypelessData":
                         var t = (Byte[])info.AsObject;
-                        foreach (var o in t)
-                        {
-                            lstAssetInfo.Items.Add(o);
-                        }
-                        lstAssetInfo.Items.Add(t.Length);
+                        //foreach (var o in t)
+                        //{
+                        //    textAssetInfo.Text += o;
+                        //}
+                        textAssetInfo.Text += t.Length;
                         break;
                     case "StreamingInfo":
-                        lstAssetInfo.Items.Add("offset " + info["offset"].AsString + ", size " + info["size"].AsString + ", path " + info["path"].AsString);
+                        textAssetInfo.Text += "offset " + info["offset"].AsString + ", size " + info["size"].AsString + ", path " + info["path"].AsString;
                         break;
                 }
+                textAssetInfo.Text += "\n";
             }
+
+            if (infos["image data"].AsByteArray.Length > 0 && infos["m_Width"].AsInt * infos["m_Height"].AsInt * 4 == infos["image data"].AsByteArray.Length)
+            {
+                Bitmap vanillaImage = GetDataPicture(infos["m_Width"].AsInt, infos["m_Height"].AsInt, infos["image data"].AsByteArray);
+                VanillaImageViewer.Source = ToBitmapImage(vanillaImage);
+            }
+            else
+                VanillaImageViewer.Source = null;
         }
 
         FileInfo[] _displayedModFilesInfo;
@@ -144,7 +153,7 @@ namespace KotHModLoaderGUI
                 string modName = lstBox.SelectedItem.ToString();
 
                 lstModFileInfo.Items.Clear();
-                VanillaImageViewer.Source = null;
+                AssignedImageViewer.Source = null;
                 ModdedImageViewer.Source = null;
 
                 _displayedModFilesInfo = _modManager.GetModFiles(modName);
@@ -166,7 +175,7 @@ namespace KotHModLoaderGUI
                 string modName = lstNames.SelectedItem.ToString();
 
                 lstModFileInfo.Items.Clear();
-                VanillaImageViewer.Source = null;
+                AssignedImageViewer.Source = null;
                 ModdedImageViewer.Source = null;
 
                 _displayedModFilesInfo = _modManager.GetModFiles(modName);
@@ -196,10 +205,10 @@ namespace KotHModLoaderGUI
                 AssetTypeValueField vanillaAssetInfo = _resMgr.GetVanillaDataImage(modFile.AssignedVanillaFile);
                 if (vanillaAssetInfo != null)
                 {
-                    if (vanillaAssetInfo["image data"].AsByteArray.Length > 0)
+                    if (vanillaAssetInfo["image data"].AsByteArray.Length > 0 && vanillaAssetInfo["m_Width"].AsInt * vanillaAssetInfo["m_Height"].AsInt * 4 == vanillaAssetInfo["image data"].AsByteArray.Length)
                     {
                         Bitmap vanillaImage = GetDataPicture(vanillaAssetInfo["m_Width"].AsInt, vanillaAssetInfo["m_Height"].AsInt, vanillaAssetInfo["image data"].AsByteArray);
-                        VanillaImageViewer.Source = ToBitmapImage(vanillaImage);
+                        AssignedImageViewer.Source = ToBitmapImage(vanillaImage);
                     }
                 }
 
@@ -224,18 +233,18 @@ namespace KotHModLoaderGUI
         {
             Bitmap pic = new Bitmap(w, h, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
-            for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++) 
             {
-                for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
                 {
-                    int arrayIndex = y * w + x;
+                    int arrayIndex = (y * w + x) * 4;
                     Color c = Color.FromArgb(
                        data[arrayIndex + 3],
                        data[arrayIndex],
                        data[arrayIndex + 1],
                        data[arrayIndex + 2]
                     );
-                    pic.SetPixel(x, y, c);
+                    pic.SetPixel(x, h - 1 - y, c);
                 }
             }
 
