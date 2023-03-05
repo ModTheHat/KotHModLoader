@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Windows.Forms;
 using AssetsTools.NET;
 using AssetsTools.NET.Extra;
 using static KotHModLoaderGUI.ModManager;
@@ -10,28 +11,82 @@ namespace KotHModLoaderGUI
 {
     public class ResourcesManager
     {
-        string _resDir = "../KingOfTheHat_Data/";
+        string _resDir = @"..\KingOfTheHat_Data";
         string _resVanilla = "resources.assets.VANILLA";
         string _resNoFlavor = "resources.assets";
         string _classPackage = "lz4.tpk";
-        string _modsDir = "../Mods/";
         private List<string> _unassignedTextureFiles = new List<string>();
-
-        private FileInfo[] _files;
-        private DirectoryInfo _dirInfoMod = new DirectoryInfo(@"..\Mods");
 
         private AssetsManager _assetsManagerVanilla;
         private AssetsFileInstance _afileInstVanilla;
         private AssetsFile _afileVanilla;
 
-        private AssetsManager[] _assetsManagersModded;
-        private AssetsFileInstance[] _afilesInstModded;
-        private AssetsFile[] _afilesModded;
-
         public List<string> UnassignedTextureFiles
         {
             get { return _unassignedTextureFiles; }
             set { _unassignedTextureFiles = value; }
+        }
+
+        //Initialise paths to mods, resources and other needed files
+        public void InitialisePaths()
+        {
+            DirectoryInfo rootInfo = new DirectoryInfo("..");
+            string appPath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            string rootPath = Path.GetDirectoryName(appPath);
+
+            //Initialise KingOfTheHat_Data folder
+            if (!Directory.Exists(_resDir))
+            {
+                DirectoryInfo[] folders = rootInfo.GetDirectories("KingOfTheHat_Data", SearchOption.AllDirectories);
+                if (folders.Length == 0)
+                {
+                    FolderBrowserDialog d = new FolderBrowserDialog();
+                    d.Description = "KingOfTheHat_Data folder not found. Are you sure you have installed the Modloader in the KotH game's folder?" +
+                        " Either reinstall the Modloader in the game's folder or choose the KingOfTheHat_Data folder in the file browser.";
+                    d.SelectedPath = rootPath;
+                    if(d.ShowDialog() == DialogResult.OK)
+                    {
+                        _resDir = d.SelectedPath;
+                    }
+
+                    if (!Directory.Exists(_resDir))
+                        Environment.Exit(1);
+
+                }
+                else
+                {
+                    _resDir = folders[0].FullName;
+                }
+            }
+            
+            //Initialise lz4.tpk classpackage handler for .assets
+            if(!File.Exists(_classPackage))
+            {
+                FileInfo[] files = rootInfo.GetFiles("lz4.tpk", SearchOption.AllDirectories);
+                if (files.Length == 0)
+                {
+                    System.Windows.Forms.OpenFileDialog f = new System.Windows.Forms.OpenFileDialog();
+                    f.Title = "lz4.tpk found. Navigate to it and choose it or reinstall the Modloader.";
+
+                    f.InitialDirectory = rootPath;
+                    f.RestoreDirectory = true;
+
+                    if (f.ShowDialog() == DialogResult.OK)
+                    {
+                        _classPackage = f.FileName;
+                    }
+
+                    if (!File.Exists(_classPackage))
+                        Environment.Exit(1);
+
+                }
+                else
+                {
+                    _classPackage = files[0].FullName;
+                }
+            }
+
+            LoadManagers();
         }
 
         //Load Vanilla and Mods Resources.assets
@@ -55,45 +110,15 @@ namespace KotHModLoaderGUI
             _assetsManagerVanilla = new AssetsManager();
             _assetsManagerVanilla.LoadClassPackage(_classPackage);
 
-            if (!File.Exists(_resDir + _resVanilla))
-                File.Copy(_resDir + _resNoFlavor, _resDir + _resVanilla);
+            if (!File.Exists(_resDir + @"\" + _resVanilla))
+                File.Copy(_resDir + @"\" + _resNoFlavor, _resDir + @"\" + _resVanilla);
 
-            File.Delete(_resDir + _resNoFlavor);
+            File.Delete(_resDir + @"\" + _resNoFlavor);
 
-            _afileInstVanilla = _assetsManagerVanilla.LoadAssetsFile(_resDir + _resVanilla, true);
+            _afileInstVanilla = _assetsManagerVanilla.LoadAssetsFile(_resDir + @"\" + _resVanilla, true);
             _afileVanilla = _afileInstVanilla.file;
 
             _assetsManagerVanilla.LoadClassDatabaseFromPackage(_afileVanilla.Metadata.UnityVersion);
-        }
-
-        //Mods folder managers
-        public string[] LoadModdedManagers()
-        {
-            _files = _dirInfoMod.GetFiles("*");
-
-            _assetsManagersModded = new AssetsManager[_files.Length];
-            _afilesInstModded = new AssetsFileInstance[_files.Length];
-            _afilesModded = new AssetsFile[_files.Length];
-
-            //Build managers for resources.assets mods
-            string[] modList = new string[_files.Length];
-            for (int a = 0; a < _files.Length; a++)
-            {
-                FileInfo file = _files[a];
-                modList[a] = file.Name;
-                if (!file.Name.Contains(".disabled"))
-                {
-                    _assetsManagersModded[a] = new AssetsManager();
-                    _assetsManagersModded[a].LoadClassPackage(_classPackage);
-                    _afilesInstModded[a] = _assetsManagersModded[a].LoadAssetsFile(_modsDir + file.Name, true);
-                    if (_assetsManagersModded[a] != null)
-                    {
-                        _afilesModded[a] = _afilesInstModded[a].file;
-                        _assetsManagersModded[a].LoadClassDatabaseFromPackage(_afilesModded[a].Metadata.UnityVersion);
-                    }
-                }
-            }
-            return modList;
         }
 
         List<string> _alreadyModded;
@@ -113,7 +138,7 @@ namespace KotHModLoaderGUI
                     }
             }
 
-            var writer = new AssetsFileWriter(_resDir + _resNoFlavor);
+            var writer = new AssetsFileWriter(_resDir + @"\" + _resNoFlavor);
             _afileVanilla.Write(writer, 0, _replacers);
             writer.Close();
 

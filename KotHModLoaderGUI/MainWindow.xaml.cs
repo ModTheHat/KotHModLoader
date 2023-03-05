@@ -28,7 +28,9 @@ namespace KotHModLoaderGUI
         {
             InitializeComponent();
 
-            _resMgr.LoadManagers();
+            _resMgr.InitialisePaths();
+            _modManager.InitialisePaths();
+
             DisplayMods();
 
             DisplayVanillaCatalog();

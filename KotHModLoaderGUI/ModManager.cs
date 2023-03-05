@@ -1,12 +1,15 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Windows.Forms;
 
 namespace KotHModLoaderGUI
 {
     public class ModManager
     {
-        private DirectoryInfo _dirInfoMod = new DirectoryInfo(@"..\Mods(new structure)");
+        private string _modDir = @"..\Mods(new structure)";
+        private DirectoryInfo _dirInfoMod;
         private DirectoryInfo[] _folders;
 
         public DirectoryInfo DirInfoMod => _dirInfoMod;
@@ -48,8 +51,45 @@ namespace KotHModLoaderGUI
         private List<Mod> _modsList = new();
         public List<Mod> ModsList => _modsList;
 
-        //Go through all mods in mods folder and add them to manager mods list
-        public string[] BuildModsDatabase()
+
+        //Initialise paths to mods, resources and other needed files
+        public void InitialisePaths()
+        {
+            DirectoryInfo rootInfo = new DirectoryInfo("..");
+            string appPath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            string rootPath = Path.GetDirectoryName(appPath);
+
+            //Initialise KingOfTheHat_Data folder
+            if (!Directory.Exists(_modDir))
+            {
+                DirectoryInfo[] folders = rootInfo.GetDirectories("Mods(new structure)", SearchOption.AllDirectories);
+                if (folders.Length == 0)
+                {
+                    FolderBrowserDialog d = new FolderBrowserDialog();
+                    d.Description = "Mods folder not found." +
+                        " Either reinstall the Modloader in the game's folder or choose the Mods folder in the folder browser.";
+                    d.SelectedPath = rootPath;
+                    if (d.ShowDialog() == DialogResult.OK)
+                    {
+                        _modDir = d.SelectedPath;
+                    }
+
+                    if (!Directory.Exists(_modDir))
+                        Environment.Exit(1);
+
+                }
+                else
+                {
+                    _modDir = folders[0].FullName;
+                }
+            }
+
+            _dirInfoMod = new DirectoryInfo(_modDir);
+        }
+
+
+            //Go through all mods in mods folder and add them to manager mods list
+            public string[] BuildModsDatabase()
         {
             _modsList.Clear();
             _folders = _dirInfoMod.GetDirectories("*");
