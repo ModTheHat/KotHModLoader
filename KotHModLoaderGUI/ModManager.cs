@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AssetsTools.NET;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -18,11 +19,13 @@ namespace KotHModLoaderGUI
         {
             public FileInfo File;
             public string AssignedVanillaFile;
+            public List<AssetTypeValueField> VanillaCandidates;
 
             public ModFile(FileInfo file, string assigned = "")
             {
                 File = file;
                 AssignedVanillaFile = assigned;
+                VanillaCandidates = new List<AssetTypeValueField>();
             }
         }
 
@@ -178,6 +181,21 @@ namespace KotHModLoaderGUI
             }
 
             return "nothing";
+        }
+
+        public List<AssetTypeValueField> FindVanillaCandidates(FileInfo file)
+        {
+            List<AssetTypeValueField> fields = new List<AssetTypeValueField>();
+
+            foreach (AssetTypeValueField values in MainWindow.ResMgr.AFilesValueFields)
+            {
+                if (file.Name.Contains(values["m_Name"].AsString))
+                {
+                    fields.Add(values);
+                }
+            }
+
+            return fields;
         }
 
         private bool IsDirectoryWritable(string dirPath, bool throwIfFails = false)

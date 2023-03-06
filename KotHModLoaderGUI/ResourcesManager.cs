@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Runtime.Intrinsics.Arm;
 using System.Windows.Forms;
+using System.Xml.Linq;
 using AssetsTools.NET;
 using AssetsTools.NET.Extra;
 using static KotHModLoaderGUI.ModManager;
@@ -20,6 +22,9 @@ namespace KotHModLoaderGUI
         private AssetsManager _assetsManagerVanilla;
         private AssetsFileInstance _afileInstVanilla;
         private AssetsFile _afileVanilla;
+        private List<AssetTypeValueField> _afilesValueFields = new List<AssetTypeValueField>();
+
+        public List<AssetTypeValueField> AFilesValueFields => _afilesValueFields;
 
         public List<string> UnassignedTextureFiles
         {
@@ -99,6 +104,7 @@ namespace KotHModLoaderGUI
                 var goBaseVanilla = _assetsManagerVanilla.GetBaseField(_afileInstVanilla, goInfo);
                 var name = goBaseVanilla["m_Name"].AsString;
                 _unassignedTextureFiles.Add(name);
+                _afilesValueFields.Add(goBaseVanilla);
             }
 
             return null;
@@ -133,8 +139,11 @@ namespace KotHModLoaderGUI
                 if(!mod.Name.Contains(".disabled"))
                     foreach (FileInfo file in mod.Files)
                     {
-                        if(!file.Name.Contains(".disabled"))
+                        if (!file.Name.Contains(".disabled") && !_alreadyModded.Contains(file.Name))
+                        {
                             ModVanillaTextureFromFileName(file.Name, GetRGBA(file));
+                            _alreadyModded.Add(file.Name);
+                        }
                     }
             }
 
@@ -156,13 +165,12 @@ namespace KotHModLoaderGUI
                 {
                     AssetTypeValue value = new AssetTypeValue(dataImage, false);
 
-                    if (goBaseVanilla["m_CompleteImageSize"].AsInt == dataImage.Length && !_alreadyModded.Contains(name))
+                    if (goBaseVanilla["m_CompleteImageSize"].AsInt == dataImage.Length)
                     {
                         goBaseVanilla["image data"].Value = value;
 
                         AssetsReplacerFromMemory replacer = new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla);
                         _replacers.Add(replacer);
-                        _alreadyModded.Add(name);
                     }
                 }
             }
@@ -186,20 +194,12 @@ namespace KotHModLoaderGUI
                 return assets;
         }
 
-        public AssetTypeValueField GetAssetInfo(string assetName)
+        public AssetTypeValueField GetAssetInfo(int index)
         {
-            foreach (var goInfo in _afileVanilla.GetAssetsOfType(AssetClassID.Texture2D))
-            {
-                var goBaseVanilla = _assetsManagerVanilla.GetBaseField(_afileInstVanilla, goInfo);
-                var name = goBaseVanilla["m_Name"].AsString;
+            List<AssetFileInfo> vanillaAssets = _afileVanilla.GetAssetsOfType(AssetClassID.Texture2D);
+            AssetTypeValueField assetInfos = _assetsManagerVanilla.GetBaseField(_afileInstVanilla, vanillaAssets[index]);
 
-                if(name == assetName)
-                {
-                    return goBaseVanilla;
-                }
-            }
-            
-            return null;
+            return assetInfos;
         }
 
         //Return byte array of rgba value for all pixels; start from bottom left to top right

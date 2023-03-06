@@ -20,7 +20,6 @@ namespace KotHModLoaderGUI
         private static ResourcesManager _resMgr = new ResourcesManager();
         private string[] _folders;
         private ModManager _modManager = new ModManager();
-        private string _activeMod = "";
 
         public static ResourcesManager ResMgr => _resMgr;
 
@@ -85,7 +84,7 @@ namespace KotHModLoaderGUI
             ListBox lstBox = (ListBox)(sender);
             string assetName = lstBox.SelectedItem.ToString();
 
-            AssetTypeValueField infos = _resMgr.GetAssetInfo(assetName);
+            AssetTypeValueField infos = _resMgr.GetAssetInfo(lstBox.SelectedIndex);
 
             textAssetInfo.Text = "";
 
@@ -154,6 +153,8 @@ namespace KotHModLoaderGUI
 
                 lstModFileInfo.Items.Clear();
                 AssignedImageViewer.Source = null;
+                AssignedImageViewer1.Source = null;
+                AssignedImageViewer2.Source = null;
                 ModdedImageViewer.Source = null;
 
                 _displayedModFilesInfo = _modManager.GetModFiles(modName);
@@ -163,8 +164,6 @@ namespace KotHModLoaderGUI
                 {
                     lstModInfo.Items.Add(info.Name);
                 }
-
-                _activeMod = modName;
             }
         }
 
@@ -176,6 +175,8 @@ namespace KotHModLoaderGUI
 
                 lstModFileInfo.Items.Clear();
                 AssignedImageViewer.Source = null;
+                AssignedImageViewer1.Source = null;
+                AssignedImageViewer2.Source = null;
                 ModdedImageViewer.Source = null;
 
                 _displayedModFilesInfo = _modManager.GetModFiles(modName);
@@ -185,8 +186,6 @@ namespace KotHModLoaderGUI
                 {
                     lstModInfo.Items.Add(info.Name);
                 }
-
-                _activeMod = modName;
             }
         }
 
@@ -201,14 +200,27 @@ namespace KotHModLoaderGUI
                 FileInfo[] files = folder.GetFiles(fileName, SearchOption.AllDirectories);
                 FileInfo file = files[0];
                 ModFile modFile = _modManager.FindModFile(fileName);
-                
-                AssetTypeValueField vanillaAssetInfo = _resMgr.GetVanillaDataImage(modFile.AssignedVanillaFile);
-                if (vanillaAssetInfo != null)
+
+                AssignedImageViewer1.Source = null;
+                AssignedImageViewer2.Source = null;
+
+                int candidateQty = 0;
+                List<AssetTypeValueField> fields = _modManager.FindVanillaCandidates(modFile.File);
+                for (int i = 0; i < fields.Count; i++)
                 {
-                    if (vanillaAssetInfo["image data"].AsByteArray.Length > 0 && vanillaAssetInfo["m_Width"].AsInt * vanillaAssetInfo["m_Height"].AsInt * 4 == vanillaAssetInfo["image data"].AsByteArray.Length)
+                    AssetTypeValueField values = fields[i];
+                    if (values["image data"].AsByteArray.Length > 0 && values["m_Width"].AsInt * values["m_Height"].AsInt * 4 == values["image data"].AsByteArray.Length)
                     {
-                        Bitmap vanillaImage = GetDataPicture(vanillaAssetInfo["m_Width"].AsInt, vanillaAssetInfo["m_Height"].AsInt, vanillaAssetInfo["image data"].AsByteArray);
-                        AssignedImageViewer.Source = ToBitmapImage(vanillaImage);
+                        Bitmap vanillaImage = GetDataPicture(values["m_Width"].AsInt, values["m_Height"].AsInt, values["image data"].AsByteArray);
+                        if (candidateQty == 0)
+                        {
+                            AssignedImageViewer1.Source = ToBitmapImage(vanillaImage);
+                        }
+                        else
+                        {
+                            AssignedImageViewer2.Source = ToBitmapImage(vanillaImage);
+                        }
+                        candidateQty++;
                     }
                 }
 
@@ -287,8 +299,6 @@ namespace KotHModLoaderGUI
                     {
                         lstModInfo.Items.Add(info.Name);
                     }
-
-                    _activeMod = modName;
                 }
                 _modManager.BuildModsDatabase();
                 DisplaySelectedModInfo();
