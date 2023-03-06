@@ -141,8 +141,8 @@ namespace KotHModLoaderGUI
                     {
                         if (!file.Name.Contains(".disabled") && !_alreadyModded.Contains(file.Name))
                         {
-                            ModVanillaTextureFromFileName(file.Name, GetRGBA(file));
-                            _alreadyModded.Add(file.Name);
+                            if(ModVanillaTextureFromFileName(file.Name, GetRGBA(file)))
+                                _alreadyModded.Add(file.Name);
                         }
                     }
             }
@@ -151,11 +151,12 @@ namespace KotHModLoaderGUI
             _afileVanilla.Write(writer, 0, _replacers);
             writer.Close();
 
-            return "Mods textures replaced.";
+            return _replacers.Count + " vanilla textures replaced.";
         }
 
-        private string ModVanillaTextureFromFileName(string filename, byte[] dataImage)
+        private bool ModVanillaTextureFromFileName(string filename, byte[] dataImage)
         {
+            bool replaced = false;
             foreach (var goInfo in _afileVanilla.GetAssetsOfType(AssetClassID.Texture2D))
             {
                 var goBaseVanilla = _assetsManagerVanilla.GetBaseField(_afileInstVanilla, goInfo);
@@ -171,10 +172,11 @@ namespace KotHModLoaderGUI
 
                         AssetsReplacerFromMemory replacer = new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla);
                         _replacers.Add(replacer);
+                        replaced = true;
                     }
                 }
             }
-            return null;
+            return replaced;
         }
 
         public List<string> GetVanillaAssets()
@@ -216,10 +218,11 @@ namespace KotHModLoaderGUI
                 {
                     pixelColor = myBitmap.GetPixel(i, j);
 
-                    rgba[(i + ((myBitmap.Height - 1 - j) * myBitmap.Width)) * 4] = pixelColor.R;
-                    rgba[(i + ((myBitmap.Height - 1 - j) * myBitmap.Width)) * 4 + 1] = pixelColor.G;
-                    rgba[(i + ((myBitmap.Height - 1 - j) * myBitmap.Width)) * 4 + 2] = pixelColor.B;
-                    rgba[(i + ((myBitmap.Height - 1 - j) * myBitmap.Width)) * 4 + 3] = pixelColor.A;
+                    int index = (i + ((myBitmap.Height - 1 - j) * myBitmap.Width)) * 4;
+                    rgba[index] = pixelColor.R;
+                    rgba[index + 1] = pixelColor.G;
+                    rgba[index + 2] = pixelColor.B;
+                    rgba[index + 3] = pixelColor.A;
                 }
             }
 

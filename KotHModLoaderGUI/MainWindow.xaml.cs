@@ -7,6 +7,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using static KotHModLoaderGUI.ModManager;
 
@@ -152,6 +153,8 @@ namespace KotHModLoaderGUI
                 string modName = lstBox.SelectedItem.ToString();
 
                 lstModFileInfo.Items.Clear();
+                VanillaImageLabel.Content = "";
+                ModImageLabel.Content = "";
                 AssignedImageViewer.Source = null;
                 AssignedImageViewer1.Source = null;
                 AssignedImageViewer2.Source = null;
@@ -174,6 +177,8 @@ namespace KotHModLoaderGUI
                 string modName = lstNames.SelectedItem.ToString();
 
                 lstModFileInfo.Items.Clear();
+                VanillaImageLabel.Content = "";
+                ModImageLabel.Content = "";
                 AssignedImageViewer.Source = null;
                 AssignedImageViewer1.Source = null;
                 AssignedImageViewer2.Source = null;
@@ -201,6 +206,8 @@ namespace KotHModLoaderGUI
                 FileInfo file = files[0];
                 ModFile modFile = _modManager.FindModFile(fileName);
 
+                VanillaImageLabel.Content = "";
+                ModImageLabel.Content = "";
                 AssignedImageViewer1.Source = null;
                 AssignedImageViewer2.Source = null;
 
@@ -221,6 +228,7 @@ namespace KotHModLoaderGUI
                             AssignedImageViewer2.Source = ToBitmapImage(vanillaImage);
                         }
                         candidateQty++;
+                        VanillaImageLabel.Content = "Vanilla files that will be replaced.";
                     }
                 }
 
@@ -233,6 +241,7 @@ namespace KotHModLoaderGUI
                     _modFileImg.EndInit();
                     fs.Close();
                     ModdedImageViewer.Source = _modFileImg;
+                    ModImageLabel.Content = "Mod file texture";
                 }
 
                 lstModFileInfo.Items.Add(files.Length);
@@ -250,7 +259,7 @@ namespace KotHModLoaderGUI
                 for (int x = 0; x < w; x++)
                 {
                     int arrayIndex = (y * w + x) * 4;
-                    Color c = Color.FromArgb(
+                    System.Drawing.Color c = System.Drawing.Color.FromArgb(
                        data[arrayIndex + 3],
                        data[arrayIndex],
                        data[arrayIndex + 1],
@@ -302,6 +311,38 @@ namespace KotHModLoaderGUI
                 }
                 _modManager.BuildModsDatabase();
                 DisplaySelectedModInfo();
+            }
+        }
+
+        private void ToggleAssignVanillaImage(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            System.Windows.Controls.Image image = (System.Windows.Controls.Image)sender;
+            console.Text += image.Name;
+            if (image.Name == "AssignedImageViewer1")
+            {
+                if (VanillaImageStack1.Opacity == 0.3)
+                {
+                    VanillaImageStack1.Opacity = 1;
+                    VanillaImageStack1.Background = null;
+                }
+                else
+                {
+                    VanillaImageStack1.Opacity = 0.3;
+                    VanillaImageStack1.Background = new SolidColorBrush(Colors.Black);
+                }
+            }
+            if (image.Name == "AssignedImageViewer2")
+            {
+                if (VanillaImageStack2.Opacity == 0.3)
+                {
+                    VanillaImageStack2.Opacity = 1;
+                    VanillaImageStack2.Background = null;
+                }
+                else
+                {
+                    VanillaImageStack2.Opacity = 0.3;
+                    VanillaImageStack2.Background = new SolidColorBrush(Colors.Black);
+                }
             }
         }
     }

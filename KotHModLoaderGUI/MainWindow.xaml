@@ -31,10 +31,18 @@
         <Label Grid.Row="0" Grid.Column="2">Mod File Information</Label>
         <StackPanel Grid.Row="1" Grid.Column="2">
             <ListBox x:Name="lstModFileInfo"/>
+            <Label x:Name="ModImageLabel" />
+            <StackPanel Grid.Row="1" Grid.Column="2">
+                <Image x:Name="ModdedImageViewer" MaxHeight="120" Height="Auto" Width="Auto" />
+            </StackPanel>
             <Image x:Name="AssignedImageViewer" MaxHeight="120" Height="Auto" Width="Auto"/>
-            <Image x:Name="AssignedImageViewer1" MaxHeight="120" Height="Auto" Width="Auto"/>
-            <Image x:Name="AssignedImageViewer2" MaxHeight="120" Height="Auto" Width="Auto"/>
-            <Image x:Name="ModdedImageViewer" MaxHeight="120" Height="Auto" Width="Auto"/>
+            <Label x:Name="VanillaImageLabel" />
+            <StackPanel x:Name="VanillaImageStack1" Grid.Row="1" Grid.Column="2">
+                <Image x:Name="AssignedImageViewer1" MaxHeight="120" Height="Auto" Width="Auto" MouseUp="ToggleAssignVanillaImage"/>
+            </StackPanel>
+            <StackPanel x:Name="VanillaImageStack2" Grid.Row="1" Grid.Column="2">
+                <Image x:Name="AssignedImageViewer2" MaxHeight="120" Height="Auto" Width="Auto"/>
+            </StackPanel>
         </StackPanel>
 
         <StackPanel Grid.Row="2" Grid.Column="2" Margin="5,0,0,0">
