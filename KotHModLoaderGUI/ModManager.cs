@@ -19,12 +19,14 @@ namespace KotHModLoaderGUI
         {
             public FileInfo File;
             public string AssignedVanillaFile;
+            public List<AssetTypeValueField> AssignedVanillaFiles;
             public List<AssetTypeValueField> VanillaCandidates;
 
             public ModFile(FileInfo file, string assigned = "")
             {
                 File = file;
                 AssignedVanillaFile = assigned;
+                AssignedVanillaFiles = new List<AssetTypeValueField>();
                 VanillaCandidates = new List<AssetTypeValueField>();
             }
         }
@@ -158,44 +160,29 @@ namespace KotHModLoaderGUI
             {
                 ModFile file = files[i];
                 file.File = fileInfos[i];
-                file.AssignedVanillaFile = AssignVanillaFile(fileInfos[i]);
+                file.AssignedVanillaFiles = AssignVanillaFiles(fileInfos[i]);
                 files[i] = file;
             }
 
             return files;
         }
 
-        private static string AssignVanillaFile(FileInfo file)
+        private static List<AssetTypeValueField> AssignVanillaFiles(FileInfo file)
         {
-            List<string> unassigned = MainWindow.ResMgr.UnassignedTextureFiles;
+            List<AssetTypeValueField> unassigned = MainWindow.ResMgr.UnassignedTextureFiles;
+            List<AssetTypeValueField> assigned = new List<AssetTypeValueField>();
 
-            foreach (string unassignedFile in unassigned)
+            for (int i = 0; i < unassigned.Count; i++)
             {
-                //return unassignedFile;
-                if (file.Name.Contains(unassignedFile))
+                AssetTypeValueField unassignedFile = unassigned[i];
+                if (file.Name.Contains(unassignedFile["m_Name"].AsString))
                 {
                     MainWindow.ResMgr.UnassignedTextureFiles.Remove(unassignedFile);
-
-                    return unassignedFile;
+                    assigned.Add(unassignedFile);
                 }
             }
 
-            return "nothing";
-        }
-
-        public List<AssetTypeValueField> FindVanillaCandidates(FileInfo file)
-        {
-            List<AssetTypeValueField> fields = new List<AssetTypeValueField>();
-
-            foreach (AssetTypeValueField values in MainWindow.ResMgr.AFilesValueFields)
-            {
-                if (file.Name.Contains(values["m_Name"].AsString))
-                {
-                    fields.Add(values);
-                }
-            }
-
-            return fields;
+            return assigned;
         }
 
         private bool IsDirectoryWritable(string dirPath, bool throwIfFails = false)

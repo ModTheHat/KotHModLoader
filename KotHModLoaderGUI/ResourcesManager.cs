@@ -17,7 +17,7 @@ namespace KotHModLoaderGUI
         string _resVanilla = "resources.assets.VANILLA";
         string _resNoFlavor = "resources.assets";
         string _classPackage = "lz4.tpk";
-        private List<string> _unassignedTextureFiles = new List<string>();
+        private List<AssetTypeValueField> _unassignedTextureFiles = new List<AssetTypeValueField>();
 
         private AssetsManager _assetsManagerVanilla;
         private AssetsFileInstance _afileInstVanilla;
@@ -26,7 +26,7 @@ namespace KotHModLoaderGUI
 
         public List<AssetTypeValueField> AFilesValueFields => _afilesValueFields;
 
-        public List<string> UnassignedTextureFiles
+        public List<AssetTypeValueField> UnassignedTextureFiles
         {
             get { return _unassignedTextureFiles; }
             set { _unassignedTextureFiles = value; }
@@ -103,7 +103,7 @@ namespace KotHModLoaderGUI
             {
                 var goBaseVanilla = _assetsManagerVanilla.GetBaseField(_afileInstVanilla, goInfo);
                 var name = goBaseVanilla["m_Name"].AsString;
-                _unassignedTextureFiles.Add(name);
+                _unassignedTextureFiles.Add(goBaseVanilla);
                 _afilesValueFields.Add(goBaseVanilla);
             }
 

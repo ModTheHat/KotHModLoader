@@ -21,6 +21,7 @@ namespace KotHModLoaderGUI
         private static ResourcesManager _resMgr = new ResourcesManager();
         private string[] _folders;
         private ModManager _modManager = new ModManager();
+        private FileInfo[] _displayedModFilesInfo;
 
         public static ResourcesManager ResMgr => _resMgr;
 
@@ -63,6 +64,7 @@ namespace KotHModLoaderGUI
                 console.Text += _modManager.ToggleModActive(new DirectoryInfo(_modManager.DirInfoMod + @"\" + lstBox.SelectedItem.ToString()));
 
                 //_modManager.BuildModsDatabase();
+                _resMgr.LoadManagers();
                 DisplayMods();
                 DisplaySelectedModInfo();
             }
@@ -144,7 +146,6 @@ namespace KotHModLoaderGUI
                 VanillaImageViewer.Source = null;
         }
 
-        FileInfo[] _displayedModFilesInfo;
         private void DisplayModInfo(object sender, SelectionChangedEventArgs e)
         {
             ListBox lstBox = (ListBox)(sender);
@@ -210,9 +211,14 @@ namespace KotHModLoaderGUI
                 ModImageLabel.Content = "";
                 AssignedImageViewer1.Source = null;
                 AssignedImageViewer2.Source = null;
+                VanillaImageStack1.Opacity = 1;
+                VanillaImageStack2.Opacity = 1;
+                VanillaImageStack1.Background = null;
+                VanillaImageStack2.Background = null;
 
                 int candidateQty = 0;
-                List<AssetTypeValueField> fields = _modManager.FindVanillaCandidates(modFile.File);
+                //List<AssetTypeValueField> fields = _modManager.FindVanillaCandidates(modFile.File);
+                List<AssetTypeValueField> fields = modFile.AssignedVanillaFiles;
                 for (int i = 0; i < fields.Count; i++)
                 {
                     AssetTypeValueField values = fields[i];
@@ -228,7 +234,7 @@ namespace KotHModLoaderGUI
                             AssignedImageViewer2.Source = ToBitmapImage(vanillaImage);
                         }
                         candidateQty++;
-                        VanillaImageLabel.Content = "Vanilla files that will be replaced.";
+                        VanillaImageLabel.Content = "Vanilla files that will be replaced. Click image to toggle between greyed out and normal. Greyed out images won't be replaced by mod asset file.";
                     }
                 }
 
@@ -244,9 +250,13 @@ namespace KotHModLoaderGUI
                     ModImageLabel.Content = "Mod file texture";
                 }
 
-                lstModFileInfo.Items.Add(files.Length);
+                AddAssignedButton.Visibility = Visibility.Visible;
+
                 lstModFileInfo.Items.Add("mod file name: " + fileName);
-                lstModFileInfo.Items.Add("assigned to vanilla file: " + modFile.AssignedVanillaFile);
+                foreach (AssetTypeValueField assigned in modFile.AssignedVanillaFiles)
+                {
+                    lstModFileInfo.Items.Add("assigned to vanilla file: " + assigned["m_Name"].AsString);
+                }
             }
         }
 
@@ -309,6 +319,7 @@ namespace KotHModLoaderGUI
                         lstModInfo.Items.Add(info.Name);
                     }
                 }
+                _resMgr.LoadManagers();
                 _modManager.BuildModsDatabase();
                 DisplaySelectedModInfo();
             }
