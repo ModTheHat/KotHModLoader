@@ -1,5 +1,8 @@
 ﻿using AssetsTools.NET;
+using AssetsTools.NET.Extra;
 using Mono.Cecil;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -7,9 +10,11 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Forms;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using static KotHModLoaderGUI.ModManager;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace KotHModLoaderGUI
 {
@@ -58,7 +63,7 @@ namespace KotHModLoaderGUI
 
         private void ToggleModActive(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            ListBox lstBox = (ListBox)(sender);
+            System.Windows.Controls.ListBox lstBox = (System.Windows.Controls.ListBox)(sender);
             if (lstBox.SelectedIndex > -1)
             {
                 console.Text += _modManager.ToggleModActive(new DirectoryInfo(_modManager.DirInfoMod + @"\" + lstBox.SelectedItem.ToString()));
@@ -84,7 +89,7 @@ namespace KotHModLoaderGUI
 
         private void DisplayAssetInfo(object sender, SelectionChangedEventArgs e)
         {
-            ListBox lstBox = (ListBox)(sender);
+            System.Windows.Controls.ListBox lstBox = (System.Windows.Controls.ListBox)(sender);
             string assetName = lstBox.SelectedItem.ToString();
 
             AssetTypeValueField infos = _resMgr.GetAssetInfo(lstBox.SelectedIndex);
@@ -148,7 +153,7 @@ namespace KotHModLoaderGUI
 
         private void DisplayModInfo(object sender, SelectionChangedEventArgs e)
         {
-            ListBox lstBox = (ListBox)(sender);
+            System.Windows.Controls.ListBox lstBox = (System.Windows.Controls.ListBox)(sender);
             if (lstBox.SelectedIndex > -1)
             {
                 string modName = lstBox.SelectedItem.ToString();
@@ -157,16 +162,18 @@ namespace KotHModLoaderGUI
                 VanillaImageLabel.Content = "";
                 ModImageLabel.Content = "";
                 AssignedImageViewer.Source = null;
-                AssignedImageViewer1.Source = null;
-                AssignedImageViewer2.Source = null;
+                CandidateImageViewer1.Source = null;
+                CandidateImageViewer2.Source = null;
                 ModdedImageViewer.Source = null;
 
                 _displayedModFilesInfo = _modManager.GetModFiles(modName);
 
+                lstModFilesInfo.Items.Clear();
+                lstModFilesInfo.Items.Add("Description: " + _modManager.FindMod(modName).Description);
+                lstModFilesInfo.Items.Add("Version: " + _modManager.FindMod(modName).Version);
+                lstModFilesInfo.Items.Add("Author: " + _modManager.FindMod(modName).Author);
+
                 lstModInfo.Items.Clear();
-                lstModInfo.Items.Add(_modManager.FindMod(modName).Description);
-                lstModInfo.Items.Add(_modManager.FindMod(modName).Version);
-                lstModInfo.Items.Add(_modManager.FindMod(modName).Author);
                 foreach (var info in _displayedModFilesInfo)
                 {
                     lstModInfo.Items.Add(info.Name);
@@ -184,11 +191,16 @@ namespace KotHModLoaderGUI
                 VanillaImageLabel.Content = "";
                 ModImageLabel.Content = "";
                 AssignedImageViewer.Source = null;
-                AssignedImageViewer1.Source = null;
-                AssignedImageViewer2.Source = null;
+                CandidateImageViewer1.Source = null;
+                CandidateImageViewer2.Source = null;
                 ModdedImageViewer.Source = null;
 
                 _displayedModFilesInfo = _modManager.GetModFiles(modName);
+
+                lstModFilesInfo.Items.Clear();
+                lstModFilesInfo.Items.Add("Description: " + _modManager.FindMod(modName).Description);
+                lstModFilesInfo.Items.Add("Version: " + _modManager.FindMod(modName).Version);
+                lstModFilesInfo.Items.Add("Author: " + _modManager.FindMod(modName).Author);
 
                 lstModInfo.Items.Clear();
                 foreach (var info in _displayedModFilesInfo)
@@ -200,10 +212,11 @@ namespace KotHModLoaderGUI
 
         private void DisplayModFileInfo(object sender, SelectionChangedEventArgs e)
         {
-            ListBox lstBox = (ListBox)(sender);
+            System.Windows.Controls.ListBox lstBox = (System.Windows.Controls.ListBox)(sender);
             lstModFileInfo.Items.Clear();
             if (lstBox.SelectedIndex > -1)
             {
+                Mod mod = _modManager.FindMod(lstNames.SelectedItem.ToString());
                 string fileName = lstBox.SelectedItem.ToString();
                 DirectoryInfo folder = _modManager.DirInfoMod;
                 FileInfo[] files = folder.GetFiles(fileName, SearchOption.AllDirectories);
@@ -212,12 +225,13 @@ namespace KotHModLoaderGUI
 
                 VanillaImageLabel.Content = "";
                 ModImageLabel.Content = "";
-                AssignedImageViewer1.Source = null;
-                AssignedImageViewer2.Source = null;
+                CandidateImageViewer1.Source = null;
+                CandidateImageViewer2.Source = null;
                 VanillaImageStack1.Opacity = 1;
                 VanillaImageStack2.Opacity = 1;
                 VanillaImageStack1.Background = null;
                 VanillaImageStack2.Background = null;
+                AssignedImageViewer1.Source = null;
 
                 int candidateQty = 0;
                 //List<AssetTypeValueField> fields = _modManager.FindVanillaCandidates(modFile.File);
@@ -230,11 +244,11 @@ namespace KotHModLoaderGUI
                         Bitmap vanillaImage = GetDataPicture(values["m_Width"].AsInt, values["m_Height"].AsInt, values["image data"].AsByteArray);
                         if (candidateQty == 0)
                         {
-                            AssignedImageViewer1.Source = ToBitmapImage(vanillaImage);
+                            CandidateImageViewer1.Source = ToBitmapImage(vanillaImage);
                         }
                         else
                         {
-                            AssignedImageViewer2.Source = ToBitmapImage(vanillaImage);
+                            CandidateImageViewer2.Source = ToBitmapImage(vanillaImage);
                         }
                         candidateQty++;
                         VanillaImageLabel.Content = "Vanilla files that will be replaced. Click image to toggle between greyed out and normal. Greyed out images won't be replaced by mod asset file.";
@@ -254,6 +268,15 @@ namespace KotHModLoaderGUI
                 }
 
                 AddAssignedButton.Visibility = Visibility.Visible;
+
+                FileInfo metaFile = mod.MetaFile;
+                dynamic modJson = LoadJson(metaFile.FullName);
+                foreach(var v in modJson["AssignedVanillaAssets"]) 
+                {
+                    //if(v["index"] != null)
+                        //var info = _resMgr.AFilesValueFields[v["index"]];
+                    //AssignedImageViewer1.Source = 
+                }
 
                 lstModFileInfo.Items.Add("mod file name: " + fileName);
                 foreach (AssetTypeValueField assigned in modFile.AssignedVanillaFiles)
@@ -305,7 +328,7 @@ namespace KotHModLoaderGUI
 
         private void ToggleModFileActive(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            ListBox lstBox = (ListBox)(sender);
+            System.Windows.Controls.ListBox lstBox = (System.Windows.Controls.ListBox)(sender);
             if (lstBox.SelectedIndex > -1)
             {
                 console.Text += "\n" + _modManager.ToggleModFileActive(_displayedModFilesInfo[lstBox.SelectedIndex]);
@@ -332,7 +355,7 @@ namespace KotHModLoaderGUI
         {
             System.Windows.Controls.Image image = (System.Windows.Controls.Image)sender;
             console.Text += image.Name;
-            if (image.Name == "AssignedImageViewer1")
+            if (image.Name == "CandidateImageViewer1")
             {
                 if (VanillaImageStack1.Opacity == 0.3)
                 {
@@ -345,7 +368,7 @@ namespace KotHModLoaderGUI
                     VanillaImageStack1.Background = new SolidColorBrush(Colors.Black);
                 }
             }
-            if (image.Name == "AssignedImageViewer2")
+            if (image.Name == "CandidateImageViewer2")
             {
                 if (VanillaImageStack2.Opacity == 0.3)
                 {
@@ -357,6 +380,35 @@ namespace KotHModLoaderGUI
                     VanillaImageStack2.Opacity = 0.3;
                     VanillaImageStack2.Background = new SolidColorBrush(Colors.Black);
                 }
+            }
+        }
+
+        private void AssignVanillaTexture(object sender, RoutedEventArgs e)
+        {
+            Mod selectedMod = _modManager.FindMod(lstNames.SelectedItem.ToString());
+            ModFile modFile = selectedMod.ModFiles[lstModInfo.SelectedIndex];
+
+            AssetTypeValueField vanillaFile = _resMgr.GetAssetInfo(lstVanilla.SelectedIndex);
+
+            AssignedVanillaAssets assigned = new AssignedVanillaAssets();
+            assigned.index = lstVanilla.SelectedIndex;
+            assigned.name = vanillaFile["m_Name"].AsString;
+
+            dynamic modJson = LoadJson(selectedMod.MetaFile.FullName);
+
+            modJson["AssignedVanillaAssets"] = JToken.FromObject(assigned);
+
+            File.WriteAllText(selectedMod.MetaFile.FullName, modJson.ToString());
+        }
+
+        private static dynamic LoadJson(string path)
+        {
+            using (StreamReader r = new StreamReader(path))
+            {
+                string json = r.ReadToEnd();
+                object metafile = JsonConvert.DeserializeObject(json);
+
+                return metafile;
             }
         }
     }

@@ -24,6 +24,7 @@ namespace KotHModLoaderGUI
         private AssetsFile _afileVanilla;
         private List<AssetTypeValueField> _afilesValueFields = new List<AssetTypeValueField>();
 
+        public AssetsFile AssetsFileVanilla => _afileVanilla;
         public List<AssetTypeValueField> AFilesValueFields => _afilesValueFields;
 
         public List<AssetTypeValueField> UnassignedTextureFiles

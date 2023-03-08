@@ -19,7 +19,7 @@ namespace KotHModLoaderGUI
     public class MetaFile
     {
         public PackMeta pack { get; set; }
-        public List<AssetTypeValueField> AssignedVanillaAssets { get; set; }
+        public List<AssignedVanillaAssets> AssignedVanillaAssets { get; set; }
     }
 
     public struct PackMeta
@@ -30,31 +30,30 @@ namespace KotHModLoaderGUI
         public string mods { get; set; }
     }
 
+    public struct AssignedVanillaAssets
+    {
+        public int index { get; set; }
+        public string name { get; set; }
+        public ModFile modFile { get; set; }
+    }
+    public struct ModFile
+    {
+        public FileInfo File;
+        public string AssignedVanillaFile;
+        public List<AssetTypeValueField> AssignedVanillaFiles;
+        public List<AssetTypeValueField> VanillaCandidates;
+
+        public ModFile(FileInfo file, string assigned = "")
+        {
+            File = file;
+            AssignedVanillaFile = assigned;
+            AssignedVanillaFiles = new List<AssetTypeValueField>();
+            VanillaCandidates = new List<AssetTypeValueField>();
+        }
+    }
+
     public class ModManager
     {
-        private string _modDir = @"..\Mods(new structure)";
-        private static string _metaFile = @"\packmeta.json";
-        private DirectoryInfo _dirInfoMod;
-        private DirectoryInfo[] _folders;
-
-        public DirectoryInfo DirInfoMod => _dirInfoMod;
-
-        public struct ModFile
-        {
-            public FileInfo File;
-            public string AssignedVanillaFile;
-            public List<AssetTypeValueField> AssignedVanillaFiles;
-            public List<AssetTypeValueField> VanillaCandidates;
-
-            public ModFile(FileInfo file, string assigned = "")
-            {
-                File = file;
-                AssignedVanillaFile = assigned;
-                AssignedVanillaFiles = new List<AssetTypeValueField>();
-                VanillaCandidates = new List<AssetTypeValueField>();
-            }
-        }
-
         public struct Mod
         {
             public string Name;
@@ -85,6 +84,14 @@ namespace KotHModLoaderGUI
                 ModFiles = GetModFilesInfo(ModDirectoryInfo);
             }
         }
+
+        private string _modDir = @"..\Mods(new structure)";
+        private static string _metaFile = @"\packmeta.json";
+        private DirectoryInfo _dirInfoMod;
+        private DirectoryInfo[] _folders;
+
+        public DirectoryInfo DirInfoMod => _dirInfoMod;
+
 
         private List<Mod> _modsList = new();
         public List<Mod> ModsList => _modsList;
@@ -246,7 +253,7 @@ namespace KotHModLoaderGUI
             {
                 MetaFile data = new MetaFile()
                 {
-                    AssignedVanillaAssets = new List<AssetTypeValueField>()
+                    AssignedVanillaAssets = new List<AssignedVanillaAssets>()
                 };
 
                 string json = System.Text.Json.JsonSerializer.Serialize(data);
