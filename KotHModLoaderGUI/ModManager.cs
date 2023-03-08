@@ -69,13 +69,20 @@ namespace KotHModLoaderGUI
             public Mod(DirectoryInfo dirInfo, string description = "", string version = "", string author = "unknown")
             {
                 ModDirectoryInfo = dirInfo;
+                MetaFile = GetMetaFileInfo(ModDirectoryInfo);
                 Description = description;
                 Version = version;
                 Author = author;
+                if (MetaFile != null)
+                {
+                    dynamic json = LoadJson(MetaFile.FullName);
+                    Description = json["pack"]["description"];
+                    Version = json["pack"]["version"];
+                    Author = json["pack"]["author"];
+                }
                 Name = dirInfo.Name;
                 Files = GetFilesInfo(ModDirectoryInfo);
                 ModFiles = GetModFilesInfo(ModDirectoryInfo);
-                MetaFile = GetMetaFileInfo(ModDirectoryInfo);
             }
         }
 
@@ -139,7 +146,7 @@ namespace KotHModLoaderGUI
             return MainWindow.ResMgr.BuildActiveModsTextures(_modsList);
         }
 
-        private Mod FindMod(string name)
+        public Mod FindMod(string name)
         {
             foreach (Mod mod in _modsList) 
             {

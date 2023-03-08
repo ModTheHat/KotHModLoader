@@ -164,6 +164,9 @@ namespace KotHModLoaderGUI
                 _displayedModFilesInfo = _modManager.GetModFiles(modName);
 
                 lstModInfo.Items.Clear();
+                lstModInfo.Items.Add(_modManager.FindMod(modName).Description);
+                lstModInfo.Items.Add(_modManager.FindMod(modName).Version);
+                lstModInfo.Items.Add(_modManager.FindMod(modName).Author);
                 foreach (var info in _displayedModFilesInfo)
                 {
                     lstModInfo.Items.Add(info.Name);
