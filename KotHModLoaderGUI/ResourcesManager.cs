@@ -163,7 +163,7 @@ namespace KotHModLoaderGUI
                 var goBaseVanilla = _assetsManagerVanilla.GetBaseField(_afileInstVanilla, goInfo);
                 var name = goBaseVanilla["m_Name"].AsString;
 
-                if(filename.Contains(name))
+                if(filename.Contains(name)) // && NOT IN BLACKLISTED
                 {
                     AssetTypeValue value = new AssetTypeValue(dataImage, false);
 

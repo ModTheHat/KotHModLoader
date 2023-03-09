@@ -19,7 +19,8 @@ namespace KotHModLoaderGUI
     public class MetaFile
     {
         public PackMeta pack { get; set; }
-        public List<AssignedVanillaAssets> AssignedVanillaAssets { get; set; }
+        public AssignedVanillaAssets AssignedVanillaAssets { get; set; }
+        public BlackListedVanillaAssets BlackListedVanillaAssets { get; set; }
     }
 
     public struct PackMeta
@@ -34,13 +35,21 @@ namespace KotHModLoaderGUI
     {
         public int index { get; set; }
         public string name { get; set; }
-        public ModFile modFile { get; set; }
+        public string path { get; set; }
     }
+    public struct BlackListedVanillaAssets
+    {
+        public int index { get; set; }
+        public string name { get; set; }
+        public string path { get; set; }
+    }
+
     public struct ModFile
     {
         public FileInfo File;
         public string AssignedVanillaFile;
         public List<AssetTypeValueField> AssignedVanillaFiles;
+        public List<int> AssignedVanillaFilesIndexes;
         public List<AssetTypeValueField> VanillaCandidates;
 
         public ModFile(FileInfo file, string assigned = "")
@@ -48,6 +57,7 @@ namespace KotHModLoaderGUI
             File = file;
             AssignedVanillaFile = assigned;
             AssignedVanillaFiles = new List<AssetTypeValueField>();
+            AssignedVanillaFilesIndexes = new List<int>();
             VanillaCandidates = new List<AssetTypeValueField>();
         }
     }
@@ -202,6 +212,7 @@ namespace KotHModLoaderGUI
                 ModFile file = files[i];
                 file.File = fileInfos[i];
                 file.AssignedVanillaFiles = AssignVanillaFiles(fileInfos[i]);
+                //file.AssignedVanillaFilesIndexes = AssignVanillaFilesIndexes(fileInfos[i]);
                 files[i] = file;
             }
 
@@ -253,7 +264,7 @@ namespace KotHModLoaderGUI
             {
                 MetaFile data = new MetaFile()
                 {
-                    AssignedVanillaAssets = new List<AssignedVanillaAssets>()
+                    AssignedVanillaAssets = new AssignedVanillaAssets()
                 };
 
                 string json = System.Text.Json.JsonSerializer.Serialize(data);
@@ -265,6 +276,24 @@ namespace KotHModLoaderGUI
         }
 
         private static List<AssetTypeValueField> AssignVanillaFiles(FileInfo file)
+        {
+            List<AssetTypeValueField> unassigned = MainWindow.ResMgr.UnassignedTextureFiles;
+            List<AssetTypeValueField> assigned = new List<AssetTypeValueField>();
+
+            for (int i = 0; i < unassigned.Count; i++)
+            {
+                AssetTypeValueField unassignedFile = unassigned[i];
+                if (file.Name.Contains(unassignedFile["m_Name"].AsString))
+                {
+                    MainWindow.ResMgr.UnassignedTextureFiles.Remove(unassignedFile);
+                    assigned.Add(unassignedFile);
+                }
+            }
+
+            return assigned;
+        }
+
+        private static List<AssetTypeValueField> AssignVanillaFilesIndexes(FileInfo file)
         {
             List<AssetTypeValueField> unassigned = MainWindow.ResMgr.UnassignedTextureFiles;
             List<AssetTypeValueField> assigned = new List<AssetTypeValueField>();

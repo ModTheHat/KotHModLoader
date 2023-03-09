@@ -11,6 +11,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
+using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using static KotHModLoaderGUI.ModManager;
@@ -164,6 +165,8 @@ namespace KotHModLoaderGUI
                 AssignedImageViewer.Source = null;
                 CandidateImageViewer1.Source = null;
                 CandidateImageViewer2.Source = null;
+                AssignedImageViewer1.Source = null;
+                AddAssignedButton.Visibility = Visibility.Hidden;
                 ModdedImageViewer.Source = null;
 
                 _displayedModFilesInfo = _modManager.GetModFiles(modName);
@@ -193,6 +196,8 @@ namespace KotHModLoaderGUI
                 AssignedImageViewer.Source = null;
                 CandidateImageViewer1.Source = null;
                 CandidateImageViewer2.Source = null;
+                AssignedImageViewer1.Source = null;
+                AddAssignedButton.Visibility = Visibility.Hidden;
                 ModdedImageViewer.Source = null;
 
                 _displayedModFilesInfo = _modManager.GetModFiles(modName);
@@ -212,12 +217,16 @@ namespace KotHModLoaderGUI
 
         private void DisplayModFileInfo(object sender, SelectionChangedEventArgs e)
         {
-            System.Windows.Controls.ListBox lstBox = (System.Windows.Controls.ListBox)(sender);
+            DisplayModFileInfoRaw();
+        }
+
+        private void DisplayModFileInfoRaw()
+        {
             lstModFileInfo.Items.Clear();
-            if (lstBox.SelectedIndex > -1)
+            if (lstModInfo.SelectedIndex > -1)
             {
                 Mod mod = _modManager.FindMod(lstNames.SelectedItem.ToString());
-                string fileName = lstBox.SelectedItem.ToString();
+                string fileName = lstModInfo.SelectedItem.ToString();
                 DirectoryInfo folder = _modManager.DirInfoMod;
                 FileInfo[] files = folder.GetFiles(fileName, SearchOption.AllDirectories);
                 FileInfo file = files[0];
@@ -232,6 +241,7 @@ namespace KotHModLoaderGUI
                 VanillaImageStack1.Background = null;
                 VanillaImageStack2.Background = null;
                 AssignedImageViewer1.Source = null;
+                AddAssignedButton.Visibility = Visibility.Hidden;
 
                 int candidateQty = 0;
                 //List<AssetTypeValueField> fields = _modManager.FindVanillaCandidates(modFile.File);
@@ -271,11 +281,25 @@ namespace KotHModLoaderGUI
 
                 FileInfo metaFile = mod.MetaFile;
                 dynamic modJson = LoadJson(metaFile.FullName);
-                foreach(var v in modJson["AssignedVanillaAssets"]) 
+
+                if (modJson["AssignedVanillaAssets"]["\\" + fileName] != null)
                 {
-                    //if(v["index"] != null)
-                        //var info = _resMgr.AFilesValueFields[v["index"]];
-                    //AssignedImageViewer1.Source = 
+                    int ind = modJson["AssignedVanillaAssets"]["\\" + fileName]["index"];
+                    string vanillaName = modJson["AssignedVanillaAssets"]["\\" + fileName]["name"];
+                    string path = modJson["AssignedVanillaAssets"]["\\" + fileName]["path"];
+
+                    //get assigned file AssetTypeValueField
+                    if (ind > 0 && path != null)
+                    {
+                        AssetTypeValueField assignedValues = _resMgr.GetAssetInfo(ind);
+                        //create Bitmap from assigned values with GetDataPicture
+                        if (assignedValues["image data"].AsByteArray.Length > 0)
+                        {
+                            Bitmap assignedBitmap = GetDataPicture(assignedValues["m_Width"].AsInt, assignedValues["m_Height"].AsInt, assignedValues["image data"].AsByteArray);
+                            //assign viewer.source with ToBitmapImage
+                            AssignedImageViewer1.Source = ToBitmapImage(assignedBitmap);
+                        }
+                    }
                 }
 
                 lstModFileInfo.Items.Add("mod file name: " + fileName);
@@ -354,7 +378,17 @@ namespace KotHModLoaderGUI
         private void ToggleAssignVanillaImage(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             System.Windows.Controls.Image image = (System.Windows.Controls.Image)sender;
-            console.Text += image.Name;
+
+            Mod selectedMod = _modManager.FindMod(lstNames.SelectedItem.ToString());
+            ModFile modFile = selectedMod.ModFiles[lstModInfo.SelectedIndex];
+
+            AssetTypeValueField vanillaFile = _resMgr.GetAssetInfo(lstVanilla.SelectedIndex);
+
+            BlackListedVanillaAssets blacklisted = new BlackListedVanillaAssets();
+            blacklisted.index = lstVanilla.SelectedIndex;
+            blacklisted.name = vanillaFile["m_Name"].AsString;
+            blacklisted.path = modFile.File.FullName.Substring(modFile.File.FullName.IndexOf(selectedMod.Name) + selectedMod.Name.Length);
+
             if (image.Name == "CandidateImageViewer1")
             {
                 if (VanillaImageStack1.Opacity == 0.3)
@@ -393,12 +427,16 @@ namespace KotHModLoaderGUI
             AssignedVanillaAssets assigned = new AssignedVanillaAssets();
             assigned.index = lstVanilla.SelectedIndex;
             assigned.name = vanillaFile["m_Name"].AsString;
+            assigned.path = modFile.File.FullName.Substring(modFile.File.FullName.IndexOf(selectedMod.Name) + selectedMod.Name.Length);
 
             dynamic modJson = LoadJson(selectedMod.MetaFile.FullName);
 
-            modJson["AssignedVanillaAssets"] = JToken.FromObject(assigned);
+            modJson["AssignedVanillaAssets"][assigned.path] = JToken.FromObject(assigned);
+            //modJson["AssignedVanillaAssets"] = System.Text.Json.JsonSerializer.Serialize(assigned);
 
             File.WriteAllText(selectedMod.MetaFile.FullName, modJson.ToString());
+
+            DisplayModFileInfoRaw();
         }
 
         private static dynamic LoadJson(string path)
@@ -410,6 +448,23 @@ namespace KotHModLoaderGUI
 
                 return metafile;
             }
+        }
+
+        private void RemoveAssignedVanillaAsset(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            Mod selectedMod = _modManager.FindMod(lstNames.SelectedItem.ToString());
+            ModFile modFile = selectedMod.ModFiles[lstModInfo.SelectedIndex];
+
+            string path = modFile.File.FullName.Substring(modFile.File.FullName.IndexOf(selectedMod.Name) + selectedMod.Name.Length);
+
+            dynamic modJson = LoadJson(selectedMod.MetaFile.FullName);
+
+            modJson["AssignedVanillaAssets"].Remove(path);
+            //modJson["AssignedVanillaAssets"] = System.Text.Json.JsonSerializer.Serialize(assigned);
+
+            File.WriteAllText(selectedMod.MetaFile.FullName, modJson.ToString());
+
+            DisplayModFileInfoRaw();
         }
     }
 }
