@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using System.Xml.Linq;
 using AssetsTools.NET;
 using AssetsTools.NET.Extra;
+using Newtonsoft.Json;
 using static KotHModLoaderGUI.ModManager;
 
 namespace KotHModLoaderGUI
@@ -127,6 +128,16 @@ namespace KotHModLoaderGUI
 
             _assetsManagerVanilla.LoadClassDatabaseFromPackage(_afileVanilla.Metadata.UnityVersion);
         }
+        private static dynamic LoadJson(string path)
+        {
+            using (StreamReader r = new StreamReader(path))
+            {
+                string json = r.ReadToEnd();
+                object metafile = JsonConvert.DeserializeObject(json);
+
+                return metafile;
+            }
+        }
 
         List<string> _alreadyModded;
         List<AssetsReplacer> _replacers;
@@ -137,13 +148,28 @@ namespace KotHModLoaderGUI
 
             foreach (var mod in mods)
             {
-                if(!mod.Name.Contains(".disabled"))
+                FileInfo metaFile = mod.MetaFile;
+                dynamic modJson = LoadJson(metaFile.FullName);
+
+
+                if (!mod.Name.Contains(".disabled"))
                     foreach (FileInfo file in mod.Files)
                     {
+                        var assigned = modJson["AssignedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
+                        var blacklisted = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
+
                         if (!file.Name.Contains(".disabled") && !_alreadyModded.Contains(file.Name))
                         {
-                            if(ModVanillaTextureFromFileName(file.Name, GetRGBA(file)))
-                                _alreadyModded.Add(file.Name);
+                            if (assigned != null)
+                            {
+                                if (ModVanillaTextureFromFileName(assigned.name.Value, GetRGBA(file)))
+                                    _alreadyModded.Add(file.Name);
+                            }
+                            if(blacklisted == null && assigned == null)
+                            {
+                                if (ModVanillaTextureFromFileName(file.Name, GetRGBA(file)))
+                                    _alreadyModded.Add(file.Name);
+                            }
                         }
                     }
             }
@@ -163,7 +189,7 @@ namespace KotHModLoaderGUI
                 var goBaseVanilla = _assetsManagerVanilla.GetBaseField(_afileInstVanilla, goInfo);
                 var name = goBaseVanilla["m_Name"].AsString;
 
-                if(filename.Contains(name)) // && NOT IN BLACKLISTED
+                if(filename.Contains(name))
                 {
                     AssetTypeValue value = new AssetTypeValue(dataImage, false);
 

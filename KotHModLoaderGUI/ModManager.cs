@@ -54,15 +54,11 @@ namespace KotHModLoaderGUI
     public struct ModFile
     {
         public FileInfo File;
-        public string AssignedVanillaFile;
-        public List<int> AssignedVanillaFilesIndexes;
         public List<AutoAssignedVanillaAssets> VanillaCandidates;
 
         public ModFile(FileInfo file, string assigned = "")
         {
             File = file;
-            AssignedVanillaFile = assigned;
-            AssignedVanillaFilesIndexes = new List<int>();
             VanillaCandidates = new List<AutoAssignedVanillaAssets>();
         }
     }
@@ -222,6 +218,7 @@ namespace KotHModLoaderGUI
 
             return files;
         }
+
         private static dynamic LoadJson(string path)
         {
             using (StreamReader r = new StreamReader(path))
