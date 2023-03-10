@@ -244,11 +244,10 @@ namespace KotHModLoaderGUI
                 AddAssignedButton.Visibility = Visibility.Hidden;
 
                 int candidateQty = 0;
-                //List<AssetTypeValueField> fields = _modManager.FindVanillaCandidates(modFile.File);
-                List<AssetTypeValueField> fields = modFile.AssignedVanillaFiles;
-                for (int i = 0; i < fields.Count; i++)
+                List<AutoAssignedVanillaAssets> candidates = modFile.VanillaCandidates;
+                for (int i = 0; i < candidates.Count; i++)
                 {
-                    AssetTypeValueField values = fields[i];
+                    AssetTypeValueField values = candidates[i].values;
                     if (values["image data"].AsByteArray.Length > 0 && values["m_Width"].AsInt * values["m_Height"].AsInt * 4 == values["image data"].AsByteArray.Length)
                     {
                         Bitmap vanillaImage = GetDataPicture(values["m_Width"].AsInt, values["m_Height"].AsInt, values["image data"].AsByteArray);
@@ -303,9 +302,9 @@ namespace KotHModLoaderGUI
                 }
 
                 lstModFileInfo.Items.Add("mod file name: " + fileName);
-                foreach (AssetTypeValueField assigned in modFile.AssignedVanillaFiles)
+                foreach (AutoAssignedVanillaAssets assigned in modFile.VanillaCandidates)
                 {
-                    lstModFileInfo.Items.Add("assigned to vanilla file: " + assigned["m_Name"].AsString);
+                    lstModFileInfo.Items.Add("assigned to vanilla file: " + assigned.values["m_Name"].AsString);
                 }
             }
         }
@@ -382,10 +381,10 @@ namespace KotHModLoaderGUI
             Mod selectedMod = _modManager.FindMod(lstNames.SelectedItem.ToString());
             ModFile modFile = selectedMod.ModFiles[lstModInfo.SelectedIndex];
 
-            AssetTypeValueField vanillaFile = _resMgr.GetAssetInfo(lstVanilla.SelectedIndex);
+            AssetTypeValueField vanillaFile = modFile.VanillaCandidates[image.Name.Contains("1") ? 0 : 1].values;
 
             BlackListedVanillaAssets blacklisted = new BlackListedVanillaAssets();
-            blacklisted.index = lstVanilla.SelectedIndex;
+            blacklisted.index = modFile.VanillaCandidates[image.Name.Contains("1") ? 0 : 1].index;
             blacklisted.name = vanillaFile["m_Name"].AsString;
             blacklisted.path = modFile.File.FullName.Substring(modFile.File.FullName.IndexOf(selectedMod.Name) + selectedMod.Name.Length);
 
@@ -400,6 +399,8 @@ namespace KotHModLoaderGUI
                 {
                     VanillaImageStack1.Opacity = 0.3;
                     VanillaImageStack1.Background = new SolidColorBrush(Colors.Black);
+
+                    WriteToMetaFile(selectedMod.MetaFile, blacklisted);
                 }
             }
             if (image.Name == "CandidateImageViewer2")
@@ -413,8 +414,19 @@ namespace KotHModLoaderGUI
                 {
                     VanillaImageStack2.Opacity = 0.3;
                     VanillaImageStack2.Background = new SolidColorBrush(Colors.Black);
+
+                    WriteToMetaFile(selectedMod.MetaFile, blacklisted);
                 }
             }
+        }
+
+        private void WriteToMetaFile(FileInfo metafile, BlackListedVanillaAssets blacklisted)
+        {
+            dynamic modJson = LoadJson(metafile.FullName);
+
+            modJson["BlackListedVanillaAssets"][blacklisted.path] = JToken.FromObject(blacklisted);
+
+            File.WriteAllText(metafile.FullName, modJson.ToString());
         }
 
         private void AssignVanillaTexture(object sender, RoutedEventArgs e)
