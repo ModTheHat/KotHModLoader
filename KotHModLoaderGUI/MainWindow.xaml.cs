@@ -14,6 +14,7 @@ using System.Windows.Forms;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
 using static KotHModLoaderGUI.ModManager;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -231,6 +232,8 @@ namespace KotHModLoaderGUI
                 FileInfo[] files = folder.GetFiles(fileName, SearchOption.AllDirectories);
                 FileInfo file = files[0];
                 ModFile modFile = _modManager.FindModFile(fileName);
+                FileInfo metaFile = mod.MetaFile;
+                dynamic modJson = LoadJson(metaFile.FullName);
 
                 VanillaImageLabel.Content = "";
                 ModImageLabel.Content = "";
@@ -254,10 +257,23 @@ namespace KotHModLoaderGUI
                         if (candidateQty == 0)
                         {
                             CandidateImageViewer1.Source = ToBitmapImage(vanillaImage);
+                            //string path = file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length;
+                            var blacklistedAsset = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
+                            if (blacklistedAsset != null)
+                            {
+                                VanillaImageStack1.Opacity = 0.3;
+                                VanillaImageStack1.Background = new SolidColorBrush(Colors.Black);
+                            }
                         }
                         else
                         {
                             CandidateImageViewer2.Source = ToBitmapImage(vanillaImage);
+                            var blacklistedAsset = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
+                            if (blacklistedAsset != null)
+                            {
+                                VanillaImageStack1.Opacity = 0.3;
+                                VanillaImageStack1.Background = new SolidColorBrush(Colors.Black);
+                            }
                         }
                         candidateQty++;
                         VanillaImageLabel.Content = "Vanilla files that will be replaced. Click image to toggle between greyed out and normal. Greyed out images won't be replaced by mod asset file.";
@@ -277,9 +293,6 @@ namespace KotHModLoaderGUI
                 }
 
                 AddAssignedButton.Visibility = Visibility.Visible;
-
-                FileInfo metaFile = mod.MetaFile;
-                dynamic modJson = LoadJson(metaFile.FullName);
 
                 if (modJson["AssignedVanillaAssets"]["\\" + fileName] != null)
                 {
@@ -394,6 +407,8 @@ namespace KotHModLoaderGUI
                 {
                     VanillaImageStack1.Opacity = 1;
                     VanillaImageStack1.Background = null;
+
+                    WriteToMetaFile(selectedMod.MetaFile, blacklisted, true);
                 }
                 else
                 {
@@ -409,6 +424,8 @@ namespace KotHModLoaderGUI
                 {
                     VanillaImageStack2.Opacity = 1;
                     VanillaImageStack2.Background = null;
+
+                    WriteToMetaFile(selectedMod.MetaFile, blacklisted, true);
                 }
                 else
                 {
@@ -420,11 +437,14 @@ namespace KotHModLoaderGUI
             }
         }
 
-        private void WriteToMetaFile(FileInfo metafile, BlackListedVanillaAssets blacklisted)
+        private void WriteToMetaFile(FileInfo metafile, BlackListedVanillaAssets blacklisted, bool remove = false)
         {
             dynamic modJson = LoadJson(metafile.FullName);
 
-            modJson["BlackListedVanillaAssets"][blacklisted.path] = JToken.FromObject(blacklisted);
+            if(!remove)
+                modJson["BlackListedVanillaAssets"][blacklisted.path] = JToken.FromObject(blacklisted);
+            else
+                modJson["BlackListedVanillaAssets"].Remove(blacklisted.path);
 
             File.WriteAllText(metafile.FullName, modJson.ToString());
         }
