@@ -153,7 +153,7 @@ namespace KotHModLoaderGUI
 
 
                 if (!mod.Name.Contains(".disabled"))
-                    foreach (FileInfo file in mod.Files)
+                    foreach (FileInfo file in mod.TextureFiles)
                     {
                         var assigned = modJson["AssignedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
                         var blacklisted = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];

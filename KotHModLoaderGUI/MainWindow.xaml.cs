@@ -1,23 +1,17 @@
 ﻿using AssetsTools.NET;
-using AssetsTools.NET.Extra;
-using Mono.Cecil;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Forms;
-using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using static KotHModLoaderGUI.ModManager;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace KotHModLoaderGUI
 {
@@ -88,9 +82,17 @@ namespace KotHModLoaderGUI
 
             List<string> assets = _resMgr.GetVanillaAssets();
 
-            foreach (string asset in assets)
+            if (_displayedIndexes != null)
             {
-                lstVanilla.Items.Add(asset);
+                GetSearchResults(search.Text);
+                DisplaySearchResults();
+            }
+            else
+            {
+                foreach (string asset in assets)
+                {
+                    lstVanilla.Items.Add(asset);
+                }
             }
 
             textAssetInfo.Text = null;
@@ -103,17 +105,21 @@ namespace KotHModLoaderGUI
             FMOD
         }
         private AssetType _currentAssetDisplayed = AssetType.Resources;
-        private void DisplayAssetInfo(object sender, SelectionChangedEventArgs e)
+        private void DisplayVanillaAssetInfo(object sender, SelectionChangedEventArgs e)
         {
-            System.Windows.Controls.ListBox lstBox = (System.Windows.Controls.ListBox)(sender);
+            ListBox lstBox = (ListBox)(sender);
             if (lstBox.SelectedIndex == -1) return;
+
+            int index;
 
             string assetName = lstBox.SelectedItem.ToString();
 
             switch (_currentAssetDisplayed)
             {
                 case AssetType.Resources:
-                    AssetTypeValueField infos = _resMgr.GetAssetInfo(lstBox.SelectedIndex);
+                    index = _displayedIndexes != null ? _displayedIndexes[lstBox.SelectedIndex] : lstBox.SelectedIndex;
+
+                    AssetTypeValueField infos = _resMgr.GetAssetInfo(index);
 
                     textAssetInfo.Text = "";
 
@@ -167,7 +173,8 @@ namespace KotHModLoaderGUI
                         VanillaImageViewer.Source = null;
                     break;
                 case AssetType.FMOD:
-                    List<string> fmodInfos = _fmodManager.GetAssetInfo(lstBox.SelectedIndex);
+                    index = _displayedIndexes != null ? _displayedIndexes[lstBox.SelectedIndex] : lstBox.SelectedIndex;
+                    List<string> fmodInfos = _fmodManager.GetAssetInfo(index);
 
                     textAssetInfo.Text = "";
 
@@ -481,10 +488,20 @@ namespace KotHModLoaderGUI
             Mod selectedMod = _modManager.FindMod(lstNames.SelectedItem.ToString());
             ModFile modFile = selectedMod.ModFiles[lstModInfo.SelectedIndex];
 
-            AssetTypeValueField vanillaFile = _resMgr.GetAssetInfo(lstVanilla.SelectedIndex);
+            if (_currentAssetDisplayed != AssetType.Resources)
+            {
+                MessageBox.Show("You selected an asset that is not a texture.\n" +
+                    "Select a vanilla texture in the Vanilla Texture Tab and then assign it to the mod asset.");
+                return;
+            }
+
+            int index = _displayedIndexes != null ? _displayedIndexes[lstVanilla.SelectedIndex] : lstVanilla.SelectedIndex;
+
+
+            AssetTypeValueField vanillaFile = _resMgr.GetAssetInfo(index);
 
             AssignedVanillaAssets assigned = new AssignedVanillaAssets();
-            assigned.index = lstVanilla.SelectedIndex;
+            assigned.index = index;
             assigned.name = vanillaFile["m_Name"].AsString;
             assigned.path = modFile.File.FullName.Substring(modFile.File.FullName.IndexOf(selectedMod.Name) + selectedMod.Name.Length);
 
@@ -537,9 +554,18 @@ namespace KotHModLoaderGUI
             List<string> fmodAssets = _fmodManager.GetBankAssets();
 
             lstVanilla.Items.Clear();
-            foreach (string asset in fmodAssets)
+
+            if (_displayedIndexes != null)
             {
-                lstVanilla.Items.Add(asset);
+                GetSearchResults(search.Text);
+                DisplaySearchResults();
+            }
+            else
+            {
+                foreach (string asset in fmodAssets)
+                {
+                    lstVanilla.Items.Add(asset);
+                }
             }
 
             textAssetInfo.Text = null;
@@ -554,6 +580,75 @@ namespace KotHModLoaderGUI
         private void DisplayTextureAssets()
         {
             DisplayVanillaCatalog();
+        }
+
+        private void SelectAllText(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            System.Windows.Controls.TextBox textBox = (System.Windows.Controls.TextBox)sender;
+
+            textBox.SelectAll();
+        }
+
+        private List<int> _displayedIndexes;
+        private void SearchEntry(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            System.Windows.Controls.TextBox textBox = (System.Windows.Controls.TextBox)sender;
+            string query = textBox.Text;
+
+            if (e.Key == System.Windows.Input.Key.Return)
+            {
+                GetSearchResults(query);
+                DisplaySearchResults();
+            }
+        }
+
+        private void GetSearchResults(string query)
+        {
+            //string query = textBox.Text;
+            _displayedIndexes = new List<int>();
+            List<string> list = new List<string>();
+
+            switch (_currentAssetDisplayed)
+            {
+                case AssetType.FMOD:
+                    list = _fmodManager.GetBankAssets();
+                    break;
+                case AssetType.Resources:
+                    list = _resMgr.GetVanillaAssets();
+                    break;
+            }
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                string item = list[i];
+                if (item.ToLower().Contains(query.ToLower()))
+                    _displayedIndexes.Add(i);
+            }
+        }
+
+        private void DisplaySearchResults()
+        {
+            lstVanilla.Items.Clear();
+
+            List<string> assets = _resMgr.GetVanillaAssets();
+
+            switch (_currentAssetDisplayed)
+            {
+                case AssetType.FMOD:
+                    assets = _fmodManager.GetBankAssets();
+                    break; 
+                case AssetType.Resources:
+                    assets = _resMgr.GetVanillaAssets();
+                    break;
+            }
+
+            foreach (int index in _displayedIndexes)
+            {
+                lstVanilla.Items.Add(assets[index]);
+            }
+
+            textAssetInfo.Text = null;
+            VanillaImageViewer.Source = null;
         }
     }
 }

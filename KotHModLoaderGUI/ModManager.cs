@@ -1,19 +1,12 @@
 ﻿using AssetsTools.NET;
-using AssetsTools.NET.Extra;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.JavaScript;
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Windows.Controls;
 using System.Windows.Forms;
-using System.Xml.Linq;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace KotHModLoaderGUI
 {
@@ -72,7 +65,8 @@ namespace KotHModLoaderGUI
             public string Version;
             public string Author;
             public DirectoryInfo ModDirectoryInfo;
-            public FileInfo[] Files;
+            public FileInfo[] TextureFiles;
+            public FileInfo[] AudioFiles;
             public ModFile[] ModFiles;
             public FileInfo MetaFile;
 
@@ -91,7 +85,8 @@ namespace KotHModLoaderGUI
                     Author = json["pack"]["author"];
                 }
                 Name = dirInfo.Name;
-                Files = GetFilesInfo(ModDirectoryInfo);
+                TextureFiles = GetTextureFilesInfo(ModDirectoryInfo);
+                AudioFiles = GetAudioFilesInfo(ModDirectoryInfo);
                 ModFiles = GetModFilesInfo(ModDirectoryInfo);
             }
         }
@@ -177,8 +172,9 @@ namespace KotHModLoaderGUI
         //Go through mod folder and list all modded files
         public FileInfo[] GetModFiles(string modName)
         {
-            FileInfo[] files = FindMod(modName).Files;
-           
+            FileInfo[] files = FindMod(modName).TextureFiles;
+            files = files.Concat(FindMod(modName).AudioFiles).ToArray();
+
             return files;
         }
 
@@ -195,17 +191,27 @@ namespace KotHModLoaderGUI
             return new ModFile();
         }
 
-        private static FileInfo[] GetFilesInfo(DirectoryInfo folder)
+        private static FileInfo[] GetTextureFilesInfo(DirectoryInfo folder)
         {
             FileInfo[] files = folder.GetFiles("*.png", SearchOption.AllDirectories);
-            files = files.Concat(folder.GetFiles("*.disabled", SearchOption.AllDirectories)).ToArray();
+            files = files.Concat(folder.GetFiles("*.png.disabled", SearchOption.AllDirectories)).ToArray();
+
+            return files;
+        }
+        
+        private static FileInfo[] GetAudioFilesInfo(DirectoryInfo folder)
+        {
+            FileInfo[] files = folder.GetFiles("*.ogg", SearchOption.AllDirectories);
+            files = files.Concat(folder.GetFiles("*.wav", SearchOption.AllDirectories)).ToArray();
+            files = files.Concat(folder.GetFiles("*.mp3", SearchOption.AllDirectories)).ToArray();
+            files = files.Concat(folder.GetFiles("*.mp3.disabled", SearchOption.AllDirectories)).ToArray();
 
             return files;
         }
 
         private static ModFile[] GetModFilesInfo(DirectoryInfo folder)
         {
-            FileInfo[] fileInfos = GetFilesInfo(folder);
+            FileInfo[] fileInfos = GetTextureFilesInfo(folder);
             ModFile[] files = new ModFile[fileInfos.Length];
 
             for(int i = 0; i < fileInfos.Length;i++)
