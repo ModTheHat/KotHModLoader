@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
@@ -28,6 +29,7 @@ namespace KotHModLoaderGUI
         private static ResourcesManager _resMgr = new ResourcesManager();
         private string[] _folders;
         private ModManager _modManager = new ModManager();
+        private FMODManager _fmodManager = new FMODManager();
         private FileInfo[] _displayedModFilesInfo;
 
         public static ResourcesManager ResMgr => _resMgr;
@@ -36,8 +38,9 @@ namespace KotHModLoaderGUI
         {
             InitializeComponent();
 
-            _resMgr.InitialisePaths();
             _modManager.InitialisePaths();
+            _resMgr.InitialisePaths();
+            _fmodManager.InitialisePaths();
 
             DisplayMods();
 
@@ -79,6 +82,8 @@ namespace KotHModLoaderGUI
 
         private void DisplayVanillaCatalog()
         {
+            _currentAssetDisplayed = AssetType.Resources;
+
             lstVanilla.Items.Clear();
 
             List<string> assets = _resMgr.GetVanillaAssets();
@@ -87,70 +92,92 @@ namespace KotHModLoaderGUI
             {
                 lstVanilla.Items.Add(asset);
             }
+
+            textAssetInfo.Text = null;
+            VanillaImageViewer.Source = null;
         }
 
+        private enum AssetType
+        {
+            Resources,
+            FMOD
+        }
+        private AssetType _currentAssetDisplayed = AssetType.Resources;
         private void DisplayAssetInfo(object sender, SelectionChangedEventArgs e)
         {
             System.Windows.Controls.ListBox lstBox = (System.Windows.Controls.ListBox)(sender);
+            if (lstBox.SelectedIndex == -1) return;
+
             string assetName = lstBox.SelectedItem.ToString();
 
-            AssetTypeValueField infos = _resMgr.GetAssetInfo(lstBox.SelectedIndex);
-
-            textAssetInfo.Text = "";
-
-            foreach (var info in infos)
+            switch (_currentAssetDisplayed)
             {
-                //var test = (info[info.FieldName]).As;
-                textAssetInfo.Text += info.FieldName + "(" + info.TypeName + "): ";
+                case AssetType.Resources:
+                    AssetTypeValueField infos = _resMgr.GetAssetInfo(lstBox.SelectedIndex);
 
-                switch (info.TypeName)
-                {
-                    case "string":
-                        var s = info.AsString;
-                        textAssetInfo.Text += s;
-                        break;
-                    case "int":
-                        var i = info.AsInt;
-                        textAssetInfo.Text += i;
-                        break;
-                    case "unsigned int":
-                        var ui = info.AsUInt;
-                        textAssetInfo.Text += ui;
-                        break;
-                    case "bool":
-                        var b = info.AsBool;
-                        textAssetInfo.Text += b;
-                        break;
-                    case "float":
-                        var f = info.AsFloat;
-                        textAssetInfo.Text += f;
-                        break;
-                    case "array":
-                        var a = info.AsArray;
-                        textAssetInfo.Text += a;
-                        break;
-                    case "TypelessData":
-                        var t = (Byte[])info.AsObject;
-                        //foreach (var o in t)
-                        //{
-                        //    textAssetInfo.Text += o;
-                        //}
-                        textAssetInfo.Text += t.Length;
-                        break;
-                    case "StreamingInfo":
-                        textAssetInfo.Text += "offset " + info["offset"].AsString + ", size " + info["size"].AsString + ", path " + info["path"].AsString;
-                        break;
-                }
-                textAssetInfo.Text += "\n";
+                    textAssetInfo.Text = "";
+
+                    foreach (var info in infos)
+                    {
+                        textAssetInfo.Text += info.FieldName + "(" + info.TypeName + "): ";
+
+                        switch (info.TypeName)
+                        {
+                            case "string":
+                                var s = info.AsString;
+                                textAssetInfo.Text += s;
+                                break;
+                            case "int":
+                                var i = info.AsInt;
+                                textAssetInfo.Text += i;
+                                break;
+                            case "unsigned int":
+                                var ui = info.AsUInt;
+                                textAssetInfo.Text += ui;
+                                break;
+                            case "bool":
+                                var b = info.AsBool;
+                                textAssetInfo.Text += b;
+                                break;
+                            case "float":
+                                var f = info.AsFloat;
+                                textAssetInfo.Text += f;
+                                break;
+                            case "array":
+                                var a = info.AsArray;
+                                textAssetInfo.Text += a;
+                                break;
+                            case "TypelessData":
+                                var t = (Byte[])info.AsObject;
+                                textAssetInfo.Text += t.Length;
+                                break;
+                            case "StreamingInfo":
+                                textAssetInfo.Text += "offset " + info["offset"].AsString + ", size " + info["size"].AsString + ", path " + info["path"].AsString;
+                                break;
+                        }
+                        textAssetInfo.Text += "\n";
+                    }
+
+                    if (infos["image data"].AsByteArray.Length > 0 && infos["m_Width"].AsInt * infos["m_Height"].AsInt * 4 == infos["image data"].AsByteArray.Length)
+                    {
+                        Bitmap vanillaImage = GetDataPicture(infos["m_Width"].AsInt, infos["m_Height"].AsInt, infos["image data"].AsByteArray);
+                        VanillaImageViewer.Source = ToBitmapImage(vanillaImage);
+                    }
+                    else
+                        VanillaImageViewer.Source = null;
+                    break;
+                case AssetType.FMOD:
+                    List<string> fmodInfos = _fmodManager.GetAssetInfo(lstBox.SelectedIndex);
+
+                    textAssetInfo.Text = "";
+
+                    foreach (var info in fmodInfos)
+                    {
+                        textAssetInfo.Text += info;
+                    }
+                    break;
             }
 
-            if (infos["image data"].AsByteArray.Length > 0 && infos["m_Width"].AsInt * infos["m_Height"].AsInt * 4 == infos["image data"].AsByteArray.Length)
-            {
-                Bitmap vanillaImage = GetDataPicture(infos["m_Width"].AsInt, infos["m_Height"].AsInt, infos["image data"].AsByteArray);
-                VanillaImageViewer.Source = ToBitmapImage(vanillaImage);
-            }
-            else
-                VanillaImageViewer.Source = null;
         }
 
         private void DisplayModInfo(object sender, SelectionChangedEventArgs e)
@@ -326,7 +353,7 @@ namespace KotHModLoaderGUI
         {
             Bitmap pic = new Bitmap(w, h, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
-            for (int y = 0; y < h; y++) 
+            for (int y = 0; y < h; y++)
             {
                 for (int x = 0; x < w; x++)
                 {
@@ -343,7 +370,7 @@ namespace KotHModLoaderGUI
 
             return pic;
         }
-        
+
         public static BitmapImage ToBitmapImage(Bitmap bitmap)
         {
             using (var memory = new MemoryStream())
@@ -441,7 +468,7 @@ namespace KotHModLoaderGUI
         {
             dynamic modJson = LoadJson(metafile.FullName);
 
-            if(!remove)
+            if (!remove)
                 modJson["BlackListedVanillaAssets"][blacklisted.path] = JToken.FromObject(blacklisted);
             else
                 modJson["BlackListedVanillaAssets"].Remove(blacklisted.path);
@@ -497,6 +524,36 @@ namespace KotHModLoaderGUI
             File.WriteAllText(selectedMod.MetaFile.FullName, modJson.ToString());
 
             DisplayModFileInfoRaw();
+        }
+
+        private void DisplayFMODAssets(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            DisplayFMODAssets();
+        }
+
+        private void DisplayFMODAssets()
+        {
+            _currentAssetDisplayed = AssetType.FMOD;
+            List<string> fmodAssets = _fmodManager.GetBankAssets();
+
+            lstVanilla.Items.Clear();
+            foreach (string asset in fmodAssets)
+            {
+                lstVanilla.Items.Add(asset);
+            }
+
+            textAssetInfo.Text = null;
+            VanillaImageViewer.Source = null;
+        }
+
+        private void DisplayTextureAssets(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            DisplayTextureAssets();
+        }
+
+        private void DisplayTextureAssets()
+        {
+            DisplayVanillaCatalog();
         }
     }
 }

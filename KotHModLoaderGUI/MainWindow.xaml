@@ -61,7 +61,8 @@
                 <TextBlock Grid.Row="4" Grid.Column="2" x:Name="console" Cursor="Arrow" Text="{Binding Text}" ScrollViewer.VerticalScrollBarVisibility="Auto" TextWrapping="WrapWithOverflow">Console</TextBlock>
         </StackPanel>
 
-        <Label Grid.Row="3">Vanilla Assets</Label>
+        <Label Grid.Row="3" HorizontalAlignment="Left" MouseDown="DisplayTextureAssets" >Vanilla Textures</Label>
+        <Label Grid.Row="3" HorizontalAlignment="Center" MouseDown="DisplayFMODAssets">Vanilla Sounds</Label>
         <ListBox Grid.Row="4" x:Name="lstVanilla" SelectionChanged="DisplayAssetInfo"/>
 
         <Label Grid.Row="3" Grid.Column="1">Asset Information</Label>
