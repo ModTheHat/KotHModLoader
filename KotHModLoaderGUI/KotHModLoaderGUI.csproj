@@ -2,15 +2,18 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net7.0-windows</TargetFramework>
+    <TargetFramework>net4.6.2</TargetFramework>
+	  <TargetPlatformIdentifier>Windows</TargetPlatformIdentifier>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
 	<UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="NAudio.Core" Version="2.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
-    <PackageReference Include="System.Drawing.Common" Version="4.6.1" />
+    <PackageReference Include="NVorbis" Version="0.10.5" />
+    <PackageReference Include="System.Drawing.Common" Version="4.6.2" />
   </ItemGroup>
 	
 <ItemGroup>

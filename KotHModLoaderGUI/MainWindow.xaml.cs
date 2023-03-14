@@ -12,6 +12,11 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using static KotHModLoaderGUI.ModManager;
+using NVorbis;
+using NAudio;
+using NAudio.Wave;
+using NAudio.Wave.SampleProviders;
+using System.Threading;
 
 namespace KotHModLoaderGUI
 {
@@ -715,11 +720,52 @@ namespace KotHModLoaderGUI
             }
         }
 
-        private void PlayOgg(object sender, RoutedEventArgs e)
+        private void PlayOgg(object sender, SelectionChangedEventArgs e)
         {
             ListBox lstBox = (ListBox)sender;
 
-            
+            using (var vorbis = new NVorbis.VorbisReader("D:\\KotHModLoader\\KotHModLoaderGUI\\bin\\Debug\\Mods(new structure)\\TANGO\\Sounds\\Forest-Take01.ogg"))
+            {
+                // get the channels & sample rate
+                var channels = vorbis.Channels;
+                var sampleRate = vorbis.SampleRate;
+
+                // OPTIONALLY: get a TimeSpan indicating the total length of the Vorbis stream
+                var totalTime = vorbis.TotalTime;
+
+                // create a buffer for reading samples
+                var readBuffer = new float[channels * sampleRate / 5];  // 200ms
+
+                // get the initial position (obviously the start)
+                var position = TimeSpan.Zero;
+
+                // go grab samples
+                int cnt;
+                while ((cnt = vorbis.ReadSamples(readBuffer, 0, readBuffer.Length)) > 0)
+                {
+                    // do stuff with the buffer
+                    // samples are interleaved (chan0, chan1, chan0, chan1, etc.)
+                    // sample value range is -0.99999994f to 0.99999994f unless vorbis.ClipSamples == false
+
+                    // OPTIONALLY: get the position we just read through to...
+                    position = vorbis.TimePosition;
+                }
+                using (var outputDevice = new NAudio.Wave.WaveOut())
+                {
+                    outputDevice.Init(audioFile);
+                    outputDevice.Play();
+                    while (outputDevice.PlaybackState == PlaybackState.Playing)
+                    {
+                        Thread.Sleep(1000);
+                    }
+                }
+
+                //using (var waveOut = new Wave())
+                //{
+                //    waveOut.Init(vorbis);
+                //    waveOut.Play();
+                //}
+            }
         }
     }
 }

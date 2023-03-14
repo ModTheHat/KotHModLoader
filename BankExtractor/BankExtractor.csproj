@@ -8,6 +8,11 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="NAudio.Core" Version="2.1.0" />
+      <PackageReference Include="NVorbis" Version="0.10.5" />
+    </ItemGroup>
+
+    <ItemGroup>
       <ProjectReference Include="..\Fmod5Sharp\Fmod5Sharp.csproj" />
     </ItemGroup>
 

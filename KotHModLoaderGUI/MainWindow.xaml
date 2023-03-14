@@ -54,7 +54,7 @@
                 </StackPanel>
 
 
-                <ListBox x:Name="lstModAudioFileInfo" Selected="PlayOgg"/>
+                <ListBox x:Name="lstModAudioFileInfo" SelectionChanged="PlayOgg"/>
             </StackPanel>
         </ScrollViewer>
 

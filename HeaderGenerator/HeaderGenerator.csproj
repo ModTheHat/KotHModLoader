@@ -6,4 +6,9 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <PackageReference Include="NAudio.Core" Version="2.1.0" />
+      <PackageReference Include="NVorbis" Version="0.10.5" />
+    </ItemGroup>
+
 </Project>
