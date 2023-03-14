@@ -25,6 +25,7 @@ namespace KotHModLoaderGUI
         private ModManager _modManager = new ModManager();
         private FMODManager _fmodManager = new FMODManager();
         private FileInfo[] _displayedModFilesInfo;
+        private FileInfo[] _displayedModAudioFilesInfo;
 
         public static ResourcesManager ResMgr => _resMgr;
 
@@ -99,7 +100,7 @@ namespace KotHModLoaderGUI
             VanillaImageViewer.Source = null;
         }
 
-        private enum AssetType
+        public enum AssetType
         {
             Resources,
             FMOD
@@ -189,7 +190,7 @@ namespace KotHModLoaderGUI
 
         private void DisplayModInfo(object sender, SelectionChangedEventArgs e)
         {
-            System.Windows.Controls.ListBox lstBox = (System.Windows.Controls.ListBox)(sender);
+            ListBox lstBox = (ListBox)(sender);
             if (lstBox.SelectedIndex > -1)
             {
                 string modName = lstBox.SelectedItem.ToString();
@@ -205,6 +206,7 @@ namespace KotHModLoaderGUI
                 ModdedImageViewer.Source = null;
 
                 _displayedModFilesInfo = _modManager.GetModFiles(modName);
+                _displayedModAudioFilesInfo = _modManager.GetModFiles(modName, AssetType.FMOD);
 
                 lstModFilesInfo.Items.Clear();
                 lstModFilesInfo.Items.Add("Description: " + _modManager.FindMod(modName).Description);
@@ -215,6 +217,12 @@ namespace KotHModLoaderGUI
                 foreach (var info in _displayedModFilesInfo)
                 {
                     lstModInfo.Items.Add(info.Name);
+                }
+
+                lstModAudioInfo.Items.Clear();
+                foreach (var info in _displayedModAudioFilesInfo)
+                {
+                    lstModAudioInfo.Items.Add(info.Name);
                 }
             }
         }
@@ -236,6 +244,7 @@ namespace KotHModLoaderGUI
                 ModdedImageViewer.Source = null;
 
                 _displayedModFilesInfo = _modManager.GetModFiles(modName);
+                _displayedModAudioFilesInfo = _modManager.GetModFiles(modName, AssetType.FMOD);
 
                 lstModFilesInfo.Items.Clear();
                 lstModFilesInfo.Items.Add("Description: " + _modManager.FindMod(modName).Description);
@@ -246,6 +255,12 @@ namespace KotHModLoaderGUI
                 foreach (var info in _displayedModFilesInfo)
                 {
                     lstModInfo.Items.Add(info.Name);
+                }
+
+                lstModAudioInfo.Items.Clear();
+                foreach (var info in _displayedModAudioFilesInfo)
+                {
+                    lstModAudioInfo.Items.Add(info.Name);
                 }
             }
         }
@@ -269,6 +284,7 @@ namespace KotHModLoaderGUI
                 FileInfo metaFile = mod.MetaFile;
                 dynamic modJson = LoadJson(metaFile.FullName);
 
+                lstModAudioInfo.SelectedIndex = -1;
                 VanillaImageLabel.Content = "";
                 ModImageLabel.Content = "";
                 CandidateImageViewer1.Source = null;
@@ -278,10 +294,11 @@ namespace KotHModLoaderGUI
                 VanillaImageStack1.Background = null;
                 VanillaImageStack2.Background = null;
                 AssignedImageViewer1.Source = null;
+                AssignedImageViewer.Source = null;
                 AddAssignedButton.Visibility = Visibility.Hidden;
 
                 int candidateQty = 0;
-                List<AutoAssignedVanillaAssets> candidates = modFile.VanillaCandidates;
+                List<VanillaAssetCandidate> candidates = modFile.VanillaCandidates;
                 for (int i = 0; i < candidates.Count; i++)
                 {
                     AssetTypeValueField values = candidates[i].values;
@@ -291,7 +308,6 @@ namespace KotHModLoaderGUI
                         if (candidateQty == 0)
                         {
                             CandidateImageViewer1.Source = ToBitmapImage(vanillaImage);
-                            //string path = file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length;
                             var blacklistedAsset = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
                             if (blacklistedAsset != null)
                             {
@@ -349,7 +365,7 @@ namespace KotHModLoaderGUI
                 }
 
                 lstModFileInfo.Items.Add("mod file name: " + fileName);
-                foreach (AutoAssignedVanillaAssets assigned in modFile.VanillaCandidates)
+                foreach (VanillaAssetCandidate assigned in modFile.VanillaCandidates)
                 {
                     lstModFileInfo.Items.Add("assigned to vanilla file: " + assigned.values["m_Name"].AsString);
                 }
@@ -398,7 +414,7 @@ namespace KotHModLoaderGUI
 
         private void ToggleModFileActive(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            System.Windows.Controls.ListBox lstBox = (System.Windows.Controls.ListBox)(sender);
+            ListBox lstBox = (ListBox)(sender);
             if (lstBox.SelectedIndex > -1)
             {
                 console.Text += "\n" + _modManager.ToggleModFileActive(_displayedModFilesInfo[lstBox.SelectedIndex]);
@@ -649,6 +665,61 @@ namespace KotHModLoaderGUI
 
             textAssetInfo.Text = null;
             VanillaImageViewer.Source = null;
+        }
+
+        private void DisplayModAudioInfo(object sender, SelectionChangedEventArgs e)
+        {
+            DisplaySelectedModAudioInfo();
+        }
+
+        private void DisplaySelectedModAudioInfo()
+        {
+            lstModAudioFileInfo.Items.Clear();
+            if (lstModAudioInfo.SelectedIndex > -1)
+            {
+                Mod mod = _modManager.FindMod(lstNames.SelectedItem.ToString());
+                string fileName = lstModAudioInfo.SelectedItem.ToString();
+                DirectoryInfo folder = _modManager.DirInfoMod;
+                FileInfo[] files = folder.GetFiles(fileName, SearchOption.AllDirectories);
+                FileInfo file = files[0];
+                ModFile modFile = _modManager.FindModFile(fileName);
+                FileInfo metaFile = mod.MetaFile;
+                dynamic modJson = LoadJson(metaFile.FullName);
+
+                lstModInfo.SelectedIndex = -1;
+                VanillaImageLabel.Content = "";
+                ModImageLabel.Content = "";
+                CandidateImageViewer1.Source = null;
+                CandidateImageViewer2.Source = null;
+                VanillaImageStack1.Opacity = 1;
+                VanillaImageStack2.Opacity = 1;
+                VanillaImageStack1.Background = null;
+                VanillaImageStack2.Background = null;
+                AssignedImageViewer1.Source = null;
+                AssignedImageViewer.Source = null;
+                ModdedImageViewer.Source = null;
+                AddAssignedButton.Visibility = Visibility.Hidden;
+
+                int candidateQty = 0;
+                List<VanillaAudioAssetCandidate> candidates = modFile.VanillaAudioCandidates;
+
+                //nom du fichier du mod
+                lstModAudioFileInfo.Items.Add("Nom du fichier audio: " + fileName);
+
+                //infos du fichier
+                //bouton play
+
+                //vanilla assignés automatiquement
+
+                //vanilla assignés manuellement
+            }
+        }
+
+        private void PlayOgg(object sender, RoutedEventArgs e)
+        {
+            ListBox lstBox = (ListBox)sender;
+
+            
         }
     }
 }

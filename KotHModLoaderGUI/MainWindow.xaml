@@ -27,8 +27,9 @@
 
         <Label Grid.Column="1">Mod Information</Label>
         <StackPanel Grid.Row="1" Grid.Column="1">
-            <ListBox Grid.Row="1" Grid.Column="1" x:Name="lstModFilesInfo" />
-            <ListBox Grid.Row="1" Grid.Column="1" x:Name="lstModInfo" SelectionChanged="DisplayModFileInfo" MouseDoubleClick="ToggleModFileActive" />
+            <ListBox x:Name="lstModFilesInfo" />
+            <ListBox x:Name="lstModInfo" SelectionChanged="DisplayModFileInfo" MouseDoubleClick="ToggleModFileActive" />
+            <ListBox x:Name="lstModAudioInfo" SelectionChanged="DisplayModAudioInfo" MouseDoubleClick="ToggleModFileActive" />
         </StackPanel>
 
         <Label Grid.Row="0" Grid.Column="2">Mod File Information</Label>
@@ -51,6 +52,9 @@
                 <StackPanel x:Name="AssignedImageStack1" Grid.Row="1" Grid.Column="2">
                     <Image x:Name="AssignedImageViewer1" MaxHeight="120" Height="Auto" Width="Auto" MouseUp="RemoveAssignedVanillaAsset" />
                 </StackPanel>
+
+
+                <ListBox x:Name="lstModAudioFileInfo" Selected="PlayOgg"/>
             </StackPanel>
         </ScrollViewer>
 
