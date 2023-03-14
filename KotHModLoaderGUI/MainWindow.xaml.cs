@@ -1,8 +1,8 @@
 ﻿using AssetsTools.NET;
+using NAudio.Vorbis;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -66,7 +66,7 @@ namespace KotHModLoaderGUI
             System.Windows.Controls.ListBox lstBox = (System.Windows.Controls.ListBox)(sender);
             if (lstBox.SelectedIndex > -1)
             {
-                console.Text += _modManager.ToggleModActive(new DirectoryInfo(_modManager.DirInfoMod + @"\" + lstBox.SelectedItem.ToString()));
+                _modManager.ToggleModActive(new DirectoryInfo(_modManager.DirInfoMod + @"\" + lstBox.SelectedItem.ToString()));
 
                 //_modManager.BuildModsDatabase();
                 _resMgr.LoadManagers();
@@ -203,6 +203,7 @@ namespace KotHModLoaderGUI
                 CandidateImageViewer2.Source = null;
                 AssignedImageViewer1.Source = null;
                 AddAssignedButton.Visibility = Visibility.Hidden;
+                btnPlayAudio.Visibility = Visibility.Hidden;
                 ModdedImageViewer.Source = null;
 
                 _displayedModFilesInfo = _modManager.GetModFiles(modName);
@@ -241,6 +242,7 @@ namespace KotHModLoaderGUI
                 CandidateImageViewer2.Source = null;
                 AssignedImageViewer1.Source = null;
                 AddAssignedButton.Visibility = Visibility.Hidden;
+                btnPlayAudio.Visibility = Visibility.Hidden;
                 ModdedImageViewer.Source = null;
 
                 _displayedModFilesInfo = _modManager.GetModFiles(modName);
@@ -296,6 +298,7 @@ namespace KotHModLoaderGUI
                 AssignedImageViewer1.Source = null;
                 AssignedImageViewer.Source = null;
                 AddAssignedButton.Visibility = Visibility.Hidden;
+                btnPlayAudio.Visibility = Visibility.Hidden;
 
                 int candidateQty = 0;
                 List<VanillaAssetCandidate> candidates = modFile.VanillaCandidates;
@@ -417,7 +420,7 @@ namespace KotHModLoaderGUI
             ListBox lstBox = (ListBox)(sender);
             if (lstBox.SelectedIndex > -1)
             {
-                console.Text += "\n" + _modManager.ToggleModFileActive(_displayedModFilesInfo[lstBox.SelectedIndex]);
+                _modManager.ToggleModFileActive(_displayedModFilesInfo[lstBox.SelectedIndex]);
 
                 if (lstNames.SelectedIndex > -1)
                 {
@@ -699,6 +702,7 @@ namespace KotHModLoaderGUI
                 AssignedImageViewer.Source = null;
                 ModdedImageViewer.Source = null;
                 AddAssignedButton.Visibility = Visibility.Hidden;
+                btnPlayAudio.Visibility = Visibility.Visible;
 
                 int candidateQty = 0;
                 List<VanillaAudioAssetCandidate> candidates = modFile.VanillaAudioCandidates;
@@ -707,6 +711,10 @@ namespace KotHModLoaderGUI
                 lstModAudioFileInfo.Items.Add("Nom du fichier audio: " + fileName);
 
                 //infos du fichier
+                foreach(string s in GetOggFileInfos(file.FullName))
+                {
+                    lstModAudioFileInfo.Items.Add(s);
+                }
                 //bouton play
 
                 //vanilla assignés automatiquement
@@ -715,11 +723,51 @@ namespace KotHModLoaderGUI
             }
         }
 
+        private List<string> GetOggFileInfos(string filename)
+        {
+            VorbisWaveReader vorbis = new NAudio.Vorbis.VorbisWaveReader(filename);
+            List<string> infos = new List<string>();
+
+            infos.Add("TotalTime :" + vorbis.TotalTime.ToString());
+            //infos.Add("UpperBitrate :" + vorbis.UpperBitrate.ToString());
+            infos.Add("Vendor :" + vorbis.Vendor.ToString());
+            infos.Add("WaveFormat :" + vorbis.WaveFormat.ToString());
+            infos.Add("StreamCount :" + vorbis.StreamCount.ToString());
+            //infos.Add("IsFixedSize :" + vorbis.Stats.IsFixedSize.ToString());
+            //infos.Add("IsReadOnly :" + vorbis.Stats.IsReadOnly.ToString());
+            //infos.Add("IsSynchronized :" + vorbis.Stats.IsSynchronized.ToString());
+            //infos.Add("Length :" + vorbis.Stats.Length.ToString());
+            //infos.Add("LongLength :" + vorbis.Stats.LongLength.ToString());
+            //infos.Add("Rank :" + vorbis.Stats.Rank.ToString());
+            //infos.Add("SyncRoot :" + vorbis.Stats.SyncRoot.ToString());
+            //infos.Add("Position :" + vorbis.Position.ToString());
+            infos.Add("NominalBitrate :" + vorbis.NominalBitrate.ToString());
+            //infos.Add("NextStreamIndex :" + vorbis.NextStreamIndex.ToString());
+            //infos.Add("LowerBitrate :" + vorbis.LowerBitrate.ToString());
+            infos.Add("Length :" + vorbis.Length.ToString());
+            //infos.Add("IsParameterChange :" + vorbis.IsParameterChange.ToString());
+            //infos.Add("CurrentTime :" + vorbis.CurrentTime.ToString());
+            //infos.Add("CurrentStream :" + vorbis.CurrentStream.ToString());
+            //infos.Add("Comments :" + vorbis.Comments.Length);
+            //infos.Add("CanWrite :" + vorbis.CanWrite.ToString());
+            //infos.Add("CanTimeout :" + vorbis.CanTimeout.ToString());
+            //infos.Add("CanSeek :" + vorbis.CanSeek.ToString());
+            //infos.Add("CanRead :" + vorbis.CanRead.ToString());
+            infos.Add("BlockAlign :" + vorbis.BlockAlign.ToString());
+
+            return infos;
+        }
+
         private void PlayOgg(object sender, RoutedEventArgs e)
         {
-            ListBox lstBox = (ListBox)sender;
+            Button btn = (Button)sender;
 
-            
+            if (lstModAudioInfo.SelectedIndex > -1)
+            {
+                string path = _displayedModAudioFilesInfo[lstModAudioInfo.SelectedIndex].FullName;
+
+                _fmodManager.PlayOgg(path);
+            }
         }
     }
 }

@@ -53,8 +53,11 @@
                     <Image x:Name="AssignedImageViewer1" MaxHeight="120" Height="Auto" Width="Auto" MouseUp="RemoveAssignedVanillaAsset" />
                 </StackPanel>
 
+                <StackPanel>
+                    <Button x:Name="btnPlayAudio" Click="PlayOgg" Visibility="Hidden">Play</Button>
+                    <ListBox x:Name="lstModAudioFileInfo"/>
+                </StackPanel>
 
-                <ListBox x:Name="lstModAudioFileInfo" Selected="PlayOgg"/>
             </StackPanel>
         </ScrollViewer>
 

@@ -8,6 +8,12 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="NAudio" Version="2.1.0" />
+      <PackageReference Include="NAudio.Vorbis" Version="1.5.0" />
+      <PackageReference Include="NVorbis" Version="0.10.5" />
+    </ItemGroup>
+
+    <ItemGroup>
       <ProjectReference Include="..\Fmod5Sharp\Fmod5Sharp.csproj" />
     </ItemGroup>
 
