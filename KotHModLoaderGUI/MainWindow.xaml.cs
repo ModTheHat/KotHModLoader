@@ -68,7 +68,6 @@ namespace KotHModLoaderGUI
             {
                 _modManager.ToggleModActive(new DirectoryInfo(_modManager.DirInfoMod + @"\" + lstBox.SelectedItem.ToString()));
 
-                //_modManager.BuildModsDatabase();
                 _resMgr.LoadManagers();
                 DisplayMods();
                 DisplaySelectedModInfo();
@@ -275,7 +274,7 @@ namespace KotHModLoaderGUI
         private void DisplayModFileInfoRaw()
         {
             lstModFileInfo.Items.Clear();
-            if (lstModInfo.SelectedIndex > -1)
+            if (lstModInfo.SelectedIndex > -1 && lstNames.SelectedIndex > -1)
             {
                 Mod mod = _modManager.FindMod(lstNames.SelectedItem.ToString());
                 string fileName = lstModInfo.SelectedItem.ToString();
@@ -301,7 +300,7 @@ namespace KotHModLoaderGUI
                 btnPlayAudio.Visibility = Visibility.Hidden;
 
                 int candidateQty = 0;
-                List<VanillaAssetCandidate> candidates = modFile.VanillaCandidates;
+                List<VanillaTextureAssetCandidate> candidates = modFile.VanillaCandidates;
                 for (int i = 0; i < candidates.Count; i++)
                 {
                     AssetTypeValueField values = candidates[i].values;
@@ -368,7 +367,7 @@ namespace KotHModLoaderGUI
                 }
 
                 lstModFileInfo.Items.Add("mod file name: " + fileName);
-                foreach (VanillaAssetCandidate assigned in modFile.VanillaCandidates)
+                foreach (VanillaTextureAssetCandidate assigned in modFile.VanillaCandidates)
                 {
                     lstModFileInfo.Items.Add("assigned to vanilla file: " + assigned.values["m_Name"].AsString);
                 }
@@ -420,16 +419,27 @@ namespace KotHModLoaderGUI
             ListBox lstBox = (ListBox)(sender);
             if (lstBox.SelectedIndex > -1)
             {
-                _modManager.ToggleModFileActive(_displayedModFilesInfo[lstBox.SelectedIndex]);
+                FileInfo[] currentDisplayed = lstBox.Name == "lstModInfo" ? _displayedModFilesInfo : _displayedModAudioFilesInfo;
+
+                _modManager.ToggleModFileActive(currentDisplayed[lstBox.SelectedIndex]);
 
                 if (lstNames.SelectedIndex > -1)
                 {
                     string modName = lstNames.SelectedItem.ToString();
 
-                    _displayedModFilesInfo = _modManager.GetModFiles(modName);
+                    if (lstBox.Name == "lstModInfo")
+                    {
+                        _displayedModFilesInfo = _modManager.GetModFiles(modName);
+                        currentDisplayed = _displayedModFilesInfo;
+                    }
+                    else
+                    {
+                        _displayedModAudioFilesInfo = _modManager.GetModFiles(modName, AssetType.FMOD);
+                        currentDisplayed = _displayedModAudioFilesInfo;
+                    }
 
                     lstModInfo.Items.Clear();
-                    foreach (var info in _displayedModFilesInfo)
+                    foreach (var info in currentDisplayed)
                     {
                         lstModInfo.Items.Add(info.Name);
                     }
@@ -516,7 +526,6 @@ namespace KotHModLoaderGUI
 
             int index = _displayedIndexes != null ? _displayedIndexes[lstVanilla.SelectedIndex] : lstVanilla.SelectedIndex;
 
-
             AssetTypeValueField vanillaFile = _resMgr.GetAssetInfo(index);
 
             AssignedVanillaAssets assigned = new AssignedVanillaAssets();
@@ -525,9 +534,7 @@ namespace KotHModLoaderGUI
             assigned.path = modFile.File.FullName.Substring(modFile.File.FullName.IndexOf(selectedMod.Name) + selectedMod.Name.Length);
 
             dynamic modJson = LoadJson(selectedMod.MetaFile.FullName);
-
             modJson["AssignedVanillaAssets"][assigned.path] = JToken.FromObject(assigned);
-            //modJson["AssignedVanillaAssets"] = System.Text.Json.JsonSerializer.Serialize(assigned);
 
             File.WriteAllText(selectedMod.MetaFile.FullName, modJson.ToString());
 
@@ -553,9 +560,7 @@ namespace KotHModLoaderGUI
             string path = modFile.File.FullName.Substring(modFile.File.FullName.IndexOf(selectedMod.Name) + selectedMod.Name.Length);
 
             dynamic modJson = LoadJson(selectedMod.MetaFile.FullName);
-
             modJson["AssignedVanillaAssets"].Remove(path);
-            //modJson["AssignedVanillaAssets"] = System.Text.Json.JsonSerializer.Serialize(assigned);
 
             File.WriteAllText(selectedMod.MetaFile.FullName, modJson.ToString());
 
@@ -623,7 +628,6 @@ namespace KotHModLoaderGUI
 
         private void GetSearchResults(string query)
         {
-            //string query = textBox.Text;
             _displayedIndexes = new List<int>();
             List<string> list = new List<string>();
 
@@ -678,7 +682,7 @@ namespace KotHModLoaderGUI
         private void DisplaySelectedModAudioInfo()
         {
             lstModAudioFileInfo.Items.Clear();
-            if (lstModAudioInfo.SelectedIndex > -1)
+            if (lstModAudioInfo.SelectedIndex > -1 && lstNames.SelectedIndex > -1)
             {
                 Mod mod = _modManager.FindMod(lstNames.SelectedItem.ToString());
                 string fileName = lstModAudioInfo.SelectedItem.ToString();
@@ -729,32 +733,14 @@ namespace KotHModLoaderGUI
             List<string> infos = new List<string>();
 
             infos.Add("TotalTime :" + vorbis.TotalTime.ToString());
-            //infos.Add("UpperBitrate :" + vorbis.UpperBitrate.ToString());
             infos.Add("Vendor :" + vorbis.Vendor.ToString());
             infos.Add("WaveFormat :" + vorbis.WaveFormat.ToString());
             infos.Add("StreamCount :" + vorbis.StreamCount.ToString());
-            //infos.Add("IsFixedSize :" + vorbis.Stats.IsFixedSize.ToString());
-            //infos.Add("IsReadOnly :" + vorbis.Stats.IsReadOnly.ToString());
-            //infos.Add("IsSynchronized :" + vorbis.Stats.IsSynchronized.ToString());
-            //infos.Add("Length :" + vorbis.Stats.Length.ToString());
-            //infos.Add("LongLength :" + vorbis.Stats.LongLength.ToString());
-            //infos.Add("Rank :" + vorbis.Stats.Rank.ToString());
-            //infos.Add("SyncRoot :" + vorbis.Stats.SyncRoot.ToString());
-            //infos.Add("Position :" + vorbis.Position.ToString());
             infos.Add("NominalBitrate :" + vorbis.NominalBitrate.ToString());
-            //infos.Add("NextStreamIndex :" + vorbis.NextStreamIndex.ToString());
-            //infos.Add("LowerBitrate :" + vorbis.LowerBitrate.ToString());
             infos.Add("Length :" + vorbis.Length.ToString());
-            //infos.Add("IsParameterChange :" + vorbis.IsParameterChange.ToString());
-            //infos.Add("CurrentTime :" + vorbis.CurrentTime.ToString());
-            //infos.Add("CurrentStream :" + vorbis.CurrentStream.ToString());
-            //infos.Add("Comments :" + vorbis.Comments.Length);
-            //infos.Add("CanWrite :" + vorbis.CanWrite.ToString());
-            //infos.Add("CanTimeout :" + vorbis.CanTimeout.ToString());
-            //infos.Add("CanSeek :" + vorbis.CanSeek.ToString());
-            //infos.Add("CanRead :" + vorbis.CanRead.ToString());
             infos.Add("BlockAlign :" + vorbis.BlockAlign.ToString());
 
+            vorbis.Close();
             return infos;
         }
 

@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Windows.Controls;
 using System.Windows.Forms;
 
 namespace KotHModLoaderGUI
@@ -38,7 +37,7 @@ namespace KotHModLoaderGUI
         public string path { get; set; }
     }
 
-    public struct VanillaAssetCandidate
+    public struct VanillaTextureAssetCandidate
     {
         public int index { get; set; }
         public AssetTypeValueField values { get; set; }
@@ -53,13 +52,13 @@ namespace KotHModLoaderGUI
     public struct ModFile
     {
         public FileInfo File;
-        public List<VanillaAssetCandidate> VanillaCandidates;
+        public List<VanillaTextureAssetCandidate> VanillaCandidates;
         public List<VanillaAudioAssetCandidate> VanillaAudioCandidates;
 
         public ModFile(FileInfo file, string assigned = "")
         {
             File = file;
-            VanillaCandidates = new List<VanillaAssetCandidate>();
+            VanillaCandidates = new List<VanillaTextureAssetCandidate>();
             VanillaAudioCandidates = new List<VanillaAudioAssetCandidate>();
         }
     }
@@ -217,6 +216,8 @@ namespace KotHModLoaderGUI
             FileInfo[] files = folder.GetFiles("*.ogg", SearchOption.AllDirectories);
             files = files.Concat(folder.GetFiles("*.wav", SearchOption.AllDirectories)).ToArray();
             files = files.Concat(folder.GetFiles("*.mp3", SearchOption.AllDirectories)).ToArray();
+            files = files.Concat(folder.GetFiles("*.ogg.disabled", SearchOption.AllDirectories)).ToArray();
+            files = files.Concat(folder.GetFiles("*.wav.disabled", SearchOption.AllDirectories)).ToArray();
             files = files.Concat(folder.GetFiles("*.mp3.disabled", SearchOption.AllDirectories)).ToArray();
 
             return files;
@@ -316,10 +317,10 @@ namespace KotHModLoaderGUI
         }
 
         private static List<int> _assignedIndexes = new List<int>();
-        private static List<VanillaAssetCandidate> AssignVanillaFilesIndexes(FileInfo file)
+        private static List<VanillaTextureAssetCandidate> AssignVanillaFilesIndexes(FileInfo file)
         {
             List<AssetTypeValueField> assetsValues = MainWindow.ResMgr.AFilesValueFields;
-            List<VanillaAssetCandidate> assigned = new List<VanillaAssetCandidate>();
+            List<VanillaTextureAssetCandidate> assigned = new List<VanillaTextureAssetCandidate>();
 
             for (int i = 0; i < assetsValues.Count; i++)
             {
@@ -327,7 +328,7 @@ namespace KotHModLoaderGUI
 
                 if (file.Name.Contains(values["m_Name"].AsString) && !_assignedIndexes.Contains(i))
                 {
-                    VanillaAssetCandidate assets = new VanillaAssetCandidate();
+                    VanillaTextureAssetCandidate assets = new VanillaTextureAssetCandidate();
                     assets.index = i;
                     assets.values = values;
                     assigned.Add(assets);
@@ -341,6 +342,8 @@ namespace KotHModLoaderGUI
         private static List<VanillaAudioAssetCandidate> AssignVanillaAudioFilesIndexes(FileInfo file)
         {
             List<VanillaAudioAssetCandidate> assigned = new List<VanillaAudioAssetCandidate>();
+
+            //df
 
             return assigned;
         }
