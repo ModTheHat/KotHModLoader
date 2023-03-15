@@ -100,5 +100,23 @@ namespace KotHModLoaderGUI
             waveOut.Init(vorbis);
             waveOut.Play();
         }
+
+        public List<string> GetOggFileInfos(string filename)
+        {
+            VorbisWaveReader vorbis = new VorbisWaveReader(filename);
+            List<string> infos = new List<string>();
+
+            infos.Add("TotalTime :" + vorbis.TotalTime.ToString());
+            infos.Add("Vendor :" + vorbis.Vendor.ToString());
+            infos.Add("WaveFormat :" + vorbis.WaveFormat.ToString());
+            infos.Add("StreamCount :" + vorbis.StreamCount.ToString());
+            infos.Add("NominalBitrate :" + vorbis.NominalBitrate.ToString());
+            infos.Add("Length :" + vorbis.Length.ToString());
+            infos.Add("BlockAlign :" + vorbis.BlockAlign.ToString());
+
+            vorbis.Close();
+            return infos;
+        }
+
     }
 }

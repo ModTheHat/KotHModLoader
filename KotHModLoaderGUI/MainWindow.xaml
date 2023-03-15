@@ -35,28 +35,34 @@
         <Label Grid.Row="0" Grid.Column="2">Mod File Information</Label>
         <ScrollViewer Grid.Row="1" Grid.Column="2">
             <StackPanel Grid.Row="1" Grid.Column="2">
-                <ListBox x:Name="lstModFileInfo"/>
-                <Label x:Name="ModImageLabel" />
-                <StackPanel Grid.Row="1" Grid.Column="2">
-                    <Image x:Name="ModdedImageViewer" MaxHeight="120" Height="Auto" Width="Auto" />
-                </StackPanel>
-                <Image x:Name="AssignedImageViewer" MaxHeight="120" Height="Auto" Width="Auto"/>
-                <Label x:Name="VanillaImageLabel" />
-                <StackPanel x:Name="VanillaImageStack1" Grid.Row="1" Grid.Column="2">
-                    <Image x:Name="CandidateImageViewer1" MaxHeight="120" Height="Auto" Width="Auto" MouseUp="ToggleAssignVanillaImage"/>
-                </StackPanel>
-                <StackPanel x:Name="VanillaImageStack2" Grid.Row="1" Grid.Column="2">
-                    <Image x:Name="CandidateImageViewer2" MaxHeight="120" Height="Auto" Width="Auto" MouseUp="ToggleAssignVanillaImage"/>
-                </StackPanel>
-                <Button x:Name="AddAssignedButton" Visibility="Hidden" Content="Assign selected asset in Vanilla Assets tab to be replaced by this Modded asset" Click="AssignVanillaTexture"/>
-                <StackPanel x:Name="AssignedImageStack1" Grid.Row="1" Grid.Column="2">
-                    <Image x:Name="AssignedImageViewer1" MaxHeight="120" Height="Auto" Width="Auto" MouseUp="RemoveAssignedVanillaAsset" />
+                <StackPanel x:Name="ModImageFileStack" Visibility="Hidden">
+                    <ListBox x:Name="lstModFileInfo"/>
+                    <Label x:Name="ModImageLabel" />
+                    <StackPanel Grid.Row="1" Grid.Column="2">
+                        <Image x:Name="ModdedImageViewer" MaxHeight="120" Height="Auto" Width="Auto" />
+                    </StackPanel>
+                    <Image x:Name="AssignedImageViewer" MaxHeight="120" Height="Auto" Width="Auto"/>
+                    <Label x:Name="VanillaImageLabel" />
+                    <StackPanel x:Name="VanillaImageStack1" Grid.Row="1" Grid.Column="2">
+                        <Image x:Name="CandidateImageViewer1" MaxHeight="120" Height="Auto" Width="Auto" MouseUp="ToggleAssignVanillaImage"/>
+                    </StackPanel>
+                    <StackPanel x:Name="VanillaImageStack2" Grid.Row="1" Grid.Column="2">
+                        <Image x:Name="CandidateImageViewer2" MaxHeight="120" Height="Auto" Width="Auto" MouseUp="ToggleAssignVanillaImage"/>
+                    </StackPanel>
+                    <Button x:Name="AddAssignedButton" Content="Assign selected asset in Vanilla Assets tab to be replaced by this Modded asset" Click="AssignVanillaTexture"/>
+                    <StackPanel x:Name="AssignedImageStack1" Grid.Row="1" Grid.Column="2">
+                        <Image x:Name="AssignedImageViewer1" MaxHeight="120" Height="Auto" Width="Auto" MouseUp="RemoveAssignedVanillaAsset" />
+                    </StackPanel>
                 </StackPanel>
 
-                <StackPanel>
-                    <Button x:Name="btnPlayAudio" Click="PlayOgg" Visibility="Hidden">Play</Button>
+                <StackPanel x:Name="ModAudioFileStack" Visibility="Hidden">
+                    <Button x:Name="btnPlayAudio" Click="PlayOgg">Play</Button>
                     <ListBox x:Name="lstModAudioFileInfo"/>
                     <!-- TODO ADD DISPLAY AUTOMATICALLY ASSIGNED FMOD-->
+                    <StackPanel>
+                        <TextBlock x:Name="CandidateAudioText1"></TextBlock>
+                        <TextBlock x:Name="CandidateAudioText2"></TextBlock>
+                    </StackPanel>
                 </StackPanel>
 
             </StackPanel>

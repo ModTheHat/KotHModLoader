@@ -10,6 +10,13 @@ using System.Windows.Forms;
 
 namespace KotHModLoaderGUI
 {
+    public enum AssetType
+    {
+        None = -1,
+        Resources = 0,
+        FMOD
+    }
+
     public class MetaFile
     {
         public PackMeta pack { get; set; }
@@ -178,13 +185,13 @@ namespace KotHModLoaderGUI
         }
 
         //Go through mod folder and list all modded files
-        public FileInfo[] GetModFiles(string modName, MainWindow.AssetType type = MainWindow.AssetType.Resources)
+        public FileInfo[] GetModFiles(string modName, AssetType type = AssetType.Resources)
         {
             switch(type)
             {
-                case MainWindow.AssetType.Resources:
+                case AssetType.Resources:
                     return FindMod(modName).TextureFiles;
-                case MainWindow.AssetType.FMOD:
+                case AssetType.FMOD:
                     return FindMod(modName).AudioFiles;
             }
 
@@ -227,6 +234,7 @@ namespace KotHModLoaderGUI
         private static ModFile[] GetModFilesInfo(DirectoryInfo folder)
         {
             FileInfo[] fileInfos = GetTextureFilesInfo(folder);
+            FileInfo[] audioFileInfos = GetAudioFilesInfo(folder);
             ModFile[] files = new ModFile[fileInfos.Length];
 
             for(int i = 0; i < fileInfos.Length;i++)
@@ -234,7 +242,13 @@ namespace KotHModLoaderGUI
                 ModFile file = files[i];
                 file.File = fileInfos[i];
                 file.VanillaCandidates = AssignVanillaFilesIndexes(fileInfos[i]);
-                file.VanillaAudioCandidates = AssignVanillaAudioFilesIndexes(fileInfos[i]);
+                files[i] = file;
+            }
+            for (int i = 0; i < audioFileInfos.Length; i++)
+            {
+                ModFile file = files[i];
+                file.File = audioFileInfos[i];
+                file.VanillaAudioCandidates = AssignVanillaAudioFilesIndexes(audioFileInfos[i]);
                 files[i] = file;
             }
 
@@ -437,6 +451,18 @@ namespace KotHModLoaderGUI
                     File.Move(fileInfo.FullName, fileInfo.FullName.Substring(0, fileInfo.FullName.LastIndexOf(".disabled")));
             }
             return fileInfo.FullName;
+        }
+
+        public void WriteToMetaFile(FileInfo metafile, BlackListedVanillaAssets blacklisted, bool remove = false)
+        {
+            dynamic modJson = LoadJson(metafile.FullName);
+
+            if (!remove)
+                modJson["BlackListedVanillaAssets"][blacklisted.path] = JToken.FromObject(blacklisted);
+            else
+                modJson["BlackListedVanillaAssets"].Remove(blacklisted.path);
+
+            File.WriteAllText(metafile.FullName, modJson.ToString());
         }
     }
 }

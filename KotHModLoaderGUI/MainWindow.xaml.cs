@@ -20,12 +20,14 @@ namespace KotHModLoaderGUI
     /// </summary>
     public partial class MainWindow : Window
     {
+        private AssetType _currentAssetDisplayed = AssetType.Resources;
+        private FileInfo[] _displayedModFilesInfo;
+        private FileInfo[] _displayedModAudioFilesInfo;
+
         private static ResourcesManager _resMgr = new ResourcesManager();
         private string[] _folders;
         private ModManager _modManager = new ModManager();
         private static FMODManager _fmodManager = new FMODManager();
-        private FileInfo[] _displayedModFilesInfo;
-        private FileInfo[] _displayedModAudioFilesInfo;
 
         public static ResourcesManager ResMgr => _resMgr;
         public static FMODManager FMODManager => _fmodManager;
@@ -64,7 +66,7 @@ namespace KotHModLoaderGUI
 
         private void ToggleModActive(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            System.Windows.Controls.ListBox lstBox = (System.Windows.Controls.ListBox)(sender);
+            ListBox lstBox = (ListBox)(sender);
             if (lstBox.SelectedIndex > -1)
             {
                 _modManager.ToggleModActive(new DirectoryInfo(_modManager.DirInfoMod + @"\" + lstBox.SelectedItem.ToString()));
@@ -100,12 +102,6 @@ namespace KotHModLoaderGUI
             VanillaImageViewer.Source = null;
         }
 
-        public enum AssetType
-        {
-            Resources,
-            FMOD
-        }
-        private AssetType _currentAssetDisplayed = AssetType.Resources;
         private void DisplayVanillaAssetInfo(object sender, SelectionChangedEventArgs e)
         {
             ListBox lstBox = (ListBox)(sender);
@@ -167,8 +163,8 @@ namespace KotHModLoaderGUI
 
                     if (infos["image data"].AsByteArray.Length > 0 && infos["m_Width"].AsInt * infos["m_Height"].AsInt * 4 == infos["image data"].AsByteArray.Length)
                     {
-                        Bitmap vanillaImage = GetDataPicture(infos["m_Width"].AsInt, infos["m_Height"].AsInt, infos["image data"].AsByteArray);
-                        VanillaImageViewer.Source = ToBitmapImage(vanillaImage);
+                        Bitmap vanillaImage = _resMgr.GetDataPicture(infos["m_Width"].AsInt, infos["m_Height"].AsInt, infos["image data"].AsByteArray);
+                        VanillaImageViewer.Source = _resMgr.ToBitmapImage(vanillaImage);
                     }
                     else
                         VanillaImageViewer.Source = null;
@@ -190,42 +186,7 @@ namespace KotHModLoaderGUI
 
         private void DisplayModInfo(object sender, SelectionChangedEventArgs e)
         {
-            ListBox lstBox = (ListBox)(sender);
-            if (lstBox.SelectedIndex > -1)
-            {
-                string modName = lstBox.SelectedItem.ToString();
-
-                lstModFileInfo.Items.Clear();
-                VanillaImageLabel.Content = "";
-                ModImageLabel.Content = "";
-                AssignedImageViewer.Source = null;
-                CandidateImageViewer1.Source = null;
-                CandidateImageViewer2.Source = null;
-                AssignedImageViewer1.Source = null;
-                AddAssignedButton.Visibility = Visibility.Hidden;
-                btnPlayAudio.Visibility = Visibility.Hidden;
-                ModdedImageViewer.Source = null;
-
-                _displayedModFilesInfo = _modManager.GetModFiles(modName);
-                _displayedModAudioFilesInfo = _modManager.GetModFiles(modName, AssetType.FMOD);
-
-                lstModFilesInfo.Items.Clear();
-                lstModFilesInfo.Items.Add("Description: " + _modManager.FindMod(modName).Description);
-                lstModFilesInfo.Items.Add("Version: " + _modManager.FindMod(modName).Version);
-                lstModFilesInfo.Items.Add("Author: " + _modManager.FindMod(modName).Author);
-
-                lstModInfo.Items.Clear();
-                foreach (var info in _displayedModFilesInfo)
-                {
-                    lstModInfo.Items.Add(info.Name);
-                }
-
-                lstModAudioInfo.Items.Clear();
-                foreach (var info in _displayedModAudioFilesInfo)
-                {
-                    lstModAudioInfo.Items.Add(info.Name);
-                }
-            }
+            DisplaySelectedModInfo();
         }
 
         private void DisplaySelectedModInfo()
@@ -234,16 +195,7 @@ namespace KotHModLoaderGUI
             {
                 string modName = lstNames.SelectedItem.ToString();
 
-                lstModFileInfo.Items.Clear();
-                VanillaImageLabel.Content = "";
-                ModImageLabel.Content = "";
-                AssignedImageViewer.Source = null;
-                CandidateImageViewer1.Source = null;
-                CandidateImageViewer2.Source = null;
-                AssignedImageViewer1.Source = null;
-                AddAssignedButton.Visibility = Visibility.Hidden;
-                btnPlayAudio.Visibility = Visibility.Hidden;
-                ModdedImageViewer.Source = null;
+                CloseModFilesUI(AssetType.None);
 
                 _displayedModFilesInfo = _modManager.GetModFiles(modName);
                 _displayedModAudioFilesInfo = _modManager.GetModFiles(modName, AssetType.FMOD);
@@ -269,10 +221,10 @@ namespace KotHModLoaderGUI
 
         private void DisplayModFileInfo(object sender, SelectionChangedEventArgs e)
         {
-            DisplayModFileInfoRaw();
+            DisplaySelectedModFileInfo();
         }
 
-        private void DisplayModFileInfoRaw()
+        private void DisplaySelectedModFileInfo()
         {
             lstModFileInfo.Items.Clear();
             if (lstModInfo.SelectedIndex > -1 && lstNames.SelectedIndex > -1)
@@ -286,19 +238,7 @@ namespace KotHModLoaderGUI
                 FileInfo metaFile = mod.MetaFile;
                 dynamic modJson = LoadJson(metaFile.FullName);
 
-                lstModAudioInfo.SelectedIndex = -1;
-                VanillaImageLabel.Content = "";
-                ModImageLabel.Content = "";
-                CandidateImageViewer1.Source = null;
-                CandidateImageViewer2.Source = null;
-                VanillaImageStack1.Opacity = 1;
-                VanillaImageStack2.Opacity = 1;
-                VanillaImageStack1.Background = null;
-                VanillaImageStack2.Background = null;
-                AssignedImageViewer1.Source = null;
-                AssignedImageViewer.Source = null;
-                AddAssignedButton.Visibility = Visibility.Hidden;
-                btnPlayAudio.Visibility = Visibility.Hidden;
+                CloseModFilesUI(AssetType.Resources);
 
                 int candidateQty = 0;
                 List<VanillaTextureAssetCandidate> candidates = modFile.VanillaCandidates;
@@ -307,10 +247,10 @@ namespace KotHModLoaderGUI
                     AssetTypeValueField values = candidates[i].values;
                     if (values["image data"].AsByteArray.Length > 0 && values["m_Width"].AsInt * values["m_Height"].AsInt * 4 == values["image data"].AsByteArray.Length)
                     {
-                        Bitmap vanillaImage = GetDataPicture(values["m_Width"].AsInt, values["m_Height"].AsInt, values["image data"].AsByteArray);
+                        Bitmap vanillaImage = _resMgr.GetDataPicture(values["m_Width"].AsInt, values["m_Height"].AsInt, values["image data"].AsByteArray);
                         if (candidateQty == 0)
                         {
-                            CandidateImageViewer1.Source = ToBitmapImage(vanillaImage);
+                            CandidateImageViewer1.Source = _resMgr.ToBitmapImage(vanillaImage);
                             var blacklistedAsset = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
                             if (blacklistedAsset != null)
                             {
@@ -320,7 +260,7 @@ namespace KotHModLoaderGUI
                         }
                         else
                         {
-                            CandidateImageViewer2.Source = ToBitmapImage(vanillaImage);
+                            CandidateImageViewer2.Source = _resMgr.ToBitmapImage(vanillaImage);
                             var blacklistedAsset = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
                             if (blacklistedAsset != null)
                             {
@@ -345,8 +285,6 @@ namespace KotHModLoaderGUI
                     ModImageLabel.Content = "Mod file texture";
                 }
 
-                AddAssignedButton.Visibility = Visibility.Visible;
-
                 if (modJson["AssignedVanillaAssets"]["\\" + fileName] != null)
                 {
                     int ind = modJson["AssignedVanillaAssets"]["\\" + fileName]["index"];
@@ -360,9 +298,9 @@ namespace KotHModLoaderGUI
                         //create Bitmap from assigned values with GetDataPicture
                         if (assignedValues["image data"].AsByteArray.Length > 0)
                         {
-                            Bitmap assignedBitmap = GetDataPicture(assignedValues["m_Width"].AsInt, assignedValues["m_Height"].AsInt, assignedValues["image data"].AsByteArray);
+                            Bitmap assignedBitmap = _resMgr.GetDataPicture(assignedValues["m_Width"].AsInt, assignedValues["m_Height"].AsInt, assignedValues["image data"].AsByteArray);
                             //assign viewer.source with ToBitmapImage
-                            AssignedImageViewer1.Source = ToBitmapImage(assignedBitmap);
+                            AssignedImageViewer1.Source = _resMgr.ToBitmapImage(assignedBitmap);
                         }
                     }
                 }
@@ -372,46 +310,6 @@ namespace KotHModLoaderGUI
                 {
                     lstModFileInfo.Items.Add("assigned to vanilla file: " + assigned.values["m_Name"].AsString);
                 }
-            }
-        }
-
-        public Bitmap GetDataPicture(int w, int h, byte[] data)
-        {
-            Bitmap pic = new Bitmap(w, h, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-            for (int y = 0; y < h; y++)
-            {
-                for (int x = 0; x < w; x++)
-                {
-                    int arrayIndex = (y * w + x) * 4;
-                    System.Drawing.Color c = System.Drawing.Color.FromArgb(
-                       data[arrayIndex + 3],
-                       data[arrayIndex],
-                       data[arrayIndex + 1],
-                       data[arrayIndex + 2]
-                    );
-                    pic.SetPixel(x, h - 1 - y, c);
-                }
-            }
-
-            return pic;
-        }
-
-        public static BitmapImage ToBitmapImage(Bitmap bitmap)
-        {
-            using (var memory = new MemoryStream())
-            {
-                bitmap.Save(memory, ImageFormat.Png);
-                memory.Position = 0;
-
-                var bitmapImage = new BitmapImage();
-                bitmapImage.BeginInit();
-                bitmapImage.StreamSource = memory;
-                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                bitmapImage.EndInit();
-                bitmapImage.Freeze();
-
-                return bitmapImage;
             }
         }
 
@@ -472,14 +370,14 @@ namespace KotHModLoaderGUI
                     VanillaImageStack1.Opacity = 1;
                     VanillaImageStack1.Background = null;
 
-                    WriteToMetaFile(selectedMod.MetaFile, blacklisted, true);
+                    _modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted, true);
                 }
                 else
                 {
                     VanillaImageStack1.Opacity = 0.3;
                     VanillaImageStack1.Background = new SolidColorBrush(Colors.Black);
 
-                    WriteToMetaFile(selectedMod.MetaFile, blacklisted);
+                    _modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted);
                 }
             }
             if (image.Name == "CandidateImageViewer2")
@@ -489,28 +387,16 @@ namespace KotHModLoaderGUI
                     VanillaImageStack2.Opacity = 1;
                     VanillaImageStack2.Background = null;
 
-                    WriteToMetaFile(selectedMod.MetaFile, blacklisted, true);
+                    _modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted, true);
                 }
                 else
                 {
                     VanillaImageStack2.Opacity = 0.3;
                     VanillaImageStack2.Background = new SolidColorBrush(Colors.Black);
 
-                    WriteToMetaFile(selectedMod.MetaFile, blacklisted);
+                    _modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted);
                 }
             }
-        }
-
-        private void WriteToMetaFile(FileInfo metafile, BlackListedVanillaAssets blacklisted, bool remove = false)
-        {
-            dynamic modJson = LoadJson(metafile.FullName);
-
-            if (!remove)
-                modJson["BlackListedVanillaAssets"][blacklisted.path] = JToken.FromObject(blacklisted);
-            else
-                modJson["BlackListedVanillaAssets"].Remove(blacklisted.path);
-
-            File.WriteAllText(metafile.FullName, modJson.ToString());
         }
 
         private void AssignVanillaTexture(object sender, RoutedEventArgs e)
@@ -539,7 +425,7 @@ namespace KotHModLoaderGUI
 
             File.WriteAllText(selectedMod.MetaFile.FullName, modJson.ToString());
 
-            DisplayModFileInfoRaw();
+            DisplaySelectedModFileInfo();
         }
 
         private static dynamic LoadJson(string path)
@@ -565,7 +451,7 @@ namespace KotHModLoaderGUI
 
             File.WriteAllText(selectedMod.MetaFile.FullName, modJson.ToString());
 
-            DisplayModFileInfoRaw();
+            DisplaySelectedModFileInfo();
         }
 
         private void DisplayFMODAssets(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -609,7 +495,7 @@ namespace KotHModLoaderGUI
 
         private void SelectAllText(object sender, System.Windows.Input.MouseEventArgs e)
         {
-            System.Windows.Controls.TextBox textBox = (System.Windows.Controls.TextBox)sender;
+           TextBox textBox = (TextBox)sender;
 
             textBox.SelectAll();
         }
@@ -680,6 +566,39 @@ namespace KotHModLoaderGUI
             DisplaySelectedModAudioInfo();
         }
 
+        private void CloseModFilesUI(AssetType type)
+        {
+            switch (type)
+            {
+                case AssetType.Resources:
+                    lstModAudioInfo.SelectedIndex = -1;
+                    ModAudioFileStack.Visibility = Visibility.Hidden;
+                    ModImageFileStack.Visibility = Visibility.Visible;
+                    break;
+                case AssetType.FMOD:
+                    lstModInfo.SelectedIndex = -1;
+                    ModImageFileStack.Visibility = Visibility.Hidden;
+                    ModAudioFileStack.Visibility = Visibility.Visible;
+                    break;
+                case AssetType.None:
+                    ModAudioFileStack.Visibility = Visibility.Hidden;
+                    ModImageFileStack.Visibility = Visibility.Hidden;
+                    lstModFileInfo.Items.Clear();
+                    break;
+            }
+            VanillaImageLabel.Content = "";
+            ModImageLabel.Content = "";
+            CandidateImageViewer1.Source = null;
+            CandidateImageViewer2.Source = null;
+            VanillaImageStack1.Opacity = 1;
+            VanillaImageStack2.Opacity = 1;
+            VanillaImageStack1.Background = null;
+            VanillaImageStack2.Background = null;
+            AssignedImageViewer1.Source = null;
+            AssignedImageViewer.Source = null;
+            ModdedImageViewer.Source = null;
+        }
+
         private void DisplaySelectedModAudioInfo()
         {
             lstModAudioFileInfo.Items.Clear();
@@ -694,20 +613,7 @@ namespace KotHModLoaderGUI
                 FileInfo metaFile = mod.MetaFile;
                 dynamic modJson = LoadJson(metaFile.FullName);
 
-                lstModInfo.SelectedIndex = -1;
-                VanillaImageLabel.Content = "";
-                ModImageLabel.Content = "";
-                CandidateImageViewer1.Source = null;
-                CandidateImageViewer2.Source = null;
-                VanillaImageStack1.Opacity = 1;
-                VanillaImageStack2.Opacity = 1;
-                VanillaImageStack1.Background = null;
-                VanillaImageStack2.Background = null;
-                AssignedImageViewer1.Source = null;
-                AssignedImageViewer.Source = null;
-                ModdedImageViewer.Source = null;
-                AddAssignedButton.Visibility = Visibility.Hidden;
-                btnPlayAudio.Visibility = Visibility.Visible;
+                CloseModFilesUI(AssetType.FMOD);
 
                 int candidateQty = 0;
                 List<VanillaAudioAssetCandidate> candidates = modFile.VanillaAudioCandidates;
@@ -716,33 +622,28 @@ namespace KotHModLoaderGUI
                 lstModAudioFileInfo.Items.Add("Nom du fichier audio: " + fileName);
 
                 //infos du fichier
-                foreach(string s in GetOggFileInfos(file.FullName))
+                foreach(string s in _fmodManager.GetOggFileInfos(file.FullName))
                 {
                     lstModAudioFileInfo.Items.Add(s);
                 }
-                //bouton play
-
                 //vanilla assignés automatiquement
+                int i = 0;
+                foreach(VanillaAudioAssetCandidate candidate in candidates)
+                {
+                    if (i == 0)
+                    {
+                        CandidateAudioText1.Text = candidate.name;
+                    }
+                    else if(i == 1)
+                    {
+                        CandidateAudioText2.Text = candidate.name;
+                    }                   
+
+                    i++;
+                }
 
                 //vanilla assignés manuellement
             }
-        }
-
-        private List<string> GetOggFileInfos(string filename)
-        {
-            VorbisWaveReader vorbis = new VorbisWaveReader(filename);
-            List<string> infos = new List<string>();
-
-            infos.Add("TotalTime :" + vorbis.TotalTime.ToString());
-            infos.Add("Vendor :" + vorbis.Vendor.ToString());
-            infos.Add("WaveFormat :" + vorbis.WaveFormat.ToString());
-            infos.Add("StreamCount :" + vorbis.StreamCount.ToString());
-            infos.Add("NominalBitrate :" + vorbis.NominalBitrate.ToString());
-            infos.Add("Length :" + vorbis.Length.ToString());
-            infos.Add("BlockAlign :" + vorbis.BlockAlign.ToString());
-
-            vorbis.Close();
-            return infos;
         }
 
         private void PlayOgg(object sender, RoutedEventArgs e)

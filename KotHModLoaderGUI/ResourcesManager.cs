@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Windows.Forms;
+using System.Windows.Media.Imaging;
 using AssetsTools.NET;
 using AssetsTools.NET.Extra;
 using Newtonsoft.Json;
@@ -267,6 +269,46 @@ namespace KotHModLoaderGUI
             }
 
             return null;
+        }
+
+        public Bitmap GetDataPicture(int w, int h, byte[] data)
+        {
+            Bitmap pic = new Bitmap(w, h, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    int arrayIndex = (y * w + x) * 4;
+                    System.Drawing.Color c = System.Drawing.Color.FromArgb(
+                       data[arrayIndex + 3],
+                       data[arrayIndex],
+                       data[arrayIndex + 1],
+                       data[arrayIndex + 2]
+                    );
+                    pic.SetPixel(x, h - 1 - y, c);
+                }
+            }
+
+            return pic;
+        }
+        
+        public BitmapImage ToBitmapImage(Bitmap bitmap)
+        {
+            using (var memory = new MemoryStream())
+            {
+                bitmap.Save(memory, ImageFormat.Png);
+                memory.Position = 0;
+
+                var bitmapImage = new BitmapImage();
+                bitmapImage.BeginInit();
+                bitmapImage.StreamSource = memory;
+                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapImage.EndInit();
+                bitmapImage.Freeze();
+
+                return bitmapImage;
+            }
         }
     }
 }
