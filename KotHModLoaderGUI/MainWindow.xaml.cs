@@ -23,11 +23,12 @@ namespace KotHModLoaderGUI
         private static ResourcesManager _resMgr = new ResourcesManager();
         private string[] _folders;
         private ModManager _modManager = new ModManager();
-        private FMODManager _fmodManager = new FMODManager();
+        private static FMODManager _fmodManager = new FMODManager();
         private FileInfo[] _displayedModFilesInfo;
         private FileInfo[] _displayedModAudioFilesInfo;
 
         public static ResourcesManager ResMgr => _resMgr;
+        public static FMODManager FMODManager => _fmodManager;
 
         public MainWindow()
         {

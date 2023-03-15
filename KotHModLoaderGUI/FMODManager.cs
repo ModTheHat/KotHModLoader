@@ -17,6 +17,7 @@ namespace KotHModLoaderGUI
 
         FmodSoundBank _fmodSounds;
 
+        public FmodSoundBank FmodSoundBank => _fmodSounds;
         public void InitialisePaths()
         {
             LoadFMODManager();

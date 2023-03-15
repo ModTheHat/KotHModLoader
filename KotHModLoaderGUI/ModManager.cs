@@ -1,4 +1,5 @@
 ﻿using AssetsTools.NET;
+using Fmod5Sharp.FmodTypes;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -339,11 +340,25 @@ namespace KotHModLoaderGUI
             return assigned;
         }
 
+        private static List<int> _assignedFMODIndexes = new List<int>();
         private static List<VanillaAudioAssetCandidate> AssignVanillaAudioFilesIndexes(FileInfo file)
         {
+            FmodSoundBank assetsValues = MainWindow.FMODManager.FmodSoundBank;
             List<VanillaAudioAssetCandidate> assigned = new List<VanillaAudioAssetCandidate>();
 
-            //df
+            for (int i = 0; i < assetsValues.Samples.Count; i++)
+            {
+                FmodSample sample = assetsValues.Samples[i];
+
+                if(file.Name.Contains(sample.Name) && !_assignedFMODIndexes.Contains(i))
+                {
+                    VanillaAudioAssetCandidate assets = new VanillaAudioAssetCandidate();
+                    assets.index = i;
+                    assets.name = file.Name;
+                    assigned.Add(assets);
+                    _assignedFMODIndexes.Add(i);
+                }
+            }
 
             return assigned;
         }

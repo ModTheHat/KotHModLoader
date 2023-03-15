@@ -56,6 +56,7 @@
                 <StackPanel>
                     <Button x:Name="btnPlayAudio" Click="PlayOgg" Visibility="Hidden">Play</Button>
                     <ListBox x:Name="lstModAudioFileInfo"/>
+                    <!-- TODO ADD DISPLAY AUTOMATICALLY ASSIGNED FMOD-->
                 </StackPanel>
 
             </StackPanel>
