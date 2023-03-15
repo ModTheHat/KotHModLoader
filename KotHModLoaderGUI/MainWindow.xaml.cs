@@ -725,7 +725,7 @@ namespace KotHModLoaderGUI
 
         private List<string> GetOggFileInfos(string filename)
         {
-            VorbisWaveReader vorbis = new NAudio.Vorbis.VorbisWaveReader(filename);
+            VorbisWaveReader vorbis = new VorbisWaveReader(filename);
             List<string> infos = new List<string>();
 
             infos.Add("TotalTime :" + vorbis.TotalTime.ToString());
