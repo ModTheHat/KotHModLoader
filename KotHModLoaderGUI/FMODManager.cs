@@ -117,6 +117,5 @@ namespace KotHModLoaderGUI
             vorbis.Close();
             return infos;
         }
-
     }
 }

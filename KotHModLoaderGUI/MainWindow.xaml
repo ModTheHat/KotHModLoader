@@ -60,8 +60,14 @@
                     <ListBox x:Name="lstModAudioFileInfo"/>
                     <!-- TODO ADD DISPLAY AUTOMATICALLY ASSIGNED FMOD-->
                     <StackPanel>
-                        <TextBlock x:Name="CandidateAudioText1"></TextBlock>
-                        <TextBlock x:Name="CandidateAudioText2"></TextBlock>
+                        <StackPanel x:Name="CandidateAudioStack1">
+                            <TextBlock x:Name="CandidateAudioText1" MouseDown="ToggleAssignVanillaAudio"></TextBlock>
+                            <Button x:Name="CandidateAudioButton1" Click="PlayOgg">Play</Button>
+                        </StackPanel>
+                        <StackPanel x:Name="CandidateAudioStack2">
+                            <TextBlock x:Name="CandidateAudioText2" MouseDown="ToggleAssignVanillaAudio"></TextBlock>
+                            <Button x:Name="CandidateAudioButton2" Click="PlayOgg">Play</Button>
+                        </StackPanel>
                     </StackPanel>
                 </StackPanel>
 

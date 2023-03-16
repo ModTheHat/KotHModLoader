@@ -1,4 +1,5 @@
 ﻿using AssetsTools.NET;
+using Fmod5Sharp.FmodTypes;
 using NAudio.Vorbis;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -7,11 +8,13 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using static KotHModLoaderGUI.ModManager;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace KotHModLoaderGUI
 {
@@ -632,11 +635,37 @@ namespace KotHModLoaderGUI
                 {
                     if (i == 0)
                     {
-                        CandidateAudioText1.Text = candidate.name;
+                        CandidateAudioText1.Text = "Audio sample name: " + candidate.name;
+                        dynamic blacklisted = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
+                        if (blacklisted != null)
+                        {
+                            if(blacklisted[candidate.name] != null)
+                            {
+                                if(blacklisted[candidate.name]["index"] == candidate.index)
+                                {
+                                    CandidateAudioStack1.Opacity = 0.3;
+                                    CandidateAudioStack1.Background = new SolidColorBrush(Colors.Black);
+                                    CandidateAudioText1.Foreground = new SolidColorBrush(Colors.White);
+                                }
+                            }
+                        }
                     }
                     else if(i == 1)
                     {
-                        CandidateAudioText2.Text = candidate.name;
+                        CandidateAudioText2.Text = "Audio sample name: " + candidate.name;
+                        dynamic blacklisted = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
+                        if (blacklisted != null)
+                        {
+                            if (blacklisted[candidate.name] != null)
+                            {
+                                if (blacklisted[candidate.name]["index"] == candidate.index)
+                                {
+                                    CandidateAudioStack2.Opacity = 0.3;
+                                    CandidateAudioStack2.Background = new SolidColorBrush(Colors.Black);
+                                    CandidateAudioText2.Foreground = new SolidColorBrush(Colors.White);
+                                }
+                            }
+                        }
                     }                   
 
                     i++;
@@ -646,15 +675,93 @@ namespace KotHModLoaderGUI
             }
         }
 
+        private byte[] GetSampleData(string fileName, int index)
+        {
+            ModFile modFile = _modManager.FindModFile(fileName);
+            FmodSample sample = _fmodManager.FmodSoundBank.Samples[modFile.VanillaAudioCandidates[index].index];
+
+            if (!sample.RebuildAsStandardFileFormat(out var data, out var extension))
+            {
+                Console.WriteLine($"Failed to extract sample {sample.Name}");
+            }
+
+            return data;
+        }
+
         private void PlayOgg(object sender, RoutedEventArgs e)
         {
             Button btn = (Button)sender;
 
-            if (lstModAudioInfo.SelectedIndex > -1)
+            if (btn.Name == "CandidateAudioButton1" || btn.Name == "CandidateAudioButton2")
             {
-                string path = _displayedModAudioFilesInfo[lstModAudioInfo.SelectedIndex].FullName;
+                if (lstModAudioInfo.SelectedIndex > -1 && lstNames.SelectedIndex > -1)
+                {
+                    string fileName = lstModAudioInfo.SelectedItem.ToString();
+                    _fmodManager.PlayOgg(null, GetSampleData(fileName, (btn.Name == "CandidateAudioButton1" ? 0 : 1)));
+                }
+            }
+            else
+            {
+                if (lstModAudioInfo.SelectedIndex > -1)
+                {
+                    string path = _displayedModAudioFilesInfo[lstModAudioInfo.SelectedIndex].FullName;
 
-                _fmodManager.PlayOgg(path);
+                    _fmodManager.PlayOgg(path);
+                }
+            }
+        }
+
+        private void ToggleAssignVanillaAudio(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            TextBlock textBlock = (TextBlock)sender;
+
+            Mod selectedMod = _modManager.FindMod(lstNames.SelectedItem.ToString());
+            ModFile modFile = selectedMod.ModFiles[lstModAudioInfo.SelectedIndex];
+
+            string vanillaFile = modFile.VanillaAudioCandidates[textBlock.Name.Contains("1") ? 0 : 1].name;
+
+            BlackListedVanillaAssets blacklisted = new BlackListedVanillaAssets();
+            blacklisted.index = modFile.VanillaAudioCandidates[textBlock.Name.Contains("1") ? 0 : 1].index;
+            blacklisted.name = modFile.VanillaAudioCandidates[textBlock.Name.Contains("1") ? 0 : 1].name;
+            blacklisted.path = modFile.File.FullName.Substring(modFile.File.FullName.IndexOf(selectedMod.Name) + selectedMod.Name.Length);
+
+            if (textBlock.Name == "CandidateAudioText1")
+            {
+                if (CandidateAudioStack1.Opacity == 0.3)
+                {
+                    CandidateAudioStack1.Opacity = 1;
+                    CandidateAudioStack1.Background = null;
+                    CandidateAudioText1.Foreground = new SolidColorBrush(Colors.Black);
+
+                    _modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted, true);
+                }
+                else
+                {
+                    CandidateAudioStack1.Opacity = 0.3;
+                    CandidateAudioStack1.Background = new SolidColorBrush(Colors.Black);
+                    CandidateAudioText1.Foreground = new SolidColorBrush(Colors.White);
+
+                    _modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted);
+                }
+            }
+            if (textBlock.Name == "CandidateAudioText2")
+            {
+                if (CandidateAudioStack2.Opacity == 0.3)
+                {
+                    CandidateAudioStack2.Opacity = 1;
+                    CandidateAudioStack2.Background = null;
+                    CandidateAudioText2.Foreground = new SolidColorBrush(Colors.Black);
+
+                    _modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted, true);
+                }
+                else
+                {
+                    CandidateAudioStack2.Opacity = 0.3;
+                    CandidateAudioStack2.Background = new SolidColorBrush(Colors.Black);
+                    CandidateAudioText2.Foreground = new SolidColorBrush(Colors.White);
+
+                    _modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted);
+                }
             }
         }
     }

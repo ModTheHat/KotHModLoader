@@ -364,11 +364,11 @@ namespace KotHModLoaderGUI
             {
                 FmodSample sample = assetsValues.Samples[i];
 
-                if(file.Name.Contains(sample.Name) && !_assignedFMODIndexes.Contains(i))
+                if(sample.Name.Contains(file.Name.Substring(0, file.Name.IndexOf("."))) && !_assignedFMODIndexes.Contains(i))
                 {
                     VanillaAudioAssetCandidate assets = new VanillaAudioAssetCandidate();
                     assets.index = i;
-                    assets.name = file.Name;
+                    assets.name = sample.Name;
                     assigned.Add(assets);
                     _assignedFMODIndexes.Add(i);
                 }
@@ -458,9 +458,13 @@ namespace KotHModLoaderGUI
             dynamic modJson = LoadJson(metafile.FullName);
 
             if (!remove)
-                modJson["BlackListedVanillaAssets"][blacklisted.path] = JToken.FromObject(blacklisted);
+            {
+                if (modJson["BlackListedVanillaAssets"][blacklisted.path] == null)
+                    modJson["BlackListedVanillaAssets"][blacklisted.path] = new JObject();
+                modJson["BlackListedVanillaAssets"][blacklisted.path][blacklisted.name] = JToken.FromObject(blacklisted);
+            }
             else
-                modJson["BlackListedVanillaAssets"].Remove(blacklisted.path);
+                modJson["BlackListedVanillaAssets"][blacklisted.path].Remove(blacklisted.name);
 
             File.WriteAllText(metafile.FullName, modJson.ToString());
         }
