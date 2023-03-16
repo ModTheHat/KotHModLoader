@@ -47,9 +47,9 @@ namespace KotHModLoaderGUI
 
             DisplayVanillaCatalog();
 
-            console.Text = ".disabled Mods won't be added to the game.\n\n" +
-                "Double click on a Mod in the Mods tab to toggle between enabled and disabled.\n\n" +
-                "When you're happy with the enabled mods list, click on Build Mods to add them to the game.";
+            console.Text = "Greyed out mods and files won't be added to the game.\n\n" +
+                "Double click on a Mod in the Mods tab or on a File in the Mod Info tab to toggle between enabled and disabled.\n\n" +
+                "When you're happy with the enabled mods and files list, click on Build Mods to add them to the game.";
         }
 
         private void DisplayMods()
@@ -72,7 +72,7 @@ namespace KotHModLoaderGUI
             ListBox lstBox = (ListBox)(sender);
             if (lstBox.SelectedIndex > -1)
             {
-                _modManager.ToggleModActive(new DirectoryInfo(_modManager.DirInfoMod + @"\" + lstBox.SelectedItem.ToString()));
+                _modManager.ToggleModActive(lstBox.SelectedIndex);
 
                 _resMgr.LoadManagers();
                 DisplayMods();

@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
@@ -20,6 +21,7 @@ namespace KotHModLoaderGUI
     public class MetaFile
     {
         public PackMeta pack { get; set; }
+        public List<string>? DisabledModsOrFiles { get; set; }
         public AssignedVanillaAssets AssignedVanillaAssets { get; set; }
         public BlackListedVanillaAssets BlackListedVanillaAssets { get; set; }
     }
@@ -214,7 +216,6 @@ namespace KotHModLoaderGUI
         private static FileInfo[] GetTextureFilesInfo(DirectoryInfo folder)
         {
             FileInfo[] files = folder.GetFiles("*.png", SearchOption.AllDirectories);
-            files = files.Concat(folder.GetFiles("*.png.disabled", SearchOption.AllDirectories)).ToArray();
 
             return files;
         }
@@ -224,9 +225,6 @@ namespace KotHModLoaderGUI
             FileInfo[] files = folder.GetFiles("*.ogg", SearchOption.AllDirectories);
             files = files.Concat(folder.GetFiles("*.wav", SearchOption.AllDirectories)).ToArray();
             files = files.Concat(folder.GetFiles("*.mp3", SearchOption.AllDirectories)).ToArray();
-            files = files.Concat(folder.GetFiles("*.ogg.disabled", SearchOption.AllDirectories)).ToArray();
-            files = files.Concat(folder.GetFiles("*.wav.disabled", SearchOption.AllDirectories)).ToArray();
-            files = files.Concat(folder.GetFiles("*.mp3.disabled", SearchOption.AllDirectories)).ToArray();
 
             return files;
         }
@@ -235,21 +233,24 @@ namespace KotHModLoaderGUI
         {
             FileInfo[] fileInfos = GetTextureFilesInfo(folder);
             FileInfo[] audioFileInfos = GetAudioFilesInfo(folder);
-            ModFile[] files = new ModFile[fileInfos.Length];
+            ModFile[] files = new ModFile[fileInfos.Length + audioFileInfos.Length];
 
-            for(int i = 0; i < fileInfos.Length;i++)
+            int i = 0;
+            for(int t = 0; t < fileInfos.Length;t++)
             {
                 ModFile file = files[i];
-                file.File = fileInfos[i];
-                file.VanillaCandidates = AssignVanillaFilesIndexes(fileInfos[i]);
+                file.File = fileInfos[t];
+                file.VanillaCandidates = AssignVanillaFilesIndexes(fileInfos[t]);
                 files[i] = file;
+                i++;
             }
-            for (int i = 0; i < audioFileInfos.Length; i++)
+            for (int a = 0; a < audioFileInfos.Length; a++)
             {
                 ModFile file = files[i];
-                file.File = audioFileInfos[i];
-                file.VanillaAudioCandidates = AssignVanillaAudioFilesIndexes(audioFileInfos[i]);
+                file.File = audioFileInfos[a];
+                file.VanillaAudioCandidates = AssignVanillaAudioFilesIndexes(audioFileInfos[a]);
                 files[i] = file;
+                i++;
             }
 
             return files;
@@ -268,7 +269,7 @@ namespace KotHModLoaderGUI
 
         private static bool ValidateNewMeta(DirectoryInfo folder)
         {
-            DialogResult dialogResult = MessageBox.Show("No compatible meta file found in " + folder.Name.Replace(".disabled", "") + ", do you want to create one? Without one, options like Assigning assets manually won't be saved.", folder.Name.Replace(".disabled", "") + ": No meta file found", MessageBoxButtons.YesNo);
+            DialogResult dialogResult = MessageBox.Show("No compatible meta file found in " + folder.Name + ", do you want to create one? Without one, options like Assigning assets manually won't be saved.", folder.Name + ": No meta file found", MessageBoxButtons.YesNo);
             if (dialogResult == DialogResult.Yes)
             {
                 return true;
@@ -302,7 +303,8 @@ namespace KotHModLoaderGUI
                 MetaFile data = new MetaFile()
                 {
                     AssignedVanillaAssets = new AssignedVanillaAssets(),
-                    BlackListedVanillaAssets = new BlackListedVanillaAssets()
+                    BlackListedVanillaAssets = new BlackListedVanillaAssets(),
+                    DisabledModsOrFiles = new List<string>()
                 };
 
                 string json = System.Text.Json.JsonSerializer.Serialize(data);
@@ -423,23 +425,42 @@ namespace KotHModLoaderGUI
             return false;
         }
 
-        public string ToggleModActive(DirectoryInfo modDir)
+        public void ToggleModActive(int index)
         {
-            if (Directory.Exists(modDir.FullName))
-            {
-                DirectoryInfo[] folders = modDir.GetDirectories("*");
-                foreach (DirectoryInfo folder in folders)
-                {
-                    if (!IsDirectoryWritable(folder.FullName))
-                        return "\nImpossible to write to " + folder.Name + " folder.\nDo you have this subfolder open somewhere?";
-                }
+            //get mod metafile and add/remove mod from disabled list
+            Mod mod = _modsList[index];
+            FileInfo metaFile = mod.MetaFile;
+            if (!metaFile.Exists) return;
 
-                if (IsDirectoryWritable(modDir.FullName))
-                {
-                    Directory.Move(modDir.FullName, modDir.FullName.Contains(".disabled") ? modDir.FullName.Replace(".disabled", "") : modDir.FullName + ".disabled");
-                }
+            dynamic modJson = LoadJson(metaFile.FullName);
+
+            List<string> disabled = (List<string>)modJson["DisabledModsOrFiles"].ToObject(typeof(List<string>));
+            if(!disabled.Contains(mod.ModDirectoryInfo.FullName.Substring(mod.ModDirectoryInfo.FullName.IndexOf(_dirInfoMod.FullName) + _dirInfoMod.FullName.Length)))
+            {
+                disabled.Add(mod.ModDirectoryInfo.FullName.Substring(mod.ModDirectoryInfo.FullName.IndexOf(_dirInfoMod.FullName) + _dirInfoMod.FullName.Length));
             }
-            return modDir.Name;
+            else
+            {
+                disabled.Remove(mod.ModDirectoryInfo.FullName.Substring(mod.ModDirectoryInfo.FullName.IndexOf(_dirInfoMod.FullName) + _dirInfoMod.FullName.Length));
+            }
+            modJson["DisabledModsOrFiles"] = JToken.FromObject(disabled);
+
+            File.WriteAllText(metaFile.FullName, modJson.ToString());
+            //if (Directory.Exists(modDir.FullName))
+            //{
+            //    DirectoryInfo[] folders = modDir.GetDirectories("*");
+            //    foreach (DirectoryInfo folder in folders)
+            //    {
+            //        if (!IsDirectoryWritable(folder.FullName))
+            //            return "\nImpossible to write to " + folder.Name + " folder.\nDo you have this subfolder open somewhere?";
+            //    }
+
+            //    if (IsDirectoryWritable(modDir.FullName))
+            //    {
+            //        Directory.Move(modDir.FullName, modDir.FullName.Contains(".disabled") ? modDir.FullName.Replace(".disabled", "") : modDir.FullName + ".disabled");
+            //    }
+            //}
+            //return modDir.Name;
         }
         public string ToggleModFileActive(FileInfo fileInfo)
         {
