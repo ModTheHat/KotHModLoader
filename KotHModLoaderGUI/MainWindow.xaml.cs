@@ -257,8 +257,11 @@ namespace KotHModLoaderGUI
                             var blacklistedAsset = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
                             if (blacklistedAsset != null)
                             {
-                                VanillaImageStack1.Opacity = 0.3;
-                                VanillaImageStack1.Background = new SolidColorBrush(Colors.Black);
+                                if (blacklistedAsset[values["m_Name"].AsString + "-" + candidates[i].index] != null)
+                                {
+                                    VanillaImageStack1.Opacity = 0.3;
+                                    VanillaImageStack1.Background = new SolidColorBrush(Colors.Black);
+                                }
                             }
                         }
                         else
@@ -267,8 +270,11 @@ namespace KotHModLoaderGUI
                             var blacklistedAsset = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
                             if (blacklistedAsset != null)
                             {
-                                VanillaImageStack1.Opacity = 0.3;
-                                VanillaImageStack1.Background = new SolidColorBrush(Colors.Black);
+                                if (blacklistedAsset[values["m_Name"].AsString + "-" + candidates[i].index] != null)
+                                {
+                                    VanillaImageStack2.Opacity = 0.3;
+                                    VanillaImageStack2.Background = new SolidColorBrush(Colors.Black);
+                                }
                             }
                         }
                         candidateQty++;
@@ -639,14 +645,12 @@ namespace KotHModLoaderGUI
                         dynamic blacklisted = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
                         if (blacklisted != null)
                         {
-                            if(blacklisted[candidate.name] != null)
+                            if(blacklisted[candidate.name + "-" + candidates[i].index] != null)
                             {
-                                if(blacklisted[candidate.name]["index"] == candidate.index)
-                                {
-                                    CandidateAudioStack1.Opacity = 0.3;
-                                    CandidateAudioStack1.Background = new SolidColorBrush(Colors.Black);
-                                    CandidateAudioText1.Foreground = new SolidColorBrush(Colors.White);
-                                }
+                                
+                                CandidateAudioStack1.Opacity = 0.3;
+                                CandidateAudioStack1.Background = new SolidColorBrush(Colors.Black);
+                                CandidateAudioText1.Foreground = new SolidColorBrush(Colors.White);
                             }
                         }
                     }
@@ -656,14 +660,11 @@ namespace KotHModLoaderGUI
                         dynamic blacklisted = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
                         if (blacklisted != null)
                         {
-                            if (blacklisted[candidate.name] != null)
-                            {
-                                if (blacklisted[candidate.name]["index"] == candidate.index)
-                                {
-                                    CandidateAudioStack2.Opacity = 0.3;
-                                    CandidateAudioStack2.Background = new SolidColorBrush(Colors.Black);
-                                    CandidateAudioText2.Foreground = new SolidColorBrush(Colors.White);
-                                }
+                            if (blacklisted[candidate.name + "-" + candidates[i].index] != null)
+                            { 
+                                CandidateAudioStack2.Opacity = 0.3;
+                                CandidateAudioStack2.Background = new SolidColorBrush(Colors.Black);
+                                CandidateAudioText2.Foreground = new SolidColorBrush(Colors.White);
                             }
                         }
                     }                   

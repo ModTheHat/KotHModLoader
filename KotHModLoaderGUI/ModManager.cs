@@ -461,10 +461,10 @@ namespace KotHModLoaderGUI
             {
                 if (modJson["BlackListedVanillaAssets"][blacklisted.path] == null)
                     modJson["BlackListedVanillaAssets"][blacklisted.path] = new JObject();
-                modJson["BlackListedVanillaAssets"][blacklisted.path][blacklisted.name] = JToken.FromObject(blacklisted);
+                modJson["BlackListedVanillaAssets"][blacklisted.path][blacklisted.name + "-" + blacklisted.index] = JToken.FromObject(blacklisted);
             }
             else
-                modJson["BlackListedVanillaAssets"][blacklisted.path].Remove(blacklisted.name);
+                modJson["BlackListedVanillaAssets"][blacklisted.path].Remove(blacklisted.name + "-" + blacklisted.index);
 
             File.WriteAllText(metafile.FullName, modJson.ToString());
         }
