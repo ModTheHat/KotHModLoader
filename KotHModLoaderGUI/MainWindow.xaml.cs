@@ -1,6 +1,5 @@
 ﻿using AssetsTools.NET;
 using Fmod5Sharp.FmodTypes;
-using NAudio.Vorbis;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -8,13 +7,11 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using static KotHModLoaderGUI.ModManager;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace KotHModLoaderGUI
 {
@@ -56,10 +53,20 @@ namespace KotHModLoaderGUI
         {
             lstNames.Items.Clear();
             _folders = _modManager.BuildModsDatabase();
-            foreach (string folder in _folders)
+            for (int i = 0; i < _folders.Length; i++)
             {
+                string folder = _folders[i];
+                Mod mod = _modManager.ModsList[i];
+                FileInfo metaFile = mod.MetaFile;
+                dynamic modJson = LoadJson(metaFile.FullName);
+                List<string> disabled = (List<string>)modJson["DisabledModsOrFiles"].ToObject(typeof(List<string>));
+                if(disabled.Contains("\\" + folder))
+                {
+                    folder += ".DISABLED";
+                }
                 lstNames.Items.Add(folder);
             }
+            ModInfoStack.Visibility = Visibility.Hidden;
         }
 
         private void ButtonBuildMods_Click(object sender, RoutedEventArgs e)
@@ -72,11 +79,13 @@ namespace KotHModLoaderGUI
             ListBox lstBox = (ListBox)(sender);
             if (lstBox.SelectedIndex > -1)
             {
+                int ind = lstBox.SelectedIndex;
                 _modManager.ToggleModActive(lstBox.SelectedIndex);
 
                 _resMgr.LoadManagers();
                 DisplayMods();
                 DisplaySelectedModInfo();
+                lstBox.SelectedIndex = ind;
             }
         }
 
@@ -112,7 +121,7 @@ namespace KotHModLoaderGUI
 
             int index;
 
-            string assetName = lstBox.SelectedItem.ToString();
+            string assetName = lstBox.SelectedItem.ToString().Replace(".DISABLED", "");
 
             switch (_currentAssetDisplayed)
             {
@@ -196,29 +205,35 @@ namespace KotHModLoaderGUI
         {
             if (lstNames.SelectedIndex > -1)
             {
-                string modName = lstNames.SelectedItem.ToString();
+                Mod selectedMod = _modManager.FindMod(lstNames.SelectedItem.ToString().Replace(".DISABLED", ""));
+                string modName = lstNames.SelectedItem.ToString().Replace(".DISABLED", "");
+                dynamic modJson = LoadJson(selectedMod.MetaFile.FullName);
+                List<string> disabled = (List<string>)modJson["DisabledModsOrFiles"].ToObject(typeof(List<string>));
 
                 CloseModFilesUI(AssetType.None);
 
                 _displayedModFilesInfo = _modManager.GetModFiles(modName);
                 _displayedModAudioFilesInfo = _modManager.GetModFiles(modName, AssetType.FMOD);
 
-                lstModFilesInfo.Items.Clear();
-                lstModFilesInfo.Items.Add("Description: " + _modManager.FindMod(modName).Description);
-                lstModFilesInfo.Items.Add("Version: " + _modManager.FindMod(modName).Version);
-                lstModFilesInfo.Items.Add("Author: " + _modManager.FindMod(modName).Author);
+                ModDescriptionTextBox.Text = _modManager.FindMod(modName).Description != null && _modManager.FindMod(modName).Description != "" ? "Description: " + _modManager.FindMod(modName).Description : "Description: Edit text and press Enter";
+                ModVersionTextBox.Text = _modManager.FindMod(modName).Version != null && _modManager.FindMod(modName).Version != "" ? "Version: " + _modManager.FindMod(modName).Version : "Version: Edit text and press Enter";
+                ModAuthorTextBox.Text = _modManager.FindMod(modName).Author != null && _modManager.FindMod(modName).Author != "" ? "Author: " + _modManager.FindMod(modName).Author : "Author: Edit text and press Enter";
 
                 lstModInfo.Items.Clear();
                 foreach (var info in _displayedModFilesInfo)
                 {
-                    lstModInfo.Items.Add(info.Name);
+                    lstModInfo.Items.Add(info.Name + (disabled.Contains("\\" + info.FullName.Substring(info.FullName.IndexOf(selectedMod.Name))) ? ".DISABLED": ""));
                 }
+                lstModInfo.Visibility = lstModInfo.Items.Count > 0 ? Visibility.Visible : Visibility.Hidden;
 
                 lstModAudioInfo.Items.Clear();
                 foreach (var info in _displayedModAudioFilesInfo)
                 {
-                    lstModAudioInfo.Items.Add(info.Name);
+                    lstModAudioInfo.Items.Add(info.Name + (disabled.Contains("\\" + info.FullName.Substring(info.FullName.IndexOf(selectedMod.Name))) ? ".DISABLED" : ""));
                 }
+                lstModAudioInfo.Visibility = lstModAudioInfo.Items.Count > 0 ? Visibility.Visible : Visibility.Hidden;
+
+                ModInfoStack.Visibility = Visibility.Visible;
             }
         }
 
@@ -232,8 +247,8 @@ namespace KotHModLoaderGUI
             lstModFileInfo.Items.Clear();
             if (lstModInfo.SelectedIndex > -1 && lstNames.SelectedIndex > -1)
             {
-                Mod mod = _modManager.FindMod(lstNames.SelectedItem.ToString());
-                string fileName = lstModInfo.SelectedItem.ToString();
+                Mod mod = _modManager.FindMod(lstNames.SelectedItem.ToString().Replace(".DISABLED", ""));
+                string fileName = lstModInfo.SelectedItem.ToString().Replace(".DISABLED", "");
                 DirectoryInfo folder = _modManager.DirInfoMod;
                 FileInfo[] files = folder.GetFiles(fileName, SearchOption.AllDirectories);
                 FileInfo file = files[0];
@@ -329,11 +344,11 @@ namespace KotHModLoaderGUI
             {
                 FileInfo[] currentDisplayed = lstBox.Name == "lstModInfo" ? _displayedModFilesInfo : _displayedModAudioFilesInfo;
 
-                _modManager.ToggleModFileActive(currentDisplayed[lstBox.SelectedIndex]);
+                _modManager.ToggleModFileActive(lstNames.SelectedIndex, lstBox.SelectedIndex, lstBox.Name == "lstModInfo" ? AssetType.Resources : AssetType.FMOD);
 
                 if (lstNames.SelectedIndex > -1)
                 {
-                    string modName = lstNames.SelectedItem.ToString();
+                    string modName = lstNames.SelectedItem.ToString().Replace(".DISABLED", "");
 
                     if (lstBox.Name == "lstModInfo")
                     {
@@ -362,7 +377,7 @@ namespace KotHModLoaderGUI
         {
             System.Windows.Controls.Image image = (System.Windows.Controls.Image)sender;
 
-            Mod selectedMod = _modManager.FindMod(lstNames.SelectedItem.ToString());
+            Mod selectedMod = _modManager.FindMod(lstNames.SelectedItem.ToString().Replace(".DISABLED", ""));
             ModFile modFile = selectedMod.ModFiles[lstModInfo.SelectedIndex];
 
             AssetTypeValueField vanillaFile = modFile.VanillaCandidates[image.Name.Contains("1") ? 0 : 1].values;
@@ -410,7 +425,7 @@ namespace KotHModLoaderGUI
 
         private void AssignVanillaTexture(object sender, RoutedEventArgs e)
         {
-            Mod selectedMod = _modManager.FindMod(lstNames.SelectedItem.ToString());
+            Mod selectedMod = _modManager.FindMod(lstNames.SelectedItem.ToString().Replace(".DISABLED", ""));
             ModFile modFile = selectedMod.ModFiles[lstModInfo.SelectedIndex];
 
             if (_currentAssetDisplayed != AssetType.Resources)
@@ -450,7 +465,7 @@ namespace KotHModLoaderGUI
 
         private void RemoveAssignedVanillaAsset(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            Mod selectedMod = _modManager.FindMod(lstNames.SelectedItem.ToString());
+            Mod selectedMod = _modManager.FindMod(lstNames.SelectedItem.ToString().Replace(".DISABLED", ""));
             ModFile modFile = selectedMod.ModFiles[lstModInfo.SelectedIndex];
 
             string path = modFile.File.FullName.Substring(modFile.File.FullName.IndexOf(selectedMod.Name) + selectedMod.Name.Length);
@@ -613,8 +628,8 @@ namespace KotHModLoaderGUI
             lstModAudioFileInfo.Items.Clear();
             if (lstModAudioInfo.SelectedIndex > -1 && lstNames.SelectedIndex > -1)
             {
-                Mod mod = _modManager.FindMod(lstNames.SelectedItem.ToString());
-                string fileName = lstModAudioInfo.SelectedItem.ToString();
+                Mod mod = _modManager.FindMod(lstNames.SelectedItem.ToString().Replace(".DISABLED", ""));
+                string fileName = lstModAudioInfo.SelectedItem.ToString().Replace(".DISABLED", "");
                 DirectoryInfo folder = _modManager.DirInfoMod;
                 FileInfo[] files = folder.GetFiles(fileName, SearchOption.AllDirectories);
                 FileInfo file = files[0];
@@ -678,7 +693,7 @@ namespace KotHModLoaderGUI
 
         private byte[] GetSampleData(string fileName, int index)
         {
-            ModFile modFile = _modManager.FindModFile(fileName);
+            ModFile modFile = _modManager.FindModFile(fileName.Replace(".DISABLED", ""));
             FmodSample sample = _fmodManager.FmodSoundBank.Samples[modFile.VanillaAudioCandidates[index].index];
 
             if (!sample.RebuildAsStandardFileFormat(out var data, out var extension))
@@ -697,7 +712,7 @@ namespace KotHModLoaderGUI
             {
                 if (lstModAudioInfo.SelectedIndex > -1 && lstNames.SelectedIndex > -1)
                 {
-                    string fileName = lstModAudioInfo.SelectedItem.ToString();
+                    string fileName = lstModAudioInfo.SelectedItem.ToString().Replace(".DISABLED", "");
                     _fmodManager.PlayOgg(null, GetSampleData(fileName, (btn.Name == "CandidateAudioButton1" ? 0 : 1)));
                 }
             }
@@ -716,8 +731,8 @@ namespace KotHModLoaderGUI
         {
             TextBlock textBlock = (TextBlock)sender;
 
-            Mod selectedMod = _modManager.FindMod(lstNames.SelectedItem.ToString());
-            ModFile modFile = selectedMod.ModFiles[lstModAudioInfo.SelectedIndex];
+            Mod selectedMod = _modManager.FindMod(lstNames.SelectedItem.ToString().Replace(".DISABLED", ""));
+            ModFile modFile = selectedMod.ModFiles[lstModAudioInfo.SelectedIndex + lstModInfo.Items.Count];
 
             string vanillaFile = modFile.VanillaAudioCandidates[textBlock.Name.Contains("1") ? 0 : 1].name;
 
@@ -763,6 +778,37 @@ namespace KotHModLoaderGUI
 
                     _modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted);
                 }
+            }
+        }
+
+        private void EditModInfo(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            TextBox textBox = (TextBox)sender;
+
+            if(e.Key == System.Windows.Input.Key.Enter)
+            {
+                //write text to mod meta file
+                Mod selectedMod = _modManager.FindMod(lstNames.SelectedItem.ToString().Replace(".DISABLED", ""));
+                dynamic modJson = LoadJson(selectedMod.MetaFile.FullName);
+                
+                switch(textBox.Name)
+                {
+                    case "ModDescriptionTextBox":
+                        modJson["pack"]["description"] = textBox.Text.Replace("Description: ", "");
+                        break;
+                    case "ModVersionTextBox":
+                        modJson["pack"]["version"] = textBox.Text.Replace("Version: ", "");
+                        break;
+                    case "ModAuthorTextBox":
+                        modJson["pack"]["author"] = textBox.Text.Replace("Author: ", "");
+                        break;
+                }
+
+                File.WriteAllText(selectedMod.MetaFile.FullName, modJson.ToString());
+
+                _resMgr.LoadManagers();
+                _modManager.BuildModsDatabase();
+                DisplaySelectedModInfo();
             }
         }
     }

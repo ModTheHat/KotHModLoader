@@ -427,15 +427,14 @@ namespace KotHModLoaderGUI
 
         public void ToggleModActive(int index)
         {
-            //get mod metafile and add/remove mod from disabled list
             Mod mod = _modsList[index];
             FileInfo metaFile = mod.MetaFile;
             if (!metaFile.Exists) return;
-
+            
             dynamic modJson = LoadJson(metaFile.FullName);
 
             List<string> disabled = (List<string>)modJson["DisabledModsOrFiles"].ToObject(typeof(List<string>));
-            if(!disabled.Contains(mod.ModDirectoryInfo.FullName.Substring(mod.ModDirectoryInfo.FullName.IndexOf(_dirInfoMod.FullName) + _dirInfoMod.FullName.Length)))
+            if (!disabled.Contains(mod.ModDirectoryInfo.FullName.Substring(mod.ModDirectoryInfo.FullName.IndexOf(_dirInfoMod.FullName) + _dirInfoMod.FullName.Length)))
             {
                 disabled.Add(mod.ModDirectoryInfo.FullName.Substring(mod.ModDirectoryInfo.FullName.IndexOf(_dirInfoMod.FullName) + _dirInfoMod.FullName.Length));
             }
@@ -446,32 +445,43 @@ namespace KotHModLoaderGUI
             modJson["DisabledModsOrFiles"] = JToken.FromObject(disabled);
 
             File.WriteAllText(metaFile.FullName, modJson.ToString());
-            //if (Directory.Exists(modDir.FullName))
-            //{
-            //    DirectoryInfo[] folders = modDir.GetDirectories("*");
-            //    foreach (DirectoryInfo folder in folders)
-            //    {
-            //        if (!IsDirectoryWritable(folder.FullName))
-            //            return "\nImpossible to write to " + folder.Name + " folder.\nDo you have this subfolder open somewhere?";
-            //    }
-
-            //    if (IsDirectoryWritable(modDir.FullName))
-            //    {
-            //        Directory.Move(modDir.FullName, modDir.FullName.Contains(".disabled") ? modDir.FullName.Replace(".disabled", "") : modDir.FullName + ".disabled");
-            //    }
-            //}
-            //return modDir.Name;
         }
-        public string ToggleModFileActive(FileInfo fileInfo)
+
+        public void ToggleModFileActive(int modIndex, int fileIndex, AssetType assetType)
         {
-            if (File.Exists(fileInfo.FullName))
+            Mod mod = _modsList[modIndex];
+            FileInfo metaFile = mod.MetaFile;
+            if (!metaFile.Exists) return;
+
+            FileInfo fileInfo = null;
+            switch (assetType)
             {
-                if(fileInfo.FullName.LastIndexOf(".disabled") <= fileInfo.FullName.LastIndexOf(@"\"))
-                    File.Move(fileInfo.FullName, fileInfo.FullName + ".disabled");
-                else
-                    File.Move(fileInfo.FullName, fileInfo.FullName.Substring(0, fileInfo.FullName.LastIndexOf(".disabled")));
+                case AssetType.Resources:
+                    fileInfo = mod.TextureFiles[fileIndex];
+                    
+                    break;
+                case AssetType.FMOD:
+                    fileInfo = mod.AudioFiles[fileIndex];
+
+                    break;
+                case AssetType.None:
+                    break;
             }
-            return fileInfo.FullName;
+
+            dynamic modJson = LoadJson(metaFile.FullName);
+            List<string> disabled = (List<string>)modJson["DisabledModsOrFiles"].ToObject(typeof(List<string>));
+
+            if (!disabled.Contains(fileInfo.FullName.Substring(fileInfo.FullName.IndexOf(_dirInfoMod.FullName) + _dirInfoMod.FullName.Length)))
+            {
+                disabled.Add(fileInfo.FullName.Substring(fileInfo.FullName.IndexOf(_dirInfoMod.FullName) + _dirInfoMod.FullName.Length));
+            }
+            else
+            {
+                disabled.Remove(fileInfo.FullName.Substring(fileInfo.FullName.IndexOf(_dirInfoMod.FullName) + _dirInfoMod.FullName.Length));
+            }
+            modJson["DisabledModsOrFiles"] = JToken.FromObject(disabled);
+
+            File.WriteAllText(metaFile.FullName, modJson.ToString());
         }
 
         public void WriteToMetaFile(FileInfo metafile, BlackListedVanillaAssets blacklisted, bool remove = false)

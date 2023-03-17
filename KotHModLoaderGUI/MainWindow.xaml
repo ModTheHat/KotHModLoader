@@ -26,11 +26,17 @@
         <ListBox Grid.Row="1" x:Name="lstNames" SelectionChanged="DisplayModInfo" MouseDoubleClick="ToggleModActive"/>
 
         <Label Grid.Column="1">Mod Information</Label>
-        <StackPanel Grid.Row="1" Grid.Column="1">
-            <ListBox x:Name="lstModFilesInfo" />
-            <ListBox x:Name="lstModInfo" SelectionChanged="DisplayModFileInfo" MouseDoubleClick="ToggleModFileActive" />
-            <ListBox x:Name="lstModAudioInfo" SelectionChanged="DisplayModAudioInfo" MouseDoubleClick="ToggleModFileActive" />
-        </StackPanel>
+        <ScrollViewer Grid.Row="1" Grid.Column="1">
+            <StackPanel x:Name="ModInfoStack" Grid.Row="1" Grid.Column="1">
+                <StackPanel x:Name="ModFilesInfoStack">
+                    <TextBox x:Name="ModDescriptionTextBox" GotMouseCapture="SelectAllText" KeyDown="EditModInfo">Description: Edit text and press Enter</TextBox>
+                    <TextBox x:Name="ModVersionTextBox" GotMouseCapture="SelectAllText" KeyDown="EditModInfo">Version: Edit text and press Enter</TextBox>
+                    <TextBox x:Name="ModAuthorTextBox" GotMouseCapture="SelectAllText" KeyDown="EditModInfo">Author: Edit text and press Enter</TextBox>
+                </StackPanel>
+                <ListBox x:Name="lstModInfo" SelectionChanged="DisplayModFileInfo" MouseDoubleClick="ToggleModFileActive" />
+                <ListBox x:Name="lstModAudioInfo" SelectionChanged="DisplayModAudioInfo" MouseDoubleClick="ToggleModFileActive" />
+            </StackPanel>
+        </ScrollViewer>
 
         <Label Grid.Row="0" Grid.Column="2">Mod File Information</Label>
         <ScrollViewer Grid.Row="1" Grid.Column="2">
@@ -58,7 +64,6 @@
                 <StackPanel x:Name="ModAudioFileStack" Visibility="Hidden">
                     <Button x:Name="btnPlayAudio" Click="PlayOgg">Play</Button>
                     <ListBox x:Name="lstModAudioFileInfo"/>
-                    <!-- TODO ADD DISPLAY AUTOMATICALLY ASSIGNED FMOD-->
                     <StackPanel>
                         <StackPanel x:Name="CandidateAudioStack1">
                             <TextBlock x:Name="CandidateAudioText1" MouseDown="ToggleAssignVanillaAudio"></TextBlock>
