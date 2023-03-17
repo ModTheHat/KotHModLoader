@@ -110,11 +110,12 @@ namespace KotHModLoaderGUI
 
         private string _modDir = @"..\Mods(new structure)";
         private static string _metaFile = @"\packmeta.json";
+        private string _extractedFolder = @"..\Extracted Assets";
         private DirectoryInfo _dirInfoMod;
         private DirectoryInfo[] _folders;
 
+        public string ExtractedFolder => _extractedFolder;
         public DirectoryInfo DirInfoMod => _dirInfoMod;
-
 
         private List<Mod> _modsList = new();
         public List<Mod> ModsList => _modsList;
@@ -153,11 +154,38 @@ namespace KotHModLoaderGUI
             }
 
             _dirInfoMod = new DirectoryInfo(_modDir);
+
+            //Initialise Extracted Assets folder
+            if (!Directory.Exists(_extractedFolder))
+            {
+                DirectoryInfo[] folders = rootInfo.GetDirectories(_extractedFolder, SearchOption.AllDirectories);
+                if (folders.Length == 0)
+                {
+                    FolderBrowserDialog d = new FolderBrowserDialog();
+                    d.Description = "Extracted assets folder not found." +
+                        " Choose where to put the Extracted assets folder.";
+                    d.SelectedPath = "";
+                    if (d.ShowDialog() == DialogResult.OK)
+                    {
+                        _extractedFolder = d.SelectedPath;
+                    }
+
+                    if (!Directory.Exists(_extractedFolder))
+                        Environment.Exit(1);
+
+                    if(!_extractedFolder.Contains("Extracted Assets"))
+                        Directory.CreateDirectory(_extractedFolder + "\\Extracted Assets");
+                }
+                else
+                {
+                    _extractedFolder = folders[0].FullName;
+                }
+            }
         }
 
 
-            //Go through all mods in mods folder and add them to manager mods list
-            public string[] BuildModsDatabase()
+        //Go through all mods in mods folder and add them to manager mods list
+        public string[] BuildModsDatabase()
         {
             _modsList.Clear();
             _folders = _dirInfoMod.GetDirectories("*");

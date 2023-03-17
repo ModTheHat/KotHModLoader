@@ -7,7 +7,11 @@ using System.Windows.Forms;
 using System.Windows.Media.Imaging;
 using AssetsTools.NET;
 using AssetsTools.NET.Extra;
+using AssetsTools.NET.Texture;
 using Newtonsoft.Json;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 using static KotHModLoaderGUI.ModManager;
 
 namespace KotHModLoaderGUI
@@ -237,7 +241,7 @@ namespace KotHModLoaderGUI
             Bitmap myBitmap = new Bitmap(file.FullName);
 
             byte[] rgba = new byte[4 * myBitmap.Width * myBitmap.Height];
-            Color pixelColor;
+            System.Drawing.Color pixelColor;
 
             for (int j = 0; j < myBitmap.Height; j++)
             {
@@ -308,6 +312,27 @@ namespace KotHModLoaderGUI
                 bitmapImage.Freeze();
 
                 return bitmapImage;
+            }
+        }
+
+        public void ExtractAssets(List<int> indexes = null)
+        {
+            int assetsQty = indexes == null ? _afilesValueFields.Count : indexes.Count; 
+            for(int i = 0; i < assetsQty; i++)
+            {
+                AssetTypeValueField field = indexes == null ? _afilesValueFields[i] : _afilesValueFields[indexes[i]];
+                {
+                    AssetTypeValueField textureBase = _afilesValueFields[indexes == null ? i : indexes[i]];
+
+                    TextureFile texture = TextureFile.ReadTextureFile(textureBase); // load base field into helper class
+                    byte[] textureBgraRaw = texture.GetTextureData(_afileInstVanilla); // get the raw bgra32 data
+                    if (textureBgraRaw != null)
+                    {
+                        SixLabors.ImageSharp.Image textureImage = SixLabors.ImageSharp.Image.LoadPixelData<Bgra32>(textureBgraRaw, texture.m_Width, texture.m_Height); // use imagesharp to convert to image
+                        textureImage.Mutate(i => i.Flip(FlipMode.Vertical)); // flip on x-axis (all textures in unity are stored flipped like this)
+                        textureImage.SaveAsPng(MainWindow.ModManager.ExtractedFolder + "\\" + field["m_Name"].AsString + "-" + i + ".png");
+                    }
+                }
             }
         }
     }

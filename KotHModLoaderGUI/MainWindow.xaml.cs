@@ -20,15 +20,18 @@ namespace KotHModLoaderGUI
     /// </summary>
     public partial class MainWindow : Window
     {
-        private AssetType _currentAssetDisplayed = AssetType.Resources;
         private FileInfo[] _displayedModFilesInfo;
         private FileInfo[] _displayedModAudioFilesInfo;
 
+        private AssetType _currentAssetDisplayed = AssetType.Resources;
+        private List<int> _displayedIndexes;
+
         private static ResourcesManager _resMgr = new ResourcesManager();
         private string[] _folders;
-        private ModManager _modManager = new ModManager();
+        private static ModManager _modManager = new ModManager();
         private static FMODManager _fmodManager = new FMODManager();
 
+        public static ModManager ModManager => _modManager;
         public static ResourcesManager ResMgr => _resMgr;
         public static FMODManager FMODManager => _fmodManager;
 
@@ -524,7 +527,6 @@ namespace KotHModLoaderGUI
             textBox.SelectAll();
         }
 
-        private List<int> _displayedIndexes;
         private void SearchEntry(object sender, System.Windows.Input.KeyEventArgs e)
         {
             System.Windows.Controls.TextBox textBox = (System.Windows.Controls.TextBox)sender;
@@ -809,6 +811,39 @@ namespace KotHModLoaderGUI
                 _resMgr.LoadManagers();
                 _modManager.BuildModsDatabase();
                 DisplaySelectedModInfo();
+            }
+        }
+
+        private void ExtractVanillaAssets(object sender, RoutedEventArgs e)
+        {
+            Button button = (Button)sender;
+
+            switch(button.Name)
+            {
+                case "btnExtractAll":
+                    _resMgr.ExtractAssets();
+                    break;
+                case "btnExtractListed":
+                    break;
+                case "btnExtractSelected":
+                    if(lstVanilla.SelectedIndex > -1)
+                    {
+                        switch(_currentAssetDisplayed)
+                        {
+                            case AssetType.Resources:
+                                List<int> list = new List<int>
+                                {
+                                    _displayedIndexes[lstVanilla.SelectedIndex]
+                                };
+                                _resMgr.ExtractAssets(list);
+                                break;
+                            case AssetType.FMOD:
+                                break;
+                            case AssetType.None:
+                                break;
+                        }
+                    }
+                    break;
             }
         }
     }
