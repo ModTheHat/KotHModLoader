@@ -166,15 +166,15 @@ namespace KotHModLoaderGUI
             {
                 FileInfo metaFile = mod.MetaFile;
                 dynamic modJson = LoadJson(metaFile.FullName);
+                List<string> disabled = (List<string>)modJson["DisabledModsOrFiles"].ToObject(typeof(List<string>));
 
-
-                if (!mod.Name.Contains(".disabled"))
+                if (!disabled.Contains("\\" + mod.Name))
                     foreach (FileInfo file in mod.TextureFiles)
                     {
                         var assigned = modJson["AssignedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
-                        var blacklisted = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
+                        var blacklisted = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name))];
 
-                        if (!file.Name.Contains(".disabled") && !_alreadyModded.Contains(file.Name))
+                        if (!disabled.Contains("\\" + file.FullName.Substring(file.FullName.IndexOf(mod.Name))) && !_alreadyModded.Contains(file.Name))
                         {
                             if (assigned != null)
                             {
