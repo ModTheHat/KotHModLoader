@@ -188,7 +188,7 @@ namespace KotHModLoaderGUI
                         int offset = data["offset"].AsInt;
                         int size = data["size"].AsInt;
                         string path = data["path"].AsString;
-
+                        
                         byte[] bytes = new byte[size];
                         for(int i = 0; i < size; i++)
                         {
