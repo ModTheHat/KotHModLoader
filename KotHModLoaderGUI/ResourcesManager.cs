@@ -21,6 +21,7 @@ namespace KotHModLoaderGUI
         string _resDir = @"..\KingOfTheHat_Data";
         string _resVanilla = "resources.assets.VANILLA";
         string _resNoFlavor = "resources.assets";
+        string _sharedResNoFlavor = "resources.assets.resS";
         string _classPackage = "lz4.tpk";
         private List<AssetTypeValueField> _unassignedTextureFiles = new List<AssetTypeValueField>();
 
@@ -29,6 +30,9 @@ namespace KotHModLoaderGUI
         private AssetsFile _afileVanilla;
         private List<AssetTypeValueField> _afilesValueFields = new List<AssetTypeValueField>();
 
+        private byte[] _ressData;
+
+        public byte[] RessData => _ressData;
         public AssetsFile AssetsFileVanilla => _afileVanilla;
         public List<AssetTypeValueField> AFilesValueFields => _afilesValueFields;
 
@@ -119,6 +123,7 @@ namespace KotHModLoaderGUI
         //Vanilla manager
         private void LoadVanillaManager()
         {
+            //resources.assets (encrypted, header)
             _assetsManagerVanilla = new AssetsManager();
             _assetsManagerVanilla.LoadClassPackage(_classPackage);
 
@@ -131,6 +136,13 @@ namespace KotHModLoaderGUI
             _afileVanilla = _afileInstVanilla.file;
 
             _assetsManagerVanilla.LoadClassDatabaseFromPackage(_afileVanilla.Metadata.UnityVersion);
+
+            //resources.assets.resS (unencrypted, no header)
+            if (File.Exists(_resDir + @"\" + _sharedResNoFlavor))
+            {
+                _ressData = File.ReadAllBytes(_resDir + @"\" + _sharedResNoFlavor);
+            }
+
         }
         private static dynamic LoadJson(string path)
         {
@@ -279,6 +291,8 @@ namespace KotHModLoaderGUI
         {
             Bitmap pic = new Bitmap(w, h, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
+            if (w * h * 4 != data.Length) return null;
+
             for (int y = 0; y < h; y++)
             {
                 for (int x = 0; x < w; x++)
@@ -330,7 +344,7 @@ namespace KotHModLoaderGUI
                     {
                         SixLabors.ImageSharp.Image textureImage = SixLabors.ImageSharp.Image.LoadPixelData<Bgra32>(textureBgraRaw, texture.m_Width, texture.m_Height); // use imagesharp to convert to image
                         textureImage.Mutate(i => i.Flip(FlipMode.Vertical)); // flip on x-axis (all textures in unity are stored flipped like this)
-                        textureImage.SaveAsPng(MainWindow.ModManager.ExtractedFolder + "\\" + field["m_Name"].AsString + "-" + i + ".png");
+                        textureImage.SaveAsPng(MainWindow.ModManager.ExtractedFolder + "\\" + field["m_Name"].AsString + "-" + (indexes == null ? i : indexes[i]) + ".png");
                     }
                 }
             }

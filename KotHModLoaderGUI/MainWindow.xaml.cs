@@ -2,6 +2,7 @@
 using Fmod5Sharp.FmodTypes;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -180,6 +181,23 @@ namespace KotHModLoaderGUI
                     {
                         Bitmap vanillaImage = _resMgr.GetDataPicture(infos["m_Width"].AsInt, infos["m_Height"].AsInt, infos["image data"].AsByteArray);
                         VanillaImageViewer.Source = _resMgr.ToBitmapImage(vanillaImage);
+                    }
+                    else if(infos["image data"].AsByteArray.Length == 0)
+                    {
+                        AssetTypeValueField data = infos["m_StreamData"];
+                        int offset = data["offset"].AsInt;
+                        int size = data["size"].AsInt;
+                        string path = data["path"].AsString;
+
+                        byte[] bytes = new byte[size];
+                        for(int i = 0; i < size; i++)
+                        {
+                            bytes[i] = _resMgr.RessData[offset + i];
+                        }
+
+                        Bitmap vanillaImage = _resMgr.GetDataPicture(infos["m_Width"].AsInt, infos["m_Height"].AsInt, bytes);
+                        if(vanillaImage != null)
+                            VanillaImageViewer.Source = _resMgr.ToBitmapImage(vanillaImage);
                     }
                     else
                         VanillaImageViewer.Source = null;
@@ -824,6 +842,16 @@ namespace KotHModLoaderGUI
                     _resMgr.ExtractAssets();
                     break;
                 case "btnExtractListed":
+                    switch (_currentAssetDisplayed)
+                    {
+                        case AssetType.Resources:
+                            _resMgr.ExtractAssets(_displayedIndexes);
+                            break;
+                        case AssetType.FMOD:
+                            break;
+                        case AssetType.None:
+                            break;
+                    }
                     break;
                 case "btnExtractSelected":
                     if(lstVanilla.SelectedIndex > -1)
@@ -833,7 +861,7 @@ namespace KotHModLoaderGUI
                             case AssetType.Resources:
                                 List<int> list = new List<int>
                                 {
-                                    _displayedIndexes[lstVanilla.SelectedIndex]
+                                    _displayedIndexes != null ? _displayedIndexes[lstVanilla.SelectedIndex] : lstVanilla.SelectedIndex
                                 };
                                 _resMgr.ExtractAssets(list);
                                 break;

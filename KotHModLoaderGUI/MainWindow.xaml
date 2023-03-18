@@ -83,7 +83,7 @@
             <StackPanel Orientation="Horizontal">
                 <Button x:Name="btnExtractAll" Width="60" Click="ExtractVanillaAssets">Extract All</Button>
                 <Button x:Name="btnExtractListed" Width="100" Click="ExtractVanillaAssets">Extract Listed</Button>
-                <Button x:Name="btnExtractSelected" Width="90" Click="ExtractVanillaAssets"> Extract Selected</Button>
+                <Button x:Name="btnExtractSelected" Width="90" Click="ExtractVanillaAssets">Extract Selected</Button>
             </StackPanel>
             <TextBox x:Name="search" Text="Search in vanilla assets" Focusable="True" GotMouseCapture="SelectAllText" KeyDown="SearchEntry" />
         </StackPanel>
