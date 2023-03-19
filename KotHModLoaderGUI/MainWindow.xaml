@@ -102,7 +102,7 @@
         <StackPanel Grid.Row="4" Grid.Column="1" Margin="4" ScrollViewer.CanContentScroll="True">
             <TextBlock Grid.Row="4" Grid.Column="1" x:Name="textAssetInfo" Cursor="Arrow" Text="{Binding Text}" ScrollViewer.VerticalScrollBarVisibility="Auto" TextWrapping="WrapWithOverflow"></TextBlock>
         </StackPanel>
-        <StackPanel Grid.Row="5" Grid.Column="2">
+        <StackPanel Grid.Row="5" Grid.Column="2" Background="Gray">
             <Image x:Name="VanillaImageViewer" MaxHeight="200" Height="Auto" Width="Auto"/>
         </StackPanel>
 

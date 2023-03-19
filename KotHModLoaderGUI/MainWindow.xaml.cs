@@ -1,4 +1,5 @@
 ﻿using AssetsTools.NET;
+using AssetsTools.NET.Texture;
 using Fmod5Sharp.FmodTypes;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -195,7 +196,8 @@ namespace KotHModLoaderGUI
                             bytes[i] = _resMgr.RessData[offset + i];
                         }
 
-                        Bitmap vanillaImage = _resMgr.GetDataPicture(infos["m_Width"].AsInt, infos["m_Height"].AsInt, bytes);
+                        byte[] decoded = TextureFile.DecodeManaged(bytes, (TextureFormat)(infos["m_TextureFormat"].AsInt), infos["m_Width"].AsInt, infos["m_Height"].AsInt);
+                        Bitmap vanillaImage = _resMgr.GetDataPicture(infos["m_Width"].AsInt, infos["m_Height"].AsInt, decoded);
                         if(vanillaImage != null)
                             VanillaImageViewer.Source = _resMgr.ToBitmapImage(vanillaImage);
                     }
@@ -299,8 +301,9 @@ namespace KotHModLoaderGUI
                         {
                             bytes[b] = _resMgr.RessData[offset + b];
                         }
+                        byte[] decoded = TextureFile.DecodeManaged(bytes, (TextureFormat)(values["m_TextureFormat"].AsInt), values["m_Width"].AsInt, values["m_Height"].AsInt);
 
-                        vanillaImage = _resMgr.GetDataPicture(values["m_Width"].AsInt, values["m_Height"].AsInt, bytes);                        
+                        vanillaImage = _resMgr.GetDataPicture(values["m_Width"].AsInt, values["m_Height"].AsInt, decoded);                        
                     }
                     else if (values["image data"].AsByteArray.Length > 0 && values["m_Width"].AsInt * values["m_Height"].AsInt * 4 == values["image data"].AsByteArray.Length)
                     {

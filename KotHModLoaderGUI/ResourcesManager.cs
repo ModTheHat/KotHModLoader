@@ -289,9 +289,10 @@ namespace KotHModLoaderGUI
 
         public Bitmap GetDataPicture(int w, int h, byte[] data)
         {
-            Bitmap pic = new Bitmap(w, h, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
+            if (data == null) return null;
             if (w * h * 4 != data.Length) return null;
+
+            Bitmap pic = new Bitmap(w, h, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
             for (int y = 0; y < h; y++)
             {
