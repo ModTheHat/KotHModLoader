@@ -284,38 +284,91 @@ namespace KotHModLoaderGUI
                 for (int i = 0; i < candidates.Count; i++)
                 {
                     AssetTypeValueField values = candidates[i].values;
-                    if (values["image data"].AsByteArray.Length > 0 && values["m_Width"].AsInt * values["m_Height"].AsInt * 4 == values["image data"].AsByteArray.Length)
+
+                    Bitmap vanillaImage = null;
+
+                    if (values["image data"].AsByteArray.Length == 0)
                     {
-                        Bitmap vanillaImage = _resMgr.GetDataPicture(values["m_Width"].AsInt, values["m_Height"].AsInt, values["image data"].AsByteArray);
-                        if (candidateQty == 0)
+                        AssetTypeValueField data = values["m_StreamData"];
+                        int offset = data["offset"].AsInt;
+                        int size = data["size"].AsInt;
+                        string path = data["path"].AsString;
+
+                        byte[] bytes = new byte[size];
+                        for (int b = 0; b < size; b++)
                         {
-                            CandidateImageViewer1.Source = _resMgr.ToBitmapImage(vanillaImage);
-                            var blacklistedAsset = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
-                            if (blacklistedAsset != null)
-                            {
-                                if (blacklistedAsset[values["m_Name"].AsString + "-" + candidates[i].index] != null)
-                                {
-                                    VanillaImageStack1.Opacity = 0.3;
-                                    VanillaImageStack1.Background = new SolidColorBrush(Colors.Black);
-                                }
-                            }
+                            bytes[b] = _resMgr.RessData[offset + b];
                         }
-                        else
-                        {
-                            CandidateImageViewer2.Source = _resMgr.ToBitmapImage(vanillaImage);
-                            var blacklistedAsset = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
-                            if (blacklistedAsset != null)
-                            {
-                                if (blacklistedAsset[values["m_Name"].AsString + "-" + candidates[i].index] != null)
-                                {
-                                    VanillaImageStack2.Opacity = 0.3;
-                                    VanillaImageStack2.Background = new SolidColorBrush(Colors.Black);
-                                }
-                            }
-                        }
-                        candidateQty++;
-                        VanillaImageLabel.Content = "Vanilla files that will be replaced. Click image to toggle between greyed out and normal. Greyed out images won't be replaced by mod asset file.";
+
+                        vanillaImage = _resMgr.GetDataPicture(values["m_Width"].AsInt, values["m_Height"].AsInt, bytes);                        
                     }
+                    else if (values["image data"].AsByteArray.Length > 0 && values["m_Width"].AsInt * values["m_Height"].AsInt * 4 == values["image data"].AsByteArray.Length)
+                    {
+                        vanillaImage = _resMgr.GetDataPicture(values["m_Width"].AsInt, values["m_Height"].AsInt, values["image data"].AsByteArray);
+                    }
+
+                    if (candidateQty == 0)
+                    {
+                        CandidateImageViewer1.Source = _resMgr.ToBitmapImage(vanillaImage);
+                        var blacklistedAsset = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
+                        if (blacklistedAsset != null)
+                        {
+                            if (blacklistedAsset[values["m_Name"].AsString + "-" + candidates[i].index] != null)
+                            {
+                                VanillaImageStack1.Opacity = 0.3;
+                                VanillaImageStack1.Background = new SolidColorBrush(Colors.Black);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        CandidateImageViewer2.Source = _resMgr.ToBitmapImage(vanillaImage);
+                        var blacklistedAsset = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
+                        if (blacklistedAsset != null)
+                        {
+                            if (blacklistedAsset[values["m_Name"].AsString + "-" + candidates[i].index] != null)
+                            {
+                                VanillaImageStack2.Opacity = 0.3;
+                                VanillaImageStack2.Background = new SolidColorBrush(Colors.Black);
+                            }
+                        }
+                    }
+                    candidateQty++;
+                    VanillaImageLabel.Content = "Vanilla files that will be replaced. Click image to toggle between greyed out and normal. Greyed out images won't be replaced by mod asset file.";
+
+
+                    //if (values["image data"].AsByteArray.Length > 0 && values["m_Width"].AsInt * values["m_Height"].AsInt * 4 == values["image data"].AsByteArray.Length)
+                    //{
+                    //    Bitmap vanillaImage = _resMgr.GetDataPicture(values["m_Width"].AsInt, values["m_Height"].AsInt, values["image data"].AsByteArray);
+                    //    if (candidateQty == 0)
+                    //    {
+                    //        CandidateImageViewer1.Source = _resMgr.ToBitmapImage(vanillaImage);
+                    //        var blacklistedAsset = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
+                    //        if (blacklistedAsset != null)
+                    //        {
+                    //            if (blacklistedAsset[values["m_Name"].AsString + "-" + candidates[i].index] != null)
+                    //            {
+                    //                VanillaImageStack1.Opacity = 0.3;
+                    //                VanillaImageStack1.Background = new SolidColorBrush(Colors.Black);
+                    //            }
+                    //        }
+                    //    }
+                    //    else
+                    //    {
+                    //        CandidateImageViewer2.Source = _resMgr.ToBitmapImage(vanillaImage);
+                    //        var blacklistedAsset = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
+                    //        if (blacklistedAsset != null)
+                    //        {
+                    //            if (blacklistedAsset[values["m_Name"].AsString + "-" + candidates[i].index] != null)
+                    //            {
+                    //                VanillaImageStack2.Opacity = 0.3;
+                    //                VanillaImageStack2.Background = new SolidColorBrush(Colors.Black);
+                    //            }
+                    //        }
+                    //    }
+                    //    candidateQty++;
+                    //    VanillaImageLabel.Content = "Vanilla files that will be replaced. Click image to toggle between greyed out and normal. Greyed out images won't be replaced by mod asset file.";
+                    //}
                 }
 
                 using (FileStream fs = new FileStream(file.FullName, FileMode.Open))
