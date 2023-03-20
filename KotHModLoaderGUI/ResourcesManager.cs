@@ -154,6 +154,8 @@ namespace KotHModLoaderGUI
             _alreadyModded = new List<string>();
 
             //byte array for new .resS file
+            _resSData = new byte[0];
+
             //list of index to be replaced, byte array for changes from mod files
 
             foreach (var mod in mods)
@@ -184,6 +186,8 @@ namespace KotHModLoaderGUI
                     }
             }
 
+            File.WriteAllBytes(_resDir + @"\resources.assets.modded.resS", _resSData);
+
             var writer = new AssetsFileWriter(_resDir + @"\" + _resNoFlavor);
             _afileVanilla.Write(writer, 0, _replacers);
             writer.Close();
@@ -191,6 +195,7 @@ namespace KotHModLoaderGUI
             return _replacers.Count + " vanilla textures replaced.";
         }
 
+        byte[] _resSData;
         private bool ModVanillaTextureFromFileName(string filename, byte[] dataImage)
         {
             bool replaced = false;
@@ -201,11 +206,29 @@ namespace KotHModLoaderGUI
 
                 if(filename.Contains(name))
                 {
-                    AssetTypeValue value = new AssetTypeValue(dataImage, false);
-
-                    if (goBaseVanilla["m_CompleteImageSize"].AsInt == dataImage.Length)
+                    if (goBaseVanilla["image data"].AsByteArray.Length > 0)
                     {
-                        goBaseVanilla["image data"].Value = value;
+                        AssetTypeValue value = new AssetTypeValue(dataImage, false);
+
+                        if (goBaseVanilla["m_CompleteImageSize"].AsInt == dataImage.Length)
+                        {
+                            goBaseVanilla["image data"].Value = value;
+
+                            AssetsReplacerFromMemory replacer = new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla);
+                            _replacers.Add(replacer);
+                            replaced = true;
+                        }
+                    }
+                    else
+                    {
+                        dynamic stream = goBaseVanilla["m_StreamData"];
+                        stream["path"].Value = new AssetTypeValue("resources.assets.modded.resS");
+                        stream["offset"].Value = new AssetTypeValue(_resSData.Length);
+                        stream["size"].Value = new AssetTypeValue(dataImage.Length / 4);
+                        goBaseVanilla["m_StreamData"].Value = new AssetTypeValue(AssetValueType.Array, stream);
+
+                        Array.Resize(ref _resSData, _resSData.Length + dataImage.Length);
+                        System.Buffer.BlockCopy(dataImage, 0, _resSData, _resSData.Length - dataImage.Length, dataImage.Length);
 
                         AssetsReplacerFromMemory replacer = new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla);
                         _replacers.Add(replacer);
@@ -216,7 +239,13 @@ namespace KotHModLoaderGUI
             return replaced;
         }
 
-        public List<string> GetVanillaAssets()
+        private bool ModVanillaTextureFromResSPath(string filename, byte[] dataImage)
+        {
+            bool replaced = false;
+            return replaced;
+        }
+
+            public List<string> GetVanillaAssets()
         {
             LoadVanillaManager();
 
@@ -301,8 +330,15 @@ namespace KotHModLoaderGUI
 
         public void ExtractAssets(List<int> indexes = null)
         {
-            int assetsQty = indexes == null ? _afilesValueFields.Count : indexes.Count; 
-            for(int i = 0; i < assetsQty; i++)
+            int assetsQty = indexes == null ? _afilesValueFields.Count : indexes.Count;
+
+            if (Directory.Exists(MainWindow.ModManager.ExtractedFolder))
+                if (!Directory.Exists(MainWindow.ModManager.ExtractedFolder + @"\Textures"))
+                    Directory.CreateDirectory(MainWindow.ModManager.ExtractedFolder + @"\Textures");
+            else
+                Directory.CreateDirectory(MainWindow.ModManager.ExtractedFolder + @"\Textures");
+
+            for (int i = 0; i < assetsQty; i++)
             {
                 AssetTypeValueField field = indexes == null ? _afilesValueFields[i] : _afilesValueFields[indexes[i]];
                 {
@@ -314,7 +350,7 @@ namespace KotHModLoaderGUI
                     {
                         SixLabors.ImageSharp.Image textureImage = SixLabors.ImageSharp.Image.LoadPixelData<Bgra32>(textureBgraRaw, texture.m_Width, texture.m_Height); // use imagesharp to convert to image
                         textureImage.Mutate(i => i.Flip(FlipMode.Vertical)); // flip on x-axis (all textures in unity are stored flipped like this)
-                        textureImage.SaveAsPng(MainWindow.ModManager.ExtractedFolder + "\\" + field["m_Name"].AsString + "-" + (indexes == null ? i : indexes[i]) + ".png");
+                        textureImage.SaveAsPng(MainWindow.ModManager.ExtractedFolder + @"\Textures" + "\\" + field["m_Name"].AsString + "-" + (indexes == null ? i : indexes[i]) + ".png");
                     }
                 }
             }
