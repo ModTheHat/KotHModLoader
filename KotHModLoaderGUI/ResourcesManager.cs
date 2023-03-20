@@ -153,6 +153,9 @@ namespace KotHModLoaderGUI
             _replacers = new List<AssetsReplacer>();
             _alreadyModded = new List<string>();
 
+            //byte array for new .resS file
+            //list of index to be replaced, byte array for changes from mod files
+
             foreach (var mod in mods)
             {
                 FileInfo metaFile = mod.MetaFile;
