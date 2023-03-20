@@ -21,7 +21,6 @@ namespace KotHModLoaderGUI
         string _resDir = @"..\KingOfTheHat_Data";
         string _resVanilla = "resources.assets.VANILLA";
         string _resNoFlavor = "resources.assets";
-        string _sharedResNoFlavor = "resources.assets.resS";
         string _classPackage = "lz4.tpk";
         private List<AssetTypeValueField> _unassignedTextureFiles = new List<AssetTypeValueField>();
 
@@ -30,9 +29,7 @@ namespace KotHModLoaderGUI
         private AssetsFile _afileVanilla;
         private List<AssetTypeValueField> _afilesValueFields = new List<AssetTypeValueField>();
 
-        private byte[] _ressData;
-
-        public byte[] RessData => _ressData;
+        public AssetsFileInstance AssetsFileInstanceVanilla => _afileInstVanilla;
         public AssetsFile AssetsFileVanilla => _afileVanilla;
         public List<AssetTypeValueField> AFilesValueFields => _afilesValueFields;
 
@@ -136,14 +133,8 @@ namespace KotHModLoaderGUI
             _afileVanilla = _afileInstVanilla.file;
 
             _assetsManagerVanilla.LoadClassDatabaseFromPackage(_afileVanilla.Metadata.UnityVersion);
-
-            //resources.assets.resS (unencrypted, no header)
-            if (File.Exists(_resDir + @"\" + _sharedResNoFlavor))
-            {
-                _ressData = File.ReadAllBytes(_resDir + @"\" + _sharedResNoFlavor);
-            }
-
         }
+        
         private static dynamic LoadJson(string path)
         {
             using (StreamReader r = new StreamReader(path))
@@ -271,47 +262,22 @@ namespace KotHModLoaderGUI
 
             return rgba;
         }
-        public AssetTypeValueField GetVanillaDataImage(string assetName)
-        {
-            foreach (var goInfo in _afileVanilla.GetAssetsOfType(AssetClassID.Texture2D))
-            {
-                var goBaseVanilla = _assetsManagerVanilla.GetBaseField(_afileInstVanilla, goInfo);
-                var name = goBaseVanilla["m_Name"].AsString;
 
-                if (name == assetName)
-                {
-                    return goBaseVanilla;
-                }
+        public Image<Bgra32> GetTextureFromField(AssetTypeValueField field)
+        {
+            Image<Bgra32> textureImage = null;
+
+            TextureFile texture = TextureFile.ReadTextureFile(field); // load base field into helper class
+            byte[] textureBgraRaw = texture.GetTextureData(_afileInstVanilla); // get the raw bgra32 data
+            if (textureBgraRaw != null)
+            {
+                textureImage = SixLabors.ImageSharp.Image.LoadPixelData<Bgra32>(textureBgraRaw, texture.m_Width, texture.m_Height); // use imagesharp to convert to image
+                textureImage.Mutate(i => i.Flip(FlipMode.Vertical)); // flip on x-axis (all textures in unity are stored flipped like this)
             }
 
-            return null;
+            return textureImage;
         }
 
-        public Bitmap GetDataPicture(int w, int h, byte[] data)
-        {
-            if (data == null) return null;
-            if (w * h * 4 != data.Length) return null;
-
-            Bitmap pic = new Bitmap(w, h, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-            for (int y = 0; y < h; y++)
-            {
-                for (int x = 0; x < w; x++)
-                {
-                    int arrayIndex = (y * w + x) * 4;
-                    System.Drawing.Color c = System.Drawing.Color.FromArgb(
-                       data[arrayIndex + 3],
-                       data[arrayIndex],
-                       data[arrayIndex + 1],
-                       data[arrayIndex + 2]
-                    );
-                    pic.SetPixel(x, h - 1 - y, c);
-                }
-            }
-
-            return pic;
-        }
-        
         public BitmapImage ToBitmapImage(Bitmap bitmap)
         {
             using (var memory = new MemoryStream())

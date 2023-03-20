@@ -1,18 +1,17 @@
 ﻿using AssetsTools.NET;
-using AssetsTools.NET.Texture;
 using Fmod5Sharp.FmodTypes;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Vurdalakov;
 using static KotHModLoaderGUI.ModManager;
 
 namespace KotHModLoaderGUI
@@ -178,31 +177,9 @@ namespace KotHModLoaderGUI
                         textAssetInfo.Text += "\n";
                     }
 
-                    if (infos["image data"].AsByteArray.Length > 0 && infos["m_Width"].AsInt * infos["m_Height"].AsInt * 4 == infos["image data"].AsByteArray.Length)
-                    {
-                        Bitmap vanillaImage = _resMgr.GetDataPicture(infos["m_Width"].AsInt, infos["m_Height"].AsInt, infos["image data"].AsByteArray);
-                        VanillaImageViewer.Source = _resMgr.ToBitmapImage(vanillaImage);
-                    }
-                    else if(infos["image data"].AsByteArray.Length == 0)
-                    {
-                        AssetTypeValueField data = infos["m_StreamData"];
-                        int offset = data["offset"].AsInt;
-                        int size = data["size"].AsInt;
-                        string path = data["path"].AsString;
-                        
-                        byte[] bytes = new byte[size];
-                        for(int i = 0; i < size; i++)
-                        {
-                            bytes[i] = _resMgr.RessData[offset + i];
-                        }
-
-                        byte[] decoded = TextureFile.DecodeManaged(bytes, (TextureFormat)(infos["m_TextureFormat"].AsInt), infos["m_Width"].AsInt, infos["m_Height"].AsInt);
-                        Bitmap vanillaImage = _resMgr.GetDataPicture(infos["m_Width"].AsInt, infos["m_Height"].AsInt, decoded);
-                        if(vanillaImage != null)
-                            VanillaImageViewer.Source = _resMgr.ToBitmapImage(vanillaImage);
-                    }
-                    else
-                        VanillaImageViewer.Source = null;
+                    Image<Bgra32> textureImage = _resMgr.GetTextureFromField(infos);
+                    ImageSource imageSource = textureImage != null ? _resMgr.ToBitmapImage(ImageSharpExtensions.ToBitmap(textureImage)) : null;
+                    VanillaImageViewer.Source = imageSource;
                     break;
                 case AssetType.FMOD:
                     index = _displayedIndexes != null ? _displayedIndexes[lstBox.SelectedIndex] : lstBox.SelectedIndex;
@@ -287,32 +264,12 @@ namespace KotHModLoaderGUI
                 {
                     AssetTypeValueField values = candidates[i].values;
 
-                    Bitmap vanillaImage = null;
-
-                    if (values["image data"].AsByteArray.Length == 0)
-                    {
-                        AssetTypeValueField data = values["m_StreamData"];
-                        int offset = data["offset"].AsInt;
-                        int size = data["size"].AsInt;
-                        string path = data["path"].AsString;
-
-                        byte[] bytes = new byte[size];
-                        for (int b = 0; b < size; b++)
-                        {
-                            bytes[b] = _resMgr.RessData[offset + b];
-                        }
-                        byte[] decoded = TextureFile.DecodeManaged(bytes, (TextureFormat)(values["m_TextureFormat"].AsInt), values["m_Width"].AsInt, values["m_Height"].AsInt);
-
-                        vanillaImage = _resMgr.GetDataPicture(values["m_Width"].AsInt, values["m_Height"].AsInt, decoded);                        
-                    }
-                    else if (values["image data"].AsByteArray.Length > 0 && values["m_Width"].AsInt * values["m_Height"].AsInt * 4 == values["image data"].AsByteArray.Length)
-                    {
-                        vanillaImage = _resMgr.GetDataPicture(values["m_Width"].AsInt, values["m_Height"].AsInt, values["image data"].AsByteArray);
-                    }
+                    Image<Bgra32> textureImage = _resMgr.GetTextureFromField(values);
+                    ImageSource imageSource = textureImage != null ? _resMgr.ToBitmapImage(ImageSharpExtensions.ToBitmap(textureImage)) : null;
 
                     if (candidateQty == 0)
                     {
-                        CandidateImageViewer1.Source = _resMgr.ToBitmapImage(vanillaImage);
+                        CandidateImageViewer1.Source = imageSource;
                         var blacklistedAsset = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
                         if (blacklistedAsset != null)
                         {
@@ -325,7 +282,7 @@ namespace KotHModLoaderGUI
                     }
                     else
                     {
-                        CandidateImageViewer2.Source = _resMgr.ToBitmapImage(vanillaImage);
+                        CandidateImageViewer2.Source = imageSource;
                         var blacklistedAsset = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
                         if (blacklistedAsset != null)
                         {
@@ -338,40 +295,6 @@ namespace KotHModLoaderGUI
                     }
                     candidateQty++;
                     VanillaImageLabel.Content = "Vanilla files that will be replaced. Click image to toggle between greyed out and normal. Greyed out images won't be replaced by mod asset file.";
-
-
-                    //if (values["image data"].AsByteArray.Length > 0 && values["m_Width"].AsInt * values["m_Height"].AsInt * 4 == values["image data"].AsByteArray.Length)
-                    //{
-                    //    Bitmap vanillaImage = _resMgr.GetDataPicture(values["m_Width"].AsInt, values["m_Height"].AsInt, values["image data"].AsByteArray);
-                    //    if (candidateQty == 0)
-                    //    {
-                    //        CandidateImageViewer1.Source = _resMgr.ToBitmapImage(vanillaImage);
-                    //        var blacklistedAsset = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
-                    //        if (blacklistedAsset != null)
-                    //        {
-                    //            if (blacklistedAsset[values["m_Name"].AsString + "-" + candidates[i].index] != null)
-                    //            {
-                    //                VanillaImageStack1.Opacity = 0.3;
-                    //                VanillaImageStack1.Background = new SolidColorBrush(Colors.Black);
-                    //            }
-                    //        }
-                    //    }
-                    //    else
-                    //    {
-                    //        CandidateImageViewer2.Source = _resMgr.ToBitmapImage(vanillaImage);
-                    //        var blacklistedAsset = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
-                    //        if (blacklistedAsset != null)
-                    //        {
-                    //            if (blacklistedAsset[values["m_Name"].AsString + "-" + candidates[i].index] != null)
-                    //            {
-                    //                VanillaImageStack2.Opacity = 0.3;
-                    //                VanillaImageStack2.Background = new SolidColorBrush(Colors.Black);
-                    //            }
-                    //        }
-                    //    }
-                    //    candidateQty++;
-                    //    VanillaImageLabel.Content = "Vanilla files that will be replaced. Click image to toggle between greyed out and normal. Greyed out images won't be replaced by mod asset file.";
-                    //}
                 }
 
                 using (FileStream fs = new FileStream(file.FullName, FileMode.Open))
@@ -392,17 +315,13 @@ namespace KotHModLoaderGUI
                     string vanillaName = modJson["AssignedVanillaAssets"]["\\" + fileName]["name"];
                     string path = modJson["AssignedVanillaAssets"]["\\" + fileName]["path"];
 
-                    //get assigned file AssetTypeValueField
                     if (ind > 0 && path != null)
                     {
                         AssetTypeValueField assignedValues = _resMgr.GetAssetInfo(ind);
-                        //create Bitmap from assigned values with GetDataPicture
-                        if (assignedValues["image data"].AsByteArray.Length > 0)
-                        {
-                            Bitmap assignedBitmap = _resMgr.GetDataPicture(assignedValues["m_Width"].AsInt, assignedValues["m_Height"].AsInt, assignedValues["image data"].AsByteArray);
-                            //assign viewer.source with ToBitmapImage
-                            AssignedImageViewer1.Source = _resMgr.ToBitmapImage(assignedBitmap);
-                        }
+
+                        Image<Bgra32> textureImage = _resMgr.GetTextureFromField(assignedValues);
+                        ImageSource imageSource = textureImage != null ? _resMgr.ToBitmapImage(ImageSharpExtensions.ToBitmap(textureImage)) : null;
+                        AssignedImageViewer1.Source = imageSource;
                     }
                 }
 
