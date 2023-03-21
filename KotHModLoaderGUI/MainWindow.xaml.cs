@@ -275,6 +275,7 @@ namespace KotHModLoaderGUI
                         {
                             if (blacklistedAsset[values["m_Name"].AsString + "-" + candidates[i].index] != null)
                             {
+                                //if (values["image data"].AsByteArray == blacklistedAsset[values["m_Name"].AsString + "-" + candidates[i].index][""])
                                 VanillaImageStack1.Opacity = 0.3;
                                 VanillaImageStack1.Background = new SolidColorBrush(Colors.Black);
                             }
@@ -382,6 +383,8 @@ namespace KotHModLoaderGUI
             blacklisted.index = modFile.VanillaCandidates[image.Name.Contains("1") ? 0 : 1].index;
             blacklisted.name = vanillaFile["m_Name"].AsString;
             blacklisted.path = modFile.File.FullName.Substring(modFile.File.FullName.IndexOf(selectedMod.Name) + selectedMod.Name.Length);
+            blacklisted.size = vanillaFile["m_CompleteImageSize"].AsInt;
+            blacklisted.bytes = vanillaFile["image data"].AsByteArray;
 
             if (image.Name == "CandidateImageViewer1")
             {

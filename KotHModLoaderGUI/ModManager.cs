@@ -45,6 +45,8 @@ namespace KotHModLoaderGUI
         public int index { get; set; }
         public string name { get; set; }
         public string path { get; set; }
+        public int size { get; set; }
+        public byte[] bytes { get; set; }
     }
 
     public struct VanillaTextureAssetCandidate

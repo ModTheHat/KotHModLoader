@@ -127,8 +127,6 @@ namespace KotHModLoaderGUI
             if (!File.Exists(_resDir + @"\" + _resVanilla))
                 File.Copy(_resDir + @"\" + _resNoFlavor, _resDir + @"\" + _resVanilla);
 
-            File.Delete(_resDir + @"\" + _resNoFlavor);
-
             _afileInstVanilla = _assetsManagerVanilla.LoadAssetsFile(_resDir + @"\" + _resVanilla, true);
             _afileVanilla = _afileInstVanilla.file;
 
@@ -168,7 +166,7 @@ namespace KotHModLoaderGUI
                     foreach (FileInfo file in mod.TextureFiles)
                     {
                         var assigned = modJson["AssignedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
-                        var blacklisted = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name))];
+                        var blacklisted = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
 
                         if (!disabled.Contains("\\" + file.FullName.Substring(file.FullName.IndexOf(mod.Name))) && !_alreadyModded.Contains(file.Name))
                         {
@@ -332,11 +330,11 @@ namespace KotHModLoaderGUI
         {
             int assetsQty = indexes == null ? _afilesValueFields.Count : indexes.Count;
 
-            if (Directory.Exists(MainWindow.ModManager.ExtractedFolder))
-                if (!Directory.Exists(MainWindow.ModManager.ExtractedFolder + @"\Textures"))
-                    Directory.CreateDirectory(MainWindow.ModManager.ExtractedFolder + @"\Textures");
+            if (Directory.Exists("..\\Extracted Assets"))
+                if (!Directory.Exists("..\\Extracted Assets\\Textures"))
+                    Directory.CreateDirectory("..\\Extracted Assets\\Textures");
             else
-                Directory.CreateDirectory(MainWindow.ModManager.ExtractedFolder + @"\Textures");
+                Directory.CreateDirectory("..\\Extracted Assets\\Textures");
 
             for (int i = 0; i < assetsQty; i++)
             {
@@ -350,7 +348,7 @@ namespace KotHModLoaderGUI
                     {
                         SixLabors.ImageSharp.Image textureImage = SixLabors.ImageSharp.Image.LoadPixelData<Bgra32>(textureBgraRaw, texture.m_Width, texture.m_Height); // use imagesharp to convert to image
                         textureImage.Mutate(i => i.Flip(FlipMode.Vertical)); // flip on x-axis (all textures in unity are stored flipped like this)
-                        textureImage.SaveAsPng(MainWindow.ModManager.ExtractedFolder + @"\Textures" + "\\" + field["m_Name"].AsString + "-" + (indexes == null ? i : indexes[i]) + ".png");
+                        textureImage.SaveAsPng("..\\Extracted Assets\\Textures" + "\\" + field["m_Name"].AsString + "-" + (indexes == null ? i : indexes[i]) + ".png");
                     }
                 }
             }
