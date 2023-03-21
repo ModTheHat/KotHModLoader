@@ -108,7 +108,7 @@ namespace KotHModLoaderGUI
             }
         }
 
-        private string _modDir = @"..\Mods(new structure)";
+        private string _modDir = @"..\Mods";
         private static string _metaFile = @"\packmeta.json";
         private string _extractedFolder = @"..\Extracted Assets";
         private DirectoryInfo _dirInfoMod;
@@ -131,7 +131,7 @@ namespace KotHModLoaderGUI
             //Initialise KingOfTheHat_Data folder
             if (!Directory.Exists(_modDir))
             {
-                DirectoryInfo[] folders = rootInfo.GetDirectories("Mods(new structure)", SearchOption.AllDirectories);
+                DirectoryInfo[] folders = rootInfo.GetDirectories("Mods", SearchOption.AllDirectories);
                 if (folders.Length == 0)
                 {
                     FolderBrowserDialog d = new FolderBrowserDialog();
