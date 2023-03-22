@@ -1,4 +1,5 @@
 ﻿using AssetsTools.NET;
+using AssetsTools.NET.Texture;
 using Fmod5Sharp.FmodTypes;
 using Microsoft.VisualBasic;
 using Newtonsoft.Json;
@@ -264,11 +265,37 @@ namespace KotHModLoaderGUI
 
                 CloseModFilesUI(AssetType.Resources);
 
+                //dynamic stream = vanillaFile["m_StreamData"];
+                //string path = stream["path"].AsString;
+                //int offset = stream["offset"].AsInt;
+                //int size = stream["size"].AsInt;
+                //byte[] resSBytes = null;
+
+                //if (size > 0)
+                //{
+                //    byte[] resSFile = File.ReadAllBytes("..\\KingOfTheHat_Data\\" + path);
+
+                //    resSBytes = new byte[size];
+                //    Buffer.BlockCopy(resSFile, offset, resSBytes, 0, size);
+                //}
+
                 int candidateQty = 0;
                 List<VanillaTextureAssetCandidate> candidates = modFile.VanillaCandidates;
                 for (int i = 0; i < candidates.Count; i++)
                 {
                     AssetTypeValueField values = candidates[i].values;
+                    dynamic stream = values["m_StreamData"];
+                    string path = stream["path"].AsString;
+                    int offset = stream["offset"].AsInt;
+                    int size = stream["size"].AsInt;
+                    byte[] resSBytes = null;
+                    if (size > 0)
+                    {
+                        byte[] resSFile = File.ReadAllBytes("..\\KingOfTheHat_Data\\" + path);
+                        ////RENDU LA
+                        resSBytes = new byte[size];
+                        Buffer.BlockCopy(resSFile, offset, resSBytes, 0, size);
+                    }
                     string str = Encoding.UTF8.GetString(values["image data"].AsByteArray);
                     bool contains = strings.Contains(str);
 
@@ -377,6 +404,29 @@ namespace KotHModLoaderGUI
             ModFile modFile = selectedMod.ModFiles[lstModInfo.SelectedIndex];
 
             AssetTypeValueField vanillaFile = modFile.VanillaCandidates[image.Name.Contains("1") ? 0 : 1].values;
+            
+            dynamic stream = vanillaFile["m_StreamData"];
+            string path = stream["path"].AsString;
+            int offset = stream["offset"].AsInt;
+            int size = stream["size"].AsInt;
+            byte[] resSBytes = null;
+
+            if (size > 0)
+            {
+                byte[] resSFile = File.ReadAllBytes("..\\KingOfTheHat_Data\\" + path);
+
+                resSBytes = new byte[size];
+                Buffer.BlockCopy(resSFile, offset, resSBytes, 0, size);
+            }
+
+            byte[] bytes = null;
+
+            if (vanillaFile["image data"].AsByteArray.Length > 0)
+                bytes = vanillaFile["image data"].AsByteArray;
+            else
+            {
+                bytes = resSBytes;
+            }
 
             if (image.Name == "CandidateImageViewer1")
             {
@@ -385,15 +435,14 @@ namespace KotHModLoaderGUI
                     VanillaImageStack1.Opacity = 1;
                     VanillaImageStack1.Background = null;
 
-                    _modManager.WriteToMetaFile(selectedMod.MetaFile, Encoding.UTF8.GetString(vanillaFile["image data"].AsByteArray), true);
+                    _modManager.WriteToMetaFile(selectedMod.MetaFile, Encoding.UTF8.GetString(bytes), true);
                 }
                 else
                 {
                     VanillaImageStack1.Opacity = 0.3;
                     VanillaImageStack1.Background = new SolidColorBrush(Colors.Black);
 
-                    _modManager.WriteToMetaFile(selectedMod.MetaFile, Encoding.UTF8.GetString(vanillaFile["image data"].AsByteArray));
-
+                    _modManager.WriteToMetaFile(selectedMod.MetaFile, Encoding.UTF8.GetString(bytes));
                 }
             }
             if (image.Name == "CandidateImageViewer2")
@@ -403,14 +452,14 @@ namespace KotHModLoaderGUI
                     VanillaImageStack2.Opacity = 1;
                     VanillaImageStack2.Background = null;
 
-                    _modManager.WriteToMetaFile(selectedMod.MetaFile, Encoding.UTF8.GetString(vanillaFile["image data"].AsByteArray), true);
+                    _modManager.WriteToMetaFile(selectedMod.MetaFile, Encoding.UTF8.GetString(bytes), true);
                 }
                 else
                 {
                     VanillaImageStack2.Opacity = 0.3;
                     VanillaImageStack2.Background = new SolidColorBrush(Colors.Black);
 
-                    _modManager.WriteToMetaFile(selectedMod.MetaFile, Encoding.UTF8.GetString(vanillaFile["image data"].AsByteArray));
+                    _modManager.WriteToMetaFile(selectedMod.MetaFile, Encoding.UTF8.GetString(bytes));
                 }
             }
         }
