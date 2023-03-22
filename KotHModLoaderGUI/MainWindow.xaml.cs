@@ -1,12 +1,16 @@
 ﻿using AssetsTools.NET;
 using Fmod5Sharp.FmodTypes;
+using Microsoft.VisualBasic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -270,29 +274,33 @@ namespace KotHModLoaderGUI
                     if (candidateQty == 0)
                     {
                         CandidateImageViewer1.Source = imageSource;
-                        var blacklistedAsset = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
-                        if (blacklistedAsset != null)
+                        var blacklistedAsset = modJson["BlackListedVanillaAssetsB"];
+                        string[] strings = (string[])blacklistedAsset.ToObject(typeof(string[]));
+                        string str = Encoding.UTF8.GetString(values["image data"].AsByteArray);
+                        bool contains = strings.Contains(str);
+                        if (contains)
                         {
-                            if (blacklistedAsset[values["m_Name"].AsString + "-" + candidates[i].index] != null)
-                            {
-                                //if (values["image data"].AsByteArray == blacklistedAsset[values["m_Name"].AsString + "-" + candidates[i].index][""])
-                                VanillaImageStack1.Opacity = 0.3;
-                                VanillaImageStack1.Background = new SolidColorBrush(Colors.Black);
-                            }
+                            VanillaImageStack1.Opacity = 0.3;
+                            VanillaImageStack1.Background = new SolidColorBrush(Colors.Black);
                         }
                     }
                     else
                     {
                         CandidateImageViewer2.Source = imageSource;
-                        var blacklistedAsset = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
-                        if (blacklistedAsset != null)
-                        {
-                            if (blacklistedAsset[values["m_Name"].AsString + "-" + candidates[i].index] != null)
-                            {
-                                VanillaImageStack2.Opacity = 0.3;
-                                VanillaImageStack2.Background = new SolidColorBrush(Colors.Black);
-                            }
-                        }
+                        //var blacklistedAsset = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
+                        //if (blacklistedAsset != null)
+                        //{
+                        //    if (blacklistedAsset[values["m_Name"].AsString + "-" + candidates[i].index] != null)
+                        //    {
+                        //        string blacklistedBytes = blacklistedAsset[values["m_Name"].AsString + "-" + candidates[i].index]["bytes"];
+                        //        string candidateBytes = System.Text.Encoding.UTF8.GetString(values["image data"].AsByteArray);
+                        //        if (candidateBytes == blacklistedBytes)
+                        //        {
+                        //            VanillaImageStack2.Opacity = 0.3;
+                        //            VanillaImageStack2.Background = new SolidColorBrush(Colors.Black);
+                        //        }
+                        //    }
+                        //}
                     }
                     candidateQty++;
                     VanillaImageLabel.Content = "Vanilla files that will be replaced. Click image to toggle between greyed out and normal. Greyed out images won't be replaced by mod asset file.";
@@ -384,7 +392,7 @@ namespace KotHModLoaderGUI
             blacklisted.name = vanillaFile["m_Name"].AsString;
             blacklisted.path = modFile.File.FullName.Substring(modFile.File.FullName.IndexOf(selectedMod.Name) + selectedMod.Name.Length);
             blacklisted.size = vanillaFile["m_CompleteImageSize"].AsInt;
-            blacklisted.bytes = vanillaFile["image data"].AsByteArray;
+            blacklisted.bytes = Encoding.UTF8.GetString(vanillaFile["image data"].AsByteArray);
 
             if (image.Name == "CandidateImageViewer1")
             {
@@ -393,14 +401,17 @@ namespace KotHModLoaderGUI
                     VanillaImageStack1.Opacity = 1;
                     VanillaImageStack1.Background = null;
 
-                    _modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted, true);
+                    //_modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted, true);
+                    _modManager.WriteToMetaFile(selectedMod.MetaFile, Encoding.UTF8.GetString(vanillaFile["image data"].AsByteArray), true);
                 }
                 else
                 {
                     VanillaImageStack1.Opacity = 0.3;
                     VanillaImageStack1.Background = new SolidColorBrush(Colors.Black);
 
-                    _modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted);
+                    //_modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted);
+                    _modManager.WriteToMetaFile(selectedMod.MetaFile, Encoding.UTF8.GetString(vanillaFile["image data"].AsByteArray));
+
                 }
             }
             if (image.Name == "CandidateImageViewer2")
@@ -410,14 +421,14 @@ namespace KotHModLoaderGUI
                     VanillaImageStack2.Opacity = 1;
                     VanillaImageStack2.Background = null;
 
-                    _modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted, true);
+                    //_modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted, true);
                 }
                 else
                 {
                     VanillaImageStack2.Opacity = 0.3;
                     VanillaImageStack2.Background = new SolidColorBrush(Colors.Black);
 
-                    _modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted);
+                    //_modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted);
                 }
             }
         }
@@ -747,7 +758,7 @@ namespace KotHModLoaderGUI
                     CandidateAudioStack1.Background = null;
                     CandidateAudioText1.Foreground = new SolidColorBrush(Colors.Black);
 
-                    _modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted, true);
+                    //_modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted, true);
                 }
                 else
                 {
@@ -755,7 +766,7 @@ namespace KotHModLoaderGUI
                     CandidateAudioStack1.Background = new SolidColorBrush(Colors.Black);
                     CandidateAudioText1.Foreground = new SolidColorBrush(Colors.White);
 
-                    _modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted);
+                    //_modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted);
                 }
             }
             if (textBlock.Name == "CandidateAudioText2")
@@ -766,7 +777,7 @@ namespace KotHModLoaderGUI
                     CandidateAudioStack2.Background = null;
                     CandidateAudioText2.Foreground = new SolidColorBrush(Colors.Black);
 
-                    _modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted, true);
+                    //_modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted, true);
                 }
                 else
                 {
@@ -774,7 +785,7 @@ namespace KotHModLoaderGUI
                     CandidateAudioStack2.Background = new SolidColorBrush(Colors.Black);
                     CandidateAudioText2.Foreground = new SolidColorBrush(Colors.White);
 
-                    _modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted);
+                    //_modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted);
                 }
             }
         }

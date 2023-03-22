@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Text.Json.Nodes;
 using System.Windows.Forms;
 
 namespace KotHModLoaderGUI
@@ -46,7 +48,7 @@ namespace KotHModLoaderGUI
         public string name { get; set; }
         public string path { get; set; }
         public int size { get; set; }
-        public byte[] bytes { get; set; }
+        public string bytes { get; set; }
     }
 
     public struct VanillaTextureAssetCandidate
@@ -514,19 +516,19 @@ namespace KotHModLoaderGUI
             File.WriteAllText(metaFile.FullName, modJson.ToString());
         }
 
-        public void WriteToMetaFile(FileInfo metafile, BlackListedVanillaAssets blacklisted, bool remove = false)
+        public void WriteToMetaFile(FileInfo metafile, string bytes, bool remove = false)
         {
             dynamic modJson = LoadJson(metafile.FullName);
+            var blacklistedAsset = modJson["BlackListedVanillaAssets"];
+            List<string> strings = (List<string>)blacklistedAsset.ToObject(typeof(List<string>));
 
-            if (!remove)
-            {
-                if (modJson["BlackListedVanillaAssets"][blacklisted.path] == null)
-                    modJson["BlackListedVanillaAssets"][blacklisted.path] = new JObject();
-                modJson["BlackListedVanillaAssets"][blacklisted.path][blacklisted.name + "-" + blacklisted.index] = JToken.FromObject(blacklisted);
-            }
+            if(!remove)
+                strings.Add(bytes);
             else
-                modJson["BlackListedVanillaAssets"][blacklisted.path].Remove(blacklisted.name + "-" + blacklisted.index);
+                strings.Remove(bytes);
 
+            modJson["BlackListedVanillaAssets"] = JToken.FromObject(strings);
+            
             File.WriteAllText(metafile.FullName, modJson.ToString());
         }
     }
