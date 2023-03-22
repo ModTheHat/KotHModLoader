@@ -2,6 +2,7 @@
 using Fmod5Sharp.FmodTypes;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.Collections.Generic;
 using System.Drawing.Imaging;
@@ -25,7 +26,7 @@ namespace KotHModLoaderGUI
         public PackMeta pack { get; set; }
         public List<string>? DisabledModsOrFiles { get; set; }
         public AssignedVanillaAssets AssignedVanillaAssets { get; set; }
-        public BlackListedVanillaAssets BlackListedVanillaAssets { get; set; }
+        public List<string>? BlackListedVanillaAssets { get; set; }
     }
 
     public struct PackMeta
@@ -335,8 +336,8 @@ namespace KotHModLoaderGUI
                 MetaFile data = new MetaFile()
                 {
                     AssignedVanillaAssets = new AssignedVanillaAssets(),
-                    BlackListedVanillaAssets = new BlackListedVanillaAssets(),
-                    DisabledModsOrFiles = new List<string>()
+                    BlackListedVanillaAssets = new List<string>(),
+                    DisabledModsOrFiles = new List<string>(),
                 };
 
                 string json = System.Text.Json.JsonSerializer.Serialize(data);

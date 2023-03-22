@@ -1,17 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.IO;
-using System.Windows.Forms;
-using System.Windows.Media.Imaging;
-using AssetsTools.NET;
+﻿using AssetsTools.NET;
 using AssetsTools.NET.Extra;
 using AssetsTools.NET.Texture;
 using Newtonsoft.Json;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
+using System.Text;
+using System.Windows.Forms;
+using System.Windows.Media.Imaging;
 using static KotHModLoaderGUI.ModManager;
 
 namespace KotHModLoaderGUI
@@ -77,7 +78,7 @@ namespace KotHModLoaderGUI
                 FileInfo[] files = rootInfo.GetFiles("lz4.tpk", SearchOption.AllDirectories);
                 if (files.Length == 0)
                 {
-                    System.Windows.Forms.OpenFileDialog f = new System.Windows.Forms.OpenFileDialog();
+                    OpenFileDialog f = new OpenFileDialog();
                     f.Title = "lz4.tpk found. Navigate to it and choose it or reinstall the Modloader.";
 
                     f.InitialDirectory = rootPath;
@@ -160,24 +161,28 @@ namespace KotHModLoaderGUI
             {
                 FileInfo metaFile = mod.MetaFile;
                 dynamic modJson = LoadJson(metaFile.FullName);
+                var blacklistedAsset = modJson["BlackListedVanillaAssets"];
+                List<string> strings = (List<string>)blacklistedAsset.ToObject(typeof(List<string>));
                 List<string> disabled = (List<string>)modJson["DisabledModsOrFiles"].ToObject(typeof(List<string>));
 
                 if (!disabled.Contains("\\" + mod.Name))
                     foreach (FileInfo file in mod.TextureFiles)
                     {
                         var assigned = modJson["AssignedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
-                        var blacklisted = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
+                        var blacklisted = modJson["BlackListedVanillaAssets"];
+                        blacklisted = null;
 
                         if (!disabled.Contains("\\" + file.FullName.Substring(file.FullName.IndexOf(mod.Name))) && !_alreadyModded.Contains(file.Name))
                         {
+                            byte[] bytes = GetRGBA(file);
                             if (assigned != null)
                             {
-                                if (ModVanillaTextureFromFileName(assigned.name.Value, GetRGBA(file)))
+                                if (ModVanillaTextureFromFileName(assigned.name.Value, bytes, strings))
                                     _alreadyModded.Add(file.Name);
                             }
                             if(blacklisted == null && assigned == null)
                             {
-                                if (ModVanillaTextureFromFileName(file.Name, GetRGBA(file)))
+                                if (ModVanillaTextureFromFileName(file.Name, bytes, strings))
                                     _alreadyModded.Add(file.Name);
                             }
                         }
@@ -194,7 +199,7 @@ namespace KotHModLoaderGUI
         }
 
         byte[] _resSData;
-        private bool ModVanillaTextureFromFileName(string filename, byte[] dataImage)
+        private bool ModVanillaTextureFromFileName(string filename, byte[] dataImage, List<string> blacklisted)
         {
             bool replaced = false;
             foreach (var goInfo in _afileVanilla.GetAssetsOfType(AssetClassID.Texture2D))
@@ -202,7 +207,10 @@ namespace KotHModLoaderGUI
                 var goBaseVanilla = _assetsManagerVanilla.GetBaseField(_afileInstVanilla, goInfo);
                 var name = goBaseVanilla["m_Name"].AsString;
 
-                if(filename.Contains(name))
+                string str = Encoding.UTF8.GetString(goBaseVanilla["image data"].AsByteArray);
+                bool contains = blacklisted.Contains(str);
+
+                if (filename.Contains(name) && !contains)
                 {
                     if (goBaseVanilla["image data"].AsByteArray.Length > 0)
                     {
@@ -226,7 +234,7 @@ namespace KotHModLoaderGUI
                         goBaseVanilla["m_StreamData"].Value = new AssetTypeValue(AssetValueType.Array, stream);
 
                         Array.Resize(ref _resSData, _resSData.Length + dataImage.Length);
-                        System.Buffer.BlockCopy(dataImage, 0, _resSData, _resSData.Length - dataImage.Length, dataImage.Length);
+                        Buffer.BlockCopy(dataImage, 0, _resSData, _resSData.Length - dataImage.Length, dataImage.Length);
 
                         AssetsReplacerFromMemory replacer = new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla);
                         _replacers.Add(replacer);
