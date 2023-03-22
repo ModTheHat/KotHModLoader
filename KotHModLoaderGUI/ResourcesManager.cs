@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Windows.Media.Imaging;
@@ -207,7 +208,23 @@ namespace KotHModLoaderGUI
                 var goBaseVanilla = _assetsManagerVanilla.GetBaseField(_afileInstVanilla, goInfo);
                 var name = goBaseVanilla["m_Name"].AsString;
 
-                string str = Encoding.UTF8.GetString(goBaseVanilla["image data"].AsByteArray);
+                dynamic stream = goBaseVanilla["m_StreamData"];
+                string path = stream["path"].AsString;
+                int offset = stream["offset"].AsInt;
+                int size = stream["size"].AsInt;
+                byte[] resSBytes = null;
+                byte[] bytes = null;
+                if (size > 0)
+                {
+                    byte[] resSFile = File.ReadAllBytes("..\\KingOfTheHat_Data\\" + path);
+                    resSBytes = new byte[size];
+                    Buffer.BlockCopy(resSFile, offset, resSBytes, 0, size);
+                    bytes = resSBytes;
+                }
+                else
+                    bytes = goBaseVanilla["image data"].AsByteArray;
+
+                string str = Encoding.UTF8.GetString(bytes);
                 bool contains = blacklisted.Contains(str);
 
                 if (filename.Contains(name) && !contains)
@@ -227,7 +244,7 @@ namespace KotHModLoaderGUI
                     }
                     else
                     {
-                        dynamic stream = goBaseVanilla["m_StreamData"];
+                        stream = goBaseVanilla["m_StreamData"];
                         stream["path"].Value = new AssetTypeValue("resources.assets.modded.resS");
                         stream["offset"].Value = new AssetTypeValue(_resSData.Length);
                         stream["size"].Value = new AssetTypeValue(dataImage.Length / 4);

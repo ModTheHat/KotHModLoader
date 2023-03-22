@@ -289,14 +289,18 @@ namespace KotHModLoaderGUI
                     int offset = stream["offset"].AsInt;
                     int size = stream["size"].AsInt;
                     byte[] resSBytes = null;
+                    byte[] bytes = null;
                     if (size > 0)
                     {
                         byte[] resSFile = File.ReadAllBytes("..\\KingOfTheHat_Data\\" + path);
-                        ////RENDU LA
                         resSBytes = new byte[size];
                         Buffer.BlockCopy(resSFile, offset, resSBytes, 0, size);
+                        bytes = resSBytes;
                     }
-                    string str = Encoding.UTF8.GetString(values["image data"].AsByteArray);
+                    else
+                        bytes = values["image data"].AsByteArray;
+
+                    string str = Encoding.UTF8.GetString(bytes);
                     bool contains = strings.Contains(str);
 
                     Image<Bgra32> textureImage = _resMgr.GetTextureFromField(values);
