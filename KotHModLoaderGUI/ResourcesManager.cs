@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Windows.Media.Imaging;
@@ -176,14 +175,20 @@ namespace KotHModLoaderGUI
                         if (!disabled.Contains("\\" + file.FullName.Substring(file.FullName.IndexOf(mod.Name))) && !_alreadyModded.Contains(file.Name))
                         {
                             byte[] bytes = GetRGBA(file);
+                            SixLabors.ImageSharp.Image image;
+                            using (image = SixLabors.ImageSharp.Image.Load(file.FullName))
+                            {
+                                var width = image.Width;
+                                var height = image.Height;
+                            }
                             if (assigned != null)
                             {
-                                if (ModVanillaTextureFromFileName(assigned.name.Value, bytes, strings))
+                                if (ModVanillaTextureFromFileName(assigned.name.Value, bytes, image.Width, image.Height, strings, file))
                                     _alreadyModded.Add(file.Name);
                             }
                             if(blacklisted == null && assigned == null)
                             {
-                                if (ModVanillaTextureFromFileName(file.Name, bytes, strings))
+                                if (ModVanillaTextureFromFileName(file.Name, bytes, image.Width, image.Height, strings, file))
                                     _alreadyModded.Add(file.Name);
                             }
                         }
@@ -200,75 +205,88 @@ namespace KotHModLoaderGUI
         }
 
         byte[] _resSData;
-        private bool ModVanillaTextureFromFileName(string filename, byte[] dataImage, List<string> blacklisted)
+        private bool ModVanillaTextureFromFileName(string filename, byte[] dataImage, int width, int height, List<string> blacklisted, FileInfo modFile)
         {
+            string differentSizesWarning = "";
             bool replaced = false;
             foreach (var goInfo in _afileVanilla.GetAssetsOfType(AssetClassID.Texture2D))
             {
                 var goBaseVanilla = _assetsManagerVanilla.GetBaseField(_afileInstVanilla, goInfo);
                 var name = goBaseVanilla["m_Name"].AsString;
 
-                dynamic stream = goBaseVanilla["m_StreamData"];
-                string path = stream["path"].AsString;
-                int offset = stream["offset"].AsInt;
-                int size = stream["size"].AsInt;
-                byte[] resSBytes = null;
-                byte[] bytes = null;
-                if (size > 0)
+                if (filename.Contains(name))
                 {
-                    byte[] resSFile = File.ReadAllBytes("..\\KingOfTheHat_Data\\" + path);
-                    resSBytes = new byte[size];
-                    Buffer.BlockCopy(resSFile, offset, resSBytes, 0, size);
-                    bytes = resSBytes;
-                }
-                else
-                    bytes = goBaseVanilla["image data"].AsByteArray;
-
-                string str = Encoding.UTF8.GetString(bytes);
-                bool contains = blacklisted.Contains(str);
-
-                if (filename.Contains(name) && !contains)
-                {
-                    if (goBaseVanilla["image data"].AsByteArray.Length > 0)
+                    dynamic stream = goBaseVanilla["m_StreamData"];
+                    string path = stream["path"].AsString;
+                    int offset = stream["offset"].AsInt;
+                    int size = stream["size"].AsInt;
+                    byte[] resSBytes = null;
+                    byte[] bytes = null;
+                    if (size > 0)
                     {
-                        AssetTypeValue value = new AssetTypeValue(dataImage, false);
+                        byte[] resSFile = File.ReadAllBytes("..\\KingOfTheHat_Data\\" + path);
+                        resSBytes = new byte[size];
+                        Buffer.BlockCopy(resSFile, offset, resSBytes, 0, size);
+                        bytes = resSBytes;
+                    }
+                    else
+                        bytes = goBaseVanilla["image data"].AsByteArray;
 
-                        if (goBaseVanilla["m_CompleteImageSize"].AsInt == dataImage.Length)
+                    string str = Encoding.UTF8.GetString(bytes);
+                    bool contains = blacklisted.Contains(str);
+
+                    if (!contains)
+                    {
+                        if (goBaseVanilla["image data"].AsByteArray.Length > 0)
                         {
-                            goBaseVanilla["image data"].Value = value;
+                            AssetTypeValue value = new AssetTypeValue(dataImage, false);
+
+                            if (goBaseVanilla["m_CompleteImageSize"].AsInt == dataImage.Length)
+                            {
+                                goBaseVanilla["image data"].Value = value;
+
+                                AssetsReplacerFromMemory replacer = new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla);
+                                _replacers.Add(replacer);
+                                replaced = true;
+                            }
+                            else
+                            {
+                                differentSizesWarning += "File: " + modFile.Name + ", trying to replace asset: " + goBaseVanilla["m_Name"].AsString + "\n";
+                                goBaseVanilla["image data"].Value = value;
+                                goBaseVanilla["m_Width"].Value = new AssetTypeValue(width);
+                                goBaseVanilla["m_Height"].Value = new AssetTypeValue(height);
+                                goBaseVanilla["m_CompleteSize"].Value = new AssetTypeValue(width * height * 4);
+
+                                AssetsReplacerFromMemory replacer = new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla);
+                                _replacers.Add(replacer);
+                                replaced = true;
+                            }
+                        }
+                        else
+                        {
+                            stream = goBaseVanilla["m_StreamData"];
+                            stream["path"].Value = new AssetTypeValue("resources.assets.modded.resS");
+                            stream["offset"].Value = new AssetTypeValue(_resSData.Length);
+                            stream["size"].Value = new AssetTypeValue(dataImage.Length / 4);
+                            goBaseVanilla["m_StreamData"].Value = new AssetTypeValue(AssetValueType.Array, stream);
+
+                            Array.Resize(ref _resSData, _resSData.Length + dataImage.Length);
+                            Buffer.BlockCopy(dataImage, 0, _resSData, _resSData.Length - dataImage.Length, dataImage.Length);
 
                             AssetsReplacerFromMemory replacer = new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla);
                             _replacers.Add(replacer);
                             replaced = true;
                         }
                     }
-                    else
-                    {
-                        stream = goBaseVanilla["m_StreamData"];
-                        stream["path"].Value = new AssetTypeValue("resources.assets.modded.resS");
-                        stream["offset"].Value = new AssetTypeValue(_resSData.Length);
-                        stream["size"].Value = new AssetTypeValue(dataImage.Length / 4);
-                        goBaseVanilla["m_StreamData"].Value = new AssetTypeValue(AssetValueType.Array, stream);
-
-                        Array.Resize(ref _resSData, _resSData.Length + dataImage.Length);
-                        Buffer.BlockCopy(dataImage, 0, _resSData, _resSData.Length - dataImage.Length, dataImage.Length);
-
-                        AssetsReplacerFromMemory replacer = new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla);
-                        _replacers.Add(replacer);
-                        replaced = true;
-                    }
                 }
             }
+            if (differentSizesWarning != "")
+                MessageBox.Show(differentSizesWarning + "Modifying asset with different image sizes will bring weird behaviour unless modded in the code.");
+
             return replaced;
         }
 
-        private bool ModVanillaTextureFromResSPath(string filename, byte[] dataImage)
-        {
-            bool replaced = false;
-            return replaced;
-        }
-
-            public List<string> GetVanillaAssets()
+        public List<string> GetVanillaAssets()
         {
             LoadVanillaManager();
 
