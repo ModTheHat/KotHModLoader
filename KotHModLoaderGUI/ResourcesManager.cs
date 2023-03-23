@@ -151,6 +151,8 @@ namespace KotHModLoaderGUI
         {
             _replacers = new List<AssetsReplacer>();
             _alreadyModded = new List<string>();
+            _alreadyModdedAsset = new List<int>();
+            _alreadyModdedWarning = "";
 
             //byte array for new .resS file
             _resSData = new byte[0];
@@ -194,6 +196,8 @@ namespace KotHModLoaderGUI
                         }
                     }
             }
+            if (_alreadyModdedWarning != "")
+                MessageBox.Show(_alreadyModdedWarning);
 
             File.WriteAllBytes(_resDir + @"\resources.assets.modded.resS", _resSData);
 
@@ -204,11 +208,14 @@ namespace KotHModLoaderGUI
             return _replacers.Count + " vanilla textures replaced.";
         }
 
+        string _alreadyModdedWarning = "";
+        List<int> _alreadyModdedAsset;
         byte[] _resSData;
         private bool ModVanillaTextureFromFileName(string filename, byte[] dataImage, int width, int height, List<string> blacklisted, FileInfo modFile)
         {
             string differentSizesWarning = "";
             bool replaced = false;
+            int i = 0;
             foreach (var goInfo in _afileVanilla.GetAssetsOfType(AssetClassID.Texture2D))
             {
                 var goBaseVanilla = _assetsManagerVanilla.GetBaseField(_afileInstVanilla, goInfo);
@@ -216,6 +223,14 @@ namespace KotHModLoaderGUI
 
                 if (filename.Contains(name))
                 {
+                    if (_alreadyModdedAsset.Contains(i))
+                    {
+                        _alreadyModdedWarning += "More than one modded file tried to modify the asset: " + name + ".\n" +
+                            "Only one file will modify the asset.";
+                        i++;
+                        continue;
+                    }
+
                     dynamic stream = goBaseVanilla["m_StreamData"];
                     string path = stream["path"].AsString;
                     int offset = stream["offset"].AsInt;
@@ -248,6 +263,7 @@ namespace KotHModLoaderGUI
                                 AssetsReplacerFromMemory replacer = new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla);
                                 _replacers.Add(replacer);
                                 replaced = true;
+                                _alreadyModdedAsset.Add(i);
                             }
                             else
                             {
@@ -260,6 +276,7 @@ namespace KotHModLoaderGUI
                                 AssetsReplacerFromMemory replacer = new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla);
                                 _replacers.Add(replacer);
                                 replaced = true;
+                                _alreadyModdedAsset.Add(i);
                             }
                         }
                         else
@@ -276,13 +293,15 @@ namespace KotHModLoaderGUI
                             AssetsReplacerFromMemory replacer = new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla);
                             _replacers.Add(replacer);
                             replaced = true;
+                            _alreadyModdedAsset.Add(i);
                         }
                     }
                 }
+                i++;
             }
             if (differentSizesWarning != "")
                 MessageBox.Show(differentSizesWarning + "Modifying asset with different image sizes will bring weird behaviour unless modded in the code.");
-
+            
             return replaced;
         }
 

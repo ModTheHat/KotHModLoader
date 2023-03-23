@@ -898,5 +898,14 @@ namespace KotHModLoaderGUI
                     break;
             }
         }
+
+        private void ButtonResetToVanilla(object sender, RoutedEventArgs e)
+        {
+            if (File.Exists("..\\KingOfTheHat_Data\\resources.assets"))
+                File.Delete("..\\KingOfTheHat_Data\\resources.assets");
+
+            File.Copy("..\\KingOfTheHat_Data\\resources.assets.VANILLA", "..\\KingOfTheHat_Data\\resources.assets");
+            console.Text = "File resources.assets resetted to Vanilla.";
+        }
     }
 }

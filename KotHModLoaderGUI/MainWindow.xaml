@@ -88,7 +88,10 @@
             <TextBox x:Name="search" Text="Search in vanilla assets" Focusable="True" GotMouseCapture="SelectAllText" KeyDown="SearchEntry" />
         </StackPanel>
         <StackPanel Grid.Row="2" Grid.Column="2" Margin="5,0,0,0">
-            <Button x:Name="btnBuild" Click="ButtonBuildMods_Click" Content="Build Mods"/>
+            <StackPanel Orientation="Horizontal">
+                <Button x:Name="btnBuild" Width="70" Click="ButtonBuildMods_Click" Content="Build Mods"/>
+                <Button x:Name="btnReset" Width="90" Click="ButtonResetToVanilla" Content="Reset to Vanilla"/>
+            </StackPanel>
         </StackPanel>
         <StackPanel Grid.Row="2" Grid.Column="1" Margin="4" ScrollViewer.CanContentScroll="True">
                 <TextBlock Grid.Row="4" Grid.Column="2" x:Name="console" Cursor="Arrow" Text="{Binding Text}" ScrollViewer.VerticalScrollBarVisibility="Auto" TextWrapping="WrapWithOverflow">Console</TextBlock>
