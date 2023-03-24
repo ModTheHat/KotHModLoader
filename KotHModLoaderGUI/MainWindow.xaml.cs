@@ -15,7 +15,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Vurdalakov;
 using static KotHModLoaderGUI.ModManager;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace KotHModLoaderGUI
 {
@@ -309,7 +308,7 @@ namespace KotHModLoaderGUI
                         }
                     }
                     candidateQty++;
-                    VanillaImageLabel.Text = "Below are vanilla assets automatically found that will be replaced by the mod file.\n" +
+                    VanillaImageLabel.Text = "\nBelow are vanilla assets automatically found that will be replaced by the mod file.\n" +
                         "Click an image to toggle between red background and normal.\n" +
                         "Reded out images won't be replaced by mod image and will stay vanilla.";
                 }
@@ -328,7 +327,7 @@ namespace KotHModLoaderGUI
                     lstModFileInfo.Items.Add("Size w: " + _modFileImg.PixelWidth + " h: " + _modFileImg.PixelHeight);
                 }
 
-                AssignVanillaImageText.Text = "Below are vanilla assets that are manually assigned to be replaced by the mod file.\n" +
+                AssignVanillaImageText.Text = "\nBelow are vanilla assets that are manually assigned to be replaced by the mod file.\n" +
                         "Select an image in the Vanilla Assets tab and click the Assign button below to assign it to the mod file.\n" +
                         "Click on the assigned images to unassign it.\n" + 
                         "If a mod file has an assigned image, only the assigned image will be modded.";
@@ -653,6 +652,7 @@ namespace KotHModLoaderGUI
             VanillaImageStack2.Opacity = 1;
             VanillaImageStack1.Background = new SolidColorBrush(Colors.LightGray);
             VanillaImageStack2.Background = new SolidColorBrush(Colors.LightGray);
+            AssignedImageStack1.Background = new SolidColorBrush(Colors.LightGray);
             AssignedImageViewer1.Source = null;
             AssignedImageViewer.Source = null;
             ModdedImageViewer.Source = null;
