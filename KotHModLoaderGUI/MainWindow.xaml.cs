@@ -1,13 +1,10 @@
 ﻿using AssetsTools.NET;
-using AssetsTools.NET.Texture;
 using Fmod5Sharp.FmodTypes;
-using Microsoft.VisualBasic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -18,13 +15,14 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Vurdalakov;
 using static KotHModLoaderGUI.ModManager;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace KotHModLoaderGUI
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : System.Windows.Window
     {
         private FileInfo[] _displayedModFilesInfo;
         private FileInfo[] _displayedModAudioFilesInfo;
@@ -53,9 +51,9 @@ namespace KotHModLoaderGUI
 
             DisplayVanillaCatalog();
 
-            console.Text = "Greyed out mods and files won't be added to the game.\n\n" +
-                "Double click on a Mod in the Mods tab or on a File in the Mod Info tab to toggle between enabled and disabled.\n\n" +
-                "When you're happy with the enabled mods and files list, click on Build Mods to add them to the game.";
+            console.Text = ".DISABLED mods and files won't be added to the game.\n" +
+                "Double click on a Mod in the Mods tab or on a File in the Mod Info tab to toggle between enabled and disabled.\n" +
+                "When you're happy with the enabled mods and files list, click on Build Mods to add them to the game and launch the game.";
         }
 
         private void DisplayMods()
@@ -265,20 +263,6 @@ namespace KotHModLoaderGUI
 
                 CloseModFilesUI(AssetType.Resources);
 
-                //dynamic stream = vanillaFile["m_StreamData"];
-                //string path = stream["path"].AsString;
-                //int offset = stream["offset"].AsInt;
-                //int size = stream["size"].AsInt;
-                //byte[] resSBytes = null;
-
-                //if (size > 0)
-                //{
-                //    byte[] resSFile = File.ReadAllBytes("..\\KingOfTheHat_Data\\" + path);
-
-                //    resSBytes = new byte[size];
-                //    Buffer.BlockCopy(resSFile, offset, resSBytes, 0, size);
-                //}
-
                 int candidateQty = 0;
                 List<VanillaTextureAssetCandidate> candidates = modFile.VanillaCandidates;
                 for (int i = 0; i < candidates.Count; i++)
@@ -312,7 +296,7 @@ namespace KotHModLoaderGUI
                         if (contains)
                         {
                             VanillaImageStack1.Opacity = 0.3;
-                            VanillaImageStack1.Background = new SolidColorBrush(Colors.Black);
+                            VanillaImageStack1.Background = new SolidColorBrush(Colors.Red);
                         }
                     }
                     else
@@ -321,11 +305,13 @@ namespace KotHModLoaderGUI
                         if (contains)
                         {
                             VanillaImageStack2.Opacity = 0.3;
-                            VanillaImageStack2.Background = new SolidColorBrush(Colors.Black);
+                            VanillaImageStack2.Background = new SolidColorBrush(Colors.Red);
                         }
                     }
                     candidateQty++;
-                    VanillaImageLabel.Content = "Vanilla files that will be replaced. Click image to toggle between greyed out and normal. Greyed out images won't be replaced by mod asset file.";
+                    VanillaImageLabel.Text = "Below are vanilla assets automatically found that will be replaced by the mod file.\n" +
+                        "Click an image to toggle between red background and normal.\n" +
+                        "Reded out images won't be replaced by mod image and will stay vanilla.";
                 }
 
                 using (FileStream fs = new FileStream(file.FullName, FileMode.Open))
@@ -338,8 +324,14 @@ namespace KotHModLoaderGUI
                     fs.Close();
                     ModdedImageViewer.Source = _modFileImg;
                     ModImageLabel.Content = "Mod file texture";
+                    lstModFileInfo.Items.Add("Mod file name: " + fileName);
+                    lstModFileInfo.Items.Add("Size w: " + _modFileImg.PixelWidth + " h: " + _modFileImg.PixelHeight);
                 }
 
+                AssignVanillaImageText.Text = "Below are vanilla assets that are manually assigned to be replaced by the mod file.\n" +
+                        "Select an image in the Vanilla Assets tab and click the Assign button below to assign it to the mod file.\n" +
+                        "Click on the assigned images to unassign it.\n" + 
+                        "If a mod file has an assigned image, only the assigned image will be modded.";
                 if (modJson["AssignedVanillaAssets"]["\\" + fileName] != null)
                 {
                     int ind = modJson["AssignedVanillaAssets"]["\\" + fileName]["index"];
@@ -356,7 +348,6 @@ namespace KotHModLoaderGUI
                     }
                 }
 
-                lstModFileInfo.Items.Add("mod file name: " + fileName);
                 foreach (VanillaTextureAssetCandidate assigned in modFile.VanillaCandidates)
                 {
                     lstModFileInfo.Items.Add("assigned to vanilla file: " + assigned.values["m_Name"].AsString);
@@ -437,14 +428,14 @@ namespace KotHModLoaderGUI
                 if (VanillaImageStack1.Opacity == 0.3)
                 {
                     VanillaImageStack1.Opacity = 1;
-                    VanillaImageStack1.Background = null;
+                    VanillaImageStack1.Background = new SolidColorBrush(Colors.LightGray);
 
                     _modManager.WriteToMetaFile(selectedMod.MetaFile, Encoding.UTF8.GetString(bytes), true);
                 }
                 else
                 {
                     VanillaImageStack1.Opacity = 0.3;
-                    VanillaImageStack1.Background = new SolidColorBrush(Colors.Black);
+                    VanillaImageStack1.Background = new SolidColorBrush(Colors.Red);
 
                     _modManager.WriteToMetaFile(selectedMod.MetaFile, Encoding.UTF8.GetString(bytes));
                 }
@@ -454,14 +445,14 @@ namespace KotHModLoaderGUI
                 if (VanillaImageStack2.Opacity == 0.3)
                 {
                     VanillaImageStack2.Opacity = 1;
-                    VanillaImageStack2.Background = null;
+                    VanillaImageStack2.Background = new SolidColorBrush(Colors.LightGray);
 
                     _modManager.WriteToMetaFile(selectedMod.MetaFile, Encoding.UTF8.GetString(bytes), true);
                 }
                 else
                 {
                     VanillaImageStack2.Opacity = 0.3;
-                    VanillaImageStack2.Background = new SolidColorBrush(Colors.Black);
+                    VanillaImageStack2.Background = new SolidColorBrush(Colors.Red);
 
                     _modManager.WriteToMetaFile(selectedMod.MetaFile, Encoding.UTF8.GetString(bytes));
                 }
@@ -564,7 +555,7 @@ namespace KotHModLoaderGUI
 
         private void SelectAllText(object sender, System.Windows.Input.MouseEventArgs e)
         {
-           TextBox textBox = (TextBox)sender;
+            System.Windows.Controls.TextBox textBox = (System.Windows.Controls.TextBox)sender;
 
             textBox.SelectAll();
         }
@@ -654,14 +645,14 @@ namespace KotHModLoaderGUI
                     lstModFileInfo.Items.Clear();
                     break;
             }
-            VanillaImageLabel.Content = "";
+            VanillaImageLabel.Text = "";
             ModImageLabel.Content = "";
             CandidateImageViewer1.Source = null;
             CandidateImageViewer2.Source = null;
             VanillaImageStack1.Opacity = 1;
             VanillaImageStack2.Opacity = 1;
-            VanillaImageStack1.Background = null;
-            VanillaImageStack2.Background = null;
+            VanillaImageStack1.Background = new SolidColorBrush(Colors.LightGray);
+            VanillaImageStack2.Background = new SolidColorBrush(Colors.LightGray);
             AssignedImageViewer1.Source = null;
             AssignedImageViewer.Source = null;
             ModdedImageViewer.Source = null;
@@ -701,31 +692,10 @@ namespace KotHModLoaderGUI
                     if (i == 0)
                     {
                         CandidateAudioText1.Text = "Audio sample name: " + candidate.name;
-                        //dynamic blacklisted = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
-                        //if (blacklisted != null)
-                        //{
-                        //    if(blacklisted[candidate.name + "-" + candidates[i].index] != null)
-                        //    {
-                                
-                        //        CandidateAudioStack1.Opacity = 0.3;
-                        //        CandidateAudioStack1.Background = new SolidColorBrush(Colors.Black);
-                        //        CandidateAudioText1.Foreground = new SolidColorBrush(Colors.White);
-                        //    }
-                        //}
                     }
                     else if(i == 1)
                     {
                         CandidateAudioText2.Text = "Audio sample name: " + candidate.name;
-                        //dynamic blacklisted = modJson["BlackListedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
-                        //if (blacklisted != null)
-                        //{
-                        //    if (blacklisted[candidate.name + "-" + candidates[i].index] != null)
-                        //    { 
-                        //        CandidateAudioStack2.Opacity = 0.3;
-                        //        CandidateAudioStack2.Background = new SolidColorBrush(Colors.Black);
-                        //        CandidateAudioText2.Foreground = new SolidColorBrush(Colors.White);
-                        //    }
-                        //}
                     }                   
 
                     i++;
@@ -750,7 +720,7 @@ namespace KotHModLoaderGUI
 
         private void PlayOgg(object sender, RoutedEventArgs e)
         {
-            Button btn = (Button)sender;
+            System.Windows.Controls.Button btn = (System.Windows.Controls.Button)sender;
 
             if (btn.Name == "CandidateAudioButton1" || btn.Name == "CandidateAudioButton2")
             {
@@ -790,15 +760,15 @@ namespace KotHModLoaderGUI
                 if (CandidateAudioStack1.Opacity == 0.3)
                 {
                     CandidateAudioStack1.Opacity = 1;
-                    CandidateAudioStack1.Background = null;
-                    CandidateAudioText1.Foreground = new SolidColorBrush(Colors.Black);
+                    CandidateAudioStack1.Background = new SolidColorBrush(Colors.LightGray);
+                    CandidateAudioText1.Foreground = new SolidColorBrush(Colors.Red);
 
                     //_modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted, true);
                 }
                 else
                 {
                     CandidateAudioStack1.Opacity = 0.3;
-                    CandidateAudioStack1.Background = new SolidColorBrush(Colors.Black);
+                    CandidateAudioStack1.Background = new SolidColorBrush(Colors.Red);
                     CandidateAudioText1.Foreground = new SolidColorBrush(Colors.White);
 
                     //_modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted);
@@ -809,15 +779,15 @@ namespace KotHModLoaderGUI
                 if (CandidateAudioStack2.Opacity == 0.3)
                 {
                     CandidateAudioStack2.Opacity = 1;
-                    CandidateAudioStack2.Background = null;
-                    CandidateAudioText2.Foreground = new SolidColorBrush(Colors.Black);
+                    CandidateAudioStack2.Background = new SolidColorBrush(Colors.LightGray);
+                    CandidateAudioText2.Foreground = new SolidColorBrush(Colors.Red);
 
                     //_modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted, true);
                 }
                 else
                 {
                     CandidateAudioStack2.Opacity = 0.3;
-                    CandidateAudioStack2.Background = new SolidColorBrush(Colors.Black);
+                    CandidateAudioStack2.Background = new SolidColorBrush(Colors.Red);
                     CandidateAudioText2.Foreground = new SolidColorBrush(Colors.White);
 
                     //_modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted);
@@ -827,7 +797,7 @@ namespace KotHModLoaderGUI
 
         private void EditModInfo(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            TextBox textBox = (TextBox)sender;
+            System.Windows.Controls.TextBox textBox = (System.Windows.Controls.TextBox)sender;
 
             if(e.Key == System.Windows.Input.Key.Enter)
             {
@@ -858,7 +828,7 @@ namespace KotHModLoaderGUI
 
         private void ExtractVanillaAssets(object sender, RoutedEventArgs e)
         {
-            Button button = (Button)sender;
+            System.Windows.Controls.Button button = (System.Windows.Controls.Button)sender;
 
             switch(button.Name)
             {
@@ -905,7 +875,7 @@ namespace KotHModLoaderGUI
                 File.Delete("..\\KingOfTheHat_Data\\resources.assets");
 
             File.Copy("..\\KingOfTheHat_Data\\resources.assets.VANILLA", "..\\KingOfTheHat_Data\\resources.assets");
-            console.Text = "File resources.assets resetted to Vanilla.";
+            console.Text = "The game data has been reset to original.";
         }
     }
 }
