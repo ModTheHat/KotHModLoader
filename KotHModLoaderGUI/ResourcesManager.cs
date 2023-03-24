@@ -7,6 +7,7 @@ using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -414,6 +415,7 @@ namespace KotHModLoaderGUI
                     }
                 }
             }
+            Process.Start("explorer.exe", @"..\Extracted Assets\Textures");
         }
     }
 }
