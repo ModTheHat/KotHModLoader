@@ -66,7 +66,7 @@ Editor preferences are available in the [editor config](https://reponame/blob/ma
 
 **Creator 1**
 
-- <https://github.com/alexislacasse1>
+- <https://github.com/k0r0z1f101/>
 
 ## Thanks
 
