@@ -18,7 +18,7 @@
 ## Table of contents
 
 - [Install](#install)
-- [What's included](#whats-included)
+- [Features](#features)
 - [Bugs and feature requests](#bugs-and-feature-requests)
 - [Contributing](#contributing)
 - [Creators](#creators)
@@ -35,7 +35,7 @@
 - Answer the Mod Loader questions to setup stuff.
 - KotHModLoader is ready to use.
 
-## What's included
+## Features
 
 Some text
 
@@ -52,7 +52,7 @@ folder1/
 
 ## Bugs and feature requests
 
-Have a bug or a feature request? Please first read the [issue guidelines](https://reponame/blob/master/CONTRIBUTING.md) and search for existing and closed issues. If your problem or idea is not addressed yet, [please open a new issue](https://reponame/issues/new).
+Have a bug or a feature request? Please first search for existing and closed issues. If your problem or idea is not addressed yet, [please open a new issue](https://github.com/ModTheHat/KotHModLoader/issues/new).
 
 ## Contributing
 
