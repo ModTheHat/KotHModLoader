@@ -1,7 +1,5 @@
 <p align="center">
-    <img src="https://github.com/ModTheHat/KotHModLoader/blob/main/icon.png" alt="Logo" width=96 height=72>
-
-  <h3 align="center">Logo</h3>
+    <img src="https://github.com/ModTheHat/KotHModLoader/blob/main/icon.png" alt="Logo" width=96 height=72 style="pointer-events: none" >
 
   <p align="center">
     Short description
