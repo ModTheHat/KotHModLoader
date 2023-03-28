@@ -52,7 +52,7 @@ folder1/
 
 ## Bugs and feature requests
 
-Have a bug or a feature request? Please first search for existing and closed issues. If your problem or idea is not addressed yet, [please open a new issue](https://github.com/ModTheHat/KotHModLoader/issues/new).
+Have a bug or a feature request? Please first search for existing and closed [issues](https://github.com/ModTheHat/KotHModLoader/issues). If your problem or idea is not addressed yet, [please open a new issue](https://github.com/ModTheHat/KotHModLoader/issues/new).
 
 ## Contributing
 
