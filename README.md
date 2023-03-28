@@ -17,27 +17,23 @@
 
 ## Table of contents
 
-- [Quick start](#quick-start)
-- [Status](#status)
+- [Install](#install)
 - [What's included](#whats-included)
 - [Bugs and feature requests](#bugs-and-feature-requests)
 - [Contributing](#contributing)
 - [Creators](#creators)
-- [Thanks](#thanks)
 - [Copyright and license](#copyright-and-license)
 
 
-## Quick start
+## Install
 
-Some text
-
-- Instruction 1
-- Instruction 2
-- Instruction 3
-
-## Status
-
-Here goes all the budgets
+- Download the latest zip file
+- Locate your King of the Hat game's folder
+- Unzip the content of the zip file to your game's folder
+- Navigate to your game's folder and then KotHModLoaderGUI folder
+- Launch the Mod Loader by running KotHModLoaderGUI.exe
+- Answer the Mod Loader questions to setup stuff.
+- KotHModLoader is ready to use.
 
 ## What's included
 
