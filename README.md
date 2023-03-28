@@ -2,7 +2,7 @@
     <img src="https://github.com/ModTheHat/KotHModLoader/blob/main/icon.png" alt="Logo" width=96 height=72>
 
   <p align="center">
-    Short description
+    King of the Hat ModLoader will help you manage and create mods for King of the Hat game.
     <br>
     <a href="https://github.com/ModTheHat/KotHModLoader/issues/new?template=bug.md">Report bug</a>
     ·
@@ -15,6 +15,7 @@
 
 - [Install](#install)
 - [Features](#features)
+- [How to use](#how-to-use)
 - [Bugs and feature requests](#bugs-and-feature-requests)
 - [Creators](#creators)
 - [Copyright and license](#copyright-and-license)
@@ -32,23 +33,18 @@
 
 ## Features
 
+- Mods browser and management
 - Vanilla texture browser from resources.assets
 - Vanilla sound browser from master.bank file
 - Vanilla texture replacement from resources.assets file.
-- Mods browser and management
 - Vanilla texture extraction
-- 
 
-```text
-folder1/
-└── folder2/
-    ├── folder3/
-    │   ├── file1
-    │   └── file2
-    └── folder4/
-        ├── file3
-        └── file4
-```
+Upcoming
+- Vanilla sound extraction
+- Vanilla code editing
+- More file type support, like bundles, for extraction and modification
+
+## How to use
 
 ## Bugs and feature requests
 
@@ -56,13 +52,13 @@ Have a bug or a feature request? Please first search for existing and closed [is
 
 ## Creators
 
-**Creator 1**
+**Creator**
 
 - <https://github.com/k0r0z1f101/>
 
 ## Thanks
 
-Some Text
+Thanks to the modding community of King of the Hat
 
 ## Copyright and license
 
