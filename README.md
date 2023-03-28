@@ -36,7 +36,12 @@
 
 ## Features
 
-Some text
+- Vanilla texture browser from resources.assets
+- Vanilla sound browser from master.bank file
+- Vanilla texture replacement from resources.assets file.
+- Mods browser and management
+- Vanilla texture extraction
+- 
 
 ```text
 folder1/
@@ -65,6 +70,6 @@ Some Text
 
 ## Copyright and license
 
-Code and documentation copyright 2011-2018 the authors. Code released under the [MIT License](https://reponame/blob/master/LICENSE).
+Code and documentation copyright 2023 k0r0z1f101. Code released under the [GPL License](https://github.com/ModTheHat/KotHModLoader/blob/main/LICENSE).
 
 Enjoy :metal:
