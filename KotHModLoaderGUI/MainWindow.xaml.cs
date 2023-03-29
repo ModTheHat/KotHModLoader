@@ -99,6 +99,10 @@ namespace KotHModLoaderGUI
         {
             _currentAssetDisplayed = AssetType.Resources;
 
+            btnExtractAll.Visibility = Visibility.Visible;
+            btnExtractListed.Visibility = Visibility.Visible;
+            btnExtractSelected.Visibility = Visibility.Visible;
+
             lstVanilla.Items.Clear();
 
             List<string> assets = _resMgr.GetVanillaAssets();
@@ -522,6 +526,10 @@ namespace KotHModLoaderGUI
         {
             _currentAssetDisplayed = AssetType.FMOD;
             List<string> fmodAssets = _fmodManager.GetBankAssets();
+
+            btnExtractAll.Visibility = Visibility.Collapsed;
+            btnExtractListed.Visibility = Visibility.Collapsed;
+            btnExtractSelected.Visibility = Visibility.Collapsed;
 
             lstVanilla.Items.Clear();
 

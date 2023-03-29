@@ -322,17 +322,22 @@ namespace KotHModLoaderGUI
                 dynamic metafile = LoadJson(info.FullName);
 
                 if (metafile.GetType() == typeof(JArray))
-                    createNewMeta = ValidateNewMeta(folder);
+                    //createNewMeta = ValidateNewMeta(folder);
+                    createNewMeta = true;
 
                 if (metafile.GetType() == typeof(JObject))
                     if (metafile["pack"] == null)
-                        createNewMeta = ValidateNewMeta(folder);
+                        //createNewMeta = ValidateNewMeta(folder);
+                        createNewMeta = true;
             }
             else
-                createNewMeta = ValidateNewMeta(folder);
+                //createNewMeta = ValidateNewMeta(folder);
+                createNewMeta = true;
 
             if (createNewMeta)
             {
+                MessageBox.Show("No compatible meta file found in " + folder.Name + ", a meta file was created in the root folder of the mod.", folder.Name + ": No meta file found");
+
                 MetaFile data = new MetaFile()
                 {
                     AssignedVanillaAssets = new AssignedVanillaAssets(),
