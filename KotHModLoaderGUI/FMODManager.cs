@@ -2,8 +2,12 @@
 using Fmod5Sharp.FmodTypes;
 using NAudio.Vorbis;
 using NAudio.Wave;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
+using SixLabors.ImageSharp;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 
@@ -116,6 +120,35 @@ namespace KotHModLoaderGUI
 
             vorbis.Close();
             return infos;
+        }
+
+        public void ExtractAssets(List<int> indexes = null)
+        {
+            int assetsQty = indexes == null ? GetBankAssets().Count : indexes.Count;
+
+            if (Directory.Exists("..\\Extracted Assets"))
+                if (!Directory.Exists("..\\Extracted Assets\\Sounds"))
+                    Directory.CreateDirectory("..\\Extracted Assets\\Sounds");
+                else
+                    Directory.CreateDirectory("..\\Extracted Assets\\Sounds");
+
+            for (int i = 0; i < assetsQty; i++)
+            {
+                //    AssetTypeValueField field = indexes == null ? _afilesValueFields[i] : _afilesValueFields[indexes[i]];
+                //    {
+                //        AssetTypeValueField textureBase = _afilesValueFields[indexes == null ? i : indexes[i]];
+
+                //        TextureFile texture = TextureFile.ReadTextureFile(textureBase); // load base field into helper class
+                //        byte[] textureBgraRaw = texture.GetTextureData(_afileInstVanilla); // get the raw bgra32 data
+                //        if (textureBgraRaw != null)
+                //        {
+                //            SixLabors.ImageSharp.Image textureImage = SixLabors.ImageSharp.Image.LoadPixelData<Bgra32>(textureBgraRaw, texture.m_Width, texture.m_Height); // use imagesharp to convert to image
+                //            textureImage.Mutate(i => i.Flip(FlipMode.Vertical)); // flip on x-axis (all textures in unity are stored flipped like this)
+                //            textureImage.SaveAsPng("..\\Extracted Assets\\Textures" + "\\" + field["m_Name"].AsString + "-" + (indexes == null ? i : indexes[i]) + ".png");
+                //        }
+                //    }
+            }
+            Process.Start("explorer.exe", @"..\Extracted Assets\Sounds");
         }
     }
 }
