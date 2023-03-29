@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="https://github.com/ModTheHat/KotHModLoader/blob/main/icon.png" alt="Logo" width=96 height=72>
+    <img src="https://github.com/ModTheHat/KotHModLoader/blob/main/favicon.png" alt="Logo" width=96 height=72>
 
   <p align="center">
     King of the Hat ModLoader will help you manage and create mods for King of the Hat game.
