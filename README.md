@@ -34,15 +34,16 @@
 ## Features
 
 - Mods browser and management
-- Vanilla texture browser from resources.assets
-- Vanilla sound browser from master.bank file
-- Vanilla texture replacement from resources.assets file.
-- Vanilla texture extraction
+- Vanilla texture browser for resources.assets file
+- Vanilla sound browser for master.bank file
+- Vanilla texture extraction for resources.assets file
+- Vanilla texture replacement for resources.assets file
 
 Upcoming
 - Vanilla sound extraction
+- Vanilla sound replacement for master.bank file
 - Vanilla code editing
-- More file type support, like bundles, for extraction and modification
+- More file type support, like bundles, for vanilla extraction and replacement
 
 ## How to use
 
