@@ -289,7 +289,7 @@ namespace KotHModLoaderGUI
             return files;
         }
 
-        private static dynamic LoadJson(string path)
+        protected static dynamic LoadJson(string path)
         {
             using (StreamReader r = new StreamReader(path))
             {
