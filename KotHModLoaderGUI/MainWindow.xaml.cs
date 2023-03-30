@@ -99,10 +99,6 @@ namespace KotHModLoaderGUI
         {
             _currentAssetDisplayed = AssetType.Resources;
 
-            btnExtractAll.Visibility = Visibility.Visible;
-            btnExtractListed.Visibility = Visibility.Visible;
-            btnExtractSelected.Visibility = Visibility.Visible;
-
             lstVanilla.Items.Clear();
 
             List<string> assets = _resMgr.GetVanillaAssets();
@@ -527,10 +523,6 @@ namespace KotHModLoaderGUI
             _currentAssetDisplayed = AssetType.FMOD;
             List<string> fmodAssets = _fmodManager.GetBankAssets();
 
-            btnExtractAll.Visibility = Visibility.Collapsed;
-            btnExtractListed.Visibility = Visibility.Collapsed;
-            btnExtractSelected.Visibility = Visibility.Collapsed;
-
             lstVanilla.Items.Clear();
 
             if (_displayedIndexes != null)
@@ -842,6 +834,7 @@ namespace KotHModLoaderGUI
             {
                 case "btnExtractAll":
                     _resMgr.ExtractAssets();
+                    _fmodManager.ExtractAssets();
                     break;
                 case "btnExtractListed":
                     switch (_currentAssetDisplayed)
@@ -850,6 +843,7 @@ namespace KotHModLoaderGUI
                             _resMgr.ExtractAssets(_displayedIndexes);
                             break;
                         case AssetType.FMOD:
+                            _fmodManager.ExtractAssets(_displayedIndexes);
                             break;
                         case AssetType.None:
                             break;
@@ -861,13 +855,18 @@ namespace KotHModLoaderGUI
                         switch(_currentAssetDisplayed)
                         {
                             case AssetType.Resources:
-                                List<int> list = new List<int>
+                                List<int> listTexture = new List<int>
                                 {
                                     _displayedIndexes != null ? _displayedIndexes[lstVanilla.SelectedIndex] : lstVanilla.SelectedIndex
                                 };
-                                _resMgr.ExtractAssets(list);
+                                _resMgr.ExtractAssets(listTexture);
                                 break;
                             case AssetType.FMOD:
+                                List<int> listAudio = new List<int>
+                                {
+                                    _displayedIndexes != null ? _displayedIndexes[lstVanilla.SelectedIndex] : lstVanilla.SelectedIndex
+                                };
+                                _fmodManager.ExtractAssets(listAudio);
                                 break;
                             case AssetType.None:
                                 break;

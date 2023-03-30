@@ -15,7 +15,6 @@
 
 - [Install](#install)
 - [Features](#features)
-- [How to use](#how-to-use)
 - [Bugs and feature requests](#bugs-and-feature-requests)
 - [Creators](#creators)
 - [Copyright and license](#copyright-and-license)
@@ -38,14 +37,12 @@
 - Vanilla sound browser for master.bank file
 - Vanilla texture extraction for resources.assets file
 - Vanilla texture replacement for resources.assets file
+- Vanilla sound extraction for master.bank file
 
 Upcoming
-- Vanilla sound extraction
 - Vanilla sound replacement for master.bank file
 - Vanilla code editing
 - More file type support, like bundles, for vanilla extraction and replacement
-
-## How to use
 
 ## Bugs and feature requests
 

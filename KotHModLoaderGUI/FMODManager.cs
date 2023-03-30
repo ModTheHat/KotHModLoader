@@ -2,9 +2,6 @@
 using Fmod5Sharp.FmodTypes;
 using NAudio.Vorbis;
 using NAudio.Wave;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
-using SixLabors.ImageSharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -56,7 +53,7 @@ namespace KotHModLoaderGUI
         {
             List<string> infos = new List<string>();
 
-            FmodSample sample = _fmodSounds.Samples[index];
+            byte[] data = GetSampleData(index, out var sample);
 
             infos.Add(_fmodSounds.Header.AudioType.ToString() + "\n");
 
@@ -72,11 +69,6 @@ namespace KotHModLoaderGUI
             infos.Add("Is Stereo: " + sample.Metadata.IsStereo + "\n");
             infos.Add("Sample Count: " + sample.Metadata.SampleCount + "\n");
             infos.Add("Frequency: " + sample.Metadata.Frequency);
-
-            if (!sample.RebuildAsStandardFileFormat(out var data, out var extension))
-            {
-                Console.WriteLine($"Failed to extract sample {sample.Name}");
-            }
 
             PlayOgg(null, data);
 
@@ -132,23 +124,26 @@ namespace KotHModLoaderGUI
                 else
                     Directory.CreateDirectory("..\\Extracted Assets\\Sounds");
 
+            byte[] data;
             for (int i = 0; i < assetsQty; i++)
             {
-                //    AssetTypeValueField field = indexes == null ? _afilesValueFields[i] : _afilesValueFields[indexes[i]];
-                //    {
-                //        AssetTypeValueField textureBase = _afilesValueFields[indexes == null ? i : indexes[i]];
+                data = GetSampleData(indexes == null ? i :indexes[i], out var sample);
 
-                //        TextureFile texture = TextureFile.ReadTextureFile(textureBase); // load base field into helper class
-                //        byte[] textureBgraRaw = texture.GetTextureData(_afileInstVanilla); // get the raw bgra32 data
-                //        if (textureBgraRaw != null)
-                //        {
-                //            SixLabors.ImageSharp.Image textureImage = SixLabors.ImageSharp.Image.LoadPixelData<Bgra32>(textureBgraRaw, texture.m_Width, texture.m_Height); // use imagesharp to convert to image
-                //            textureImage.Mutate(i => i.Flip(FlipMode.Vertical)); // flip on x-axis (all textures in unity are stored flipped like this)
-                //            textureImage.SaveAsPng("..\\Extracted Assets\\Textures" + "\\" + field["m_Name"].AsString + "-" + (indexes == null ? i : indexes[i]) + ".png");
-                //        }
-                //    }
+                File.WriteAllBytes(@"..\Extracted Assets\Sounds\" + sample.Name + "-" + i + ".ogg", data);
             }
             Process.Start("explorer.exe", @"..\Extracted Assets\Sounds");
+        }
+
+        private byte[] GetSampleData(int index, out FmodSample sample)
+        {
+            sample = _fmodSounds.Samples[index];
+
+            if (!sample.RebuildAsStandardFileFormat(out var data, out var extension))
+            {
+                Console.WriteLine($"Failed to extract sample {sample.Name}");
+            }
+
+            return data;
         }
     }
 }
