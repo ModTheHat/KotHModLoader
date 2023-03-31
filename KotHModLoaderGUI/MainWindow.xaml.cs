@@ -401,6 +401,12 @@ namespace KotHModLoaderGUI
                             CandidateAudioStack1.Background = new SolidColorBrush(Colors.Red);
                             CandidateAudioText1.Foreground = new SolidColorBrush(Colors.White);
                         }
+                        else
+                        {
+                            CandidateAudioStack1.Opacity = 1;
+                            CandidateAudioStack1.Background = new SolidColorBrush(Colors.White);
+                            CandidateAudioText1.Foreground = new SolidColorBrush(Colors.Black);
+                        }
                     }
                     else if (i == 1)
                     {
@@ -410,6 +416,12 @@ namespace KotHModLoaderGUI
                             CandidateAudioStack2.Opacity = 0.3;
                             CandidateAudioStack2.Background = new SolidColorBrush(Colors.Red);
                             CandidateAudioText2.Foreground = new SolidColorBrush(Colors.White);
+                        }
+                        else
+                        {
+                            CandidateAudioStack2.Opacity = 1;
+                            CandidateAudioStack2.Background = new SolidColorBrush(Colors.White);
+                            CandidateAudioText2.Foreground = new SolidColorBrush(Colors.Black);
                         }
                     }
 
