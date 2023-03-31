@@ -398,7 +398,6 @@ namespace KotHModLoaderGUI
             return assigned;
         }
 
-        private static List<int> _assignedFMODIndexes = new List<int>();
         private static List<VanillaAudioAssetCandidate> AssignVanillaAudioFilesIndexes(FileInfo file)
         {
             FmodSoundBank assetsValues = MainWindow.FMODManager.FmodSoundBank;
@@ -408,13 +407,12 @@ namespace KotHModLoaderGUI
             {
                 FmodSample sample = assetsValues.Samples[i];
 
-                if(sample.Name.Contains(file.Name.Substring(0, file.Name.IndexOf("."))) && !_assignedFMODIndexes.Contains(i))
+                if(sample.Name.Contains(file.Name.Substring(0, file.Name.IndexOf("."))))
                 {
                     VanillaAudioAssetCandidate assets = new VanillaAudioAssetCandidate();
                     assets.index = i;
                     assets.name = sample.Name;
                     assigned.Add(assets);
-                    _assignedFMODIndexes.Add(i);
                 }
             }
 

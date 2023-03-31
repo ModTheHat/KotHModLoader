@@ -2,14 +2,11 @@
 using Fmod5Sharp.FmodTypes;
 using NAudio.Vorbis;
 using NAudio.Wave;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
-using static KotHModLoaderGUI.ModManager;
 
 namespace KotHModLoaderGUI
 {
@@ -198,7 +195,7 @@ namespace KotHModLoaderGUI
                             //                }
                             if (!blacklistedAssets.Contains(file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)) && assignedAsset == null)
                             {
-                                if (ModVanillaFMODAudioFromFileName(file.Name, bytes, 0, 0, new List<string>(), file))
+                                if (ModVanillaFMODAudioFromFileName(file.Name, bytes, 0, 0, blacklistedAssets, file))
                                     _alreadyModded.Add(file.Name);
                             }
                         }
@@ -222,92 +219,78 @@ namespace KotHModLoaderGUI
         byte[] _resSData;
         private bool ModVanillaFMODAudioFromFileName(string filename, byte[] dataImage, int width, int height, List<string> blacklisted, FileInfo modFile)
         {
-            //string differentSizesWarning = "";
-            //bool replaced = false;
-            //int i = 0;
-            //foreach (var goInfo in _afileVanilla.GetAssetsOfType(AssetClassID.Texture2D))
-            //{
-            //    var goBaseVanilla = _assetsManagerVanilla.GetBaseField(_afileInstVanilla, goInfo);
-            //    var name = goBaseVanilla["m_Name"].AsString;
+            bool replaced = false;
+            
+            for (int i = 0; i < _fmodSounds.Samples.Count; i++)
+            {
+                FmodSample sample = _fmodSounds.Samples[i];
+                string name = sample.Name;
 
-            //    if (filename.Contains(name))
-            //    {
-            //        if (_alreadyModdedAsset.Contains(i))
-            //        {
-            //            _alreadyModdedWarning += "More than one modded file tried to modify the asset: " + name + ".\n" +
-            //                "Only one file will modify the asset.";
-            //            i++;
-            //            continue;
-            //        }
+                if (filename.Contains(name))
+                {
+                    if (_alreadyModdedAsset.Contains(i))
+                    {
+                        _alreadyModdedWarning += "More than one modded file tried to modify the asset: " + name + ".\n" +
+                            "Only one file will modify the asset.";
+                        continue;
+                    }
 
-            //        dynamic stream = goBaseVanilla["m_StreamData"];
-            //        string path = stream["path"].AsString;
-            //        int offset = stream["offset"].AsInt;
-            //        int size = stream["size"].AsInt;
-            //        byte[] resSBytes = null;
-            //        byte[] bytes = null;
-            //        if (size > 0)
-            //        {
-            //            byte[] resSFile = File.ReadAllBytes("..\\KingOfTheHat_Data\\" + path);
-            //            resSBytes = new byte[size];
-            //            Buffer.BlockCopy(resSFile, offset, resSBytes, 0, size);
-            //            bytes = resSBytes;
-            //        }
-            //        else
-            //            bytes = goBaseVanilla["image data"].AsByteArray;
+                    if (!sample.RebuildAsStandardFileFormat(out var bytes, out var extension))
+                    {
+                        Console.WriteLine($"Failed to extract sample {sample.Name}");
+                    }
 
-            //        string str = Encoding.UTF8.GetString(bytes);
-            //        bool contains = blacklisted.Contains(str);
+                    string str = Encoding.UTF8.GetString(bytes);
+                    bool contains = blacklisted.Contains(str);
 
-            //        if (!contains)
-            //        {
-            //            if (goBaseVanilla["image data"].AsByteArray.Length > 0)
-            //            {
-            //                AssetTypeValue value = new AssetTypeValue(dataImage, false);
+                    //        if (!contains)
+                    //        {
+                    //            if (goBaseVanilla["image data"].AsByteArray.Length > 0)
+                    //            {
+                    //                AssetTypeValue value = new AssetTypeValue(dataImage, false);
 
-            //                if (goBaseVanilla["m_CompleteImageSize"].AsInt == dataImage.Length)
-            //                {
-            //                    goBaseVanilla["image data"].Value = value;
+                    //                if (goBaseVanilla["m_CompleteImageSize"].AsInt == dataImage.Length)
+                    //                {
+                    //                    goBaseVanilla["image data"].Value = value;
 
-            //                    AssetsReplacerFromMemory replacer = new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla);
-            //                    _replacers.Add(replacer);
-            //                    replaced = true;
-            //                    _alreadyModdedAsset.Add(i);
-            //                }
-            //                else
-            //                {
-            //                    differentSizesWarning += "File: " + modFile.Name + ", trying to replace asset: " + goBaseVanilla["m_Name"].AsString + "\n";
-            //                    goBaseVanilla["image data"].Value = value;
-            //                    goBaseVanilla["m_Width"].Value = new AssetTypeValue(width);
-            //                    goBaseVanilla["m_Height"].Value = new AssetTypeValue(height);
-            //                    goBaseVanilla["m_CompleteSize"].Value = new AssetTypeValue(width * height * 4);
+                    //                    AssetsReplacerFromMemory replacer = new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla);
+                    //                    _replacers.Add(replacer);
+                    //                    replaced = true;
+                    //                    _alreadyModdedAsset.Add(i);
+                    //                }
+                    //                else
+                    //                {
+                    //                    differentSizesWarning += "File: " + modFile.Name + ", trying to replace asset: " + goBaseVanilla["m_Name"].AsString + "\n";
+                    //                    goBaseVanilla["image data"].Value = value;
+                    //                    goBaseVanilla["m_Width"].Value = new AssetTypeValue(width);
+                    //                    goBaseVanilla["m_Height"].Value = new AssetTypeValue(height);
+                    //                    goBaseVanilla["m_CompleteSize"].Value = new AssetTypeValue(width * height * 4);
 
-            //                    AssetsReplacerFromMemory replacer = new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla);
-            //                    _replacers.Add(replacer);
-            //                    replaced = true;
-            //                    _alreadyModdedAsset.Add(i);
-            //                }
-            //            }
-            //            else
-            //            {
-            //                stream = goBaseVanilla["m_StreamData"];
-            //                stream["path"].Value = new AssetTypeValue("resources.assets.modded.resS");
-            //                stream["offset"].Value = new AssetTypeValue(_resSData.Length);
-            //                stream["size"].Value = new AssetTypeValue(dataImage.Length / 4);
-            //                goBaseVanilla["m_StreamData"].Value = new AssetTypeValue(AssetValueType.Array, stream);
+                    //                    AssetsReplacerFromMemory replacer = new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla);
+                    //                    _replacers.Add(replacer);
+                    //                    replaced = true;
+                    //                    _alreadyModdedAsset.Add(i);
+                    //                }
+                    //            }
+                    //            else
+                    //            {
+                    //                stream = goBaseVanilla["m_StreamData"];
+                    //                stream["path"].Value = new AssetTypeValue("resources.assets.modded.resS");
+                    //                stream["offset"].Value = new AssetTypeValue(_resSData.Length);
+                    //                stream["size"].Value = new AssetTypeValue(dataImage.Length / 4);
+                    //                goBaseVanilla["m_StreamData"].Value = new AssetTypeValue(AssetValueType.Array, stream);
 
-            //                Array.Resize(ref _resSData, _resSData.Length + dataImage.Length);
-            //                Buffer.BlockCopy(dataImage, 0, _resSData, _resSData.Length - dataImage.Length, dataImage.Length);
+                    //                Array.Resize(ref _resSData, _resSData.Length + dataImage.Length);
+                    //                Buffer.BlockCopy(dataImage, 0, _resSData, _resSData.Length - dataImage.Length, dataImage.Length);
 
-            //                AssetsReplacerFromMemory replacer = new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla);
-            //                _replacers.Add(replacer);
-            //                replaced = true;
-            //                _alreadyModdedAsset.Add(i);
-            //            }
-            //        }
-            //    }
-            //    i++;
-            //}
+                    //                AssetsReplacerFromMemory replacer = new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla);
+                    //                _replacers.Add(replacer);
+                    //                replaced = true;
+                    //                _alreadyModdedAsset.Add(i);
+                    //            }
+                    //        }
+                }
+            }
             //if (differentSizesWarning != "")
             //    MessageBox.Show(differentSizesWarning + "Modifying asset with different image sizes will bring weird behaviour unless modded in the code.");
 
