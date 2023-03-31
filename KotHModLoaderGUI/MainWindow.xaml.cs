@@ -367,6 +367,8 @@ namespace KotHModLoaderGUI
                 ModFile modFile = _modManager.FindModFile(fileName);
                 FileInfo metaFile = mod.MetaFile;
                 dynamic modJson = LoadJson(metaFile.FullName);
+                var blacklistedAsset = modJson["BlackListedVanillaAssets"];
+                string[] strings = (string[])blacklistedAsset.ToObject(typeof(string[]));
 
                 CloseModFilesUI(AssetType.FMOD);
 
@@ -385,13 +387,30 @@ namespace KotHModLoaderGUI
                 int i = 0;
                 foreach (VanillaAudioAssetCandidate candidate in candidates)
                 {
+                    byte[] bytes = _fmodManager.GetSampleData(candidate.index, out var sample);
+
+                    string str = Encoding.UTF8.GetString(bytes);
+                    bool contains = strings.Contains(str);
+
                     if (i == 0)
                     {
                         CandidateAudioText1.Text = "Audio sample name: " + candidate.name;
+                        if(contains)
+                        {
+                            CandidateAudioStack1.Opacity = 0.3;
+                            CandidateAudioStack1.Background = new SolidColorBrush(Colors.Red);
+                            CandidateAudioText1.Foreground = new SolidColorBrush(Colors.White);
+                        }
                     }
                     else if (i == 1)
                     {
                         CandidateAudioText2.Text = "Audio sample name: " + candidate.name;
+                        if (contains)
+                        {
+                            CandidateAudioStack2.Opacity = 0.3;
+                            CandidateAudioStack2.Background = new SolidColorBrush(Colors.Red);
+                            CandidateAudioText2.Foreground = new SolidColorBrush(Colors.White);
+                        }
                     }
 
                     i++;
