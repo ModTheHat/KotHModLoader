@@ -354,6 +354,53 @@ namespace KotHModLoaderGUI
             }
         }
 
+        private void DisplaySelectedModAudioInfo()
+        {
+            lstModAudioFileInfo.Items.Clear();
+            if (lstModAudioInfo.SelectedIndex > -1 && lstNames.SelectedIndex > -1)
+            {
+                Mod mod = _modManager.FindMod(lstNames.SelectedItem.ToString().Replace(".DISABLED", ""));
+                string fileName = lstModAudioInfo.SelectedItem.ToString().Replace(".DISABLED", "");
+                DirectoryInfo folder = _modManager.DirInfoMod;
+                FileInfo[] files = folder.GetFiles(fileName, SearchOption.AllDirectories);
+                FileInfo file = files[0];
+                ModFile modFile = _modManager.FindModFile(fileName);
+                FileInfo metaFile = mod.MetaFile;
+                dynamic modJson = LoadJson(metaFile.FullName);
+
+                CloseModFilesUI(AssetType.FMOD);
+
+                int candidateQty = 0;
+                List<VanillaAudioAssetCandidate> candidates = modFile.VanillaAudioCandidates;
+
+                //nom du fichier du mod
+                lstModAudioFileInfo.Items.Add("Nom du fichier audio: " + fileName);
+
+                //infos du fichier
+                foreach (string s in _fmodManager.GetOggFileInfos(file.FullName))
+                {
+                    lstModAudioFileInfo.Items.Add(s);
+                }
+                //vanilla assignés automatiquement
+                int i = 0;
+                foreach (VanillaAudioAssetCandidate candidate in candidates)
+                {
+                    if (i == 0)
+                    {
+                        CandidateAudioText1.Text = "Audio sample name: " + candidate.name;
+                    }
+                    else if (i == 1)
+                    {
+                        CandidateAudioText2.Text = "Audio sample name: " + candidate.name;
+                    }
+
+                    i++;
+                }
+
+                //vanilla assignés manuellement
+            }
+        }
+
         private void ToggleModFileActive(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ListBox lstBox = (ListBox)(sender);
@@ -452,6 +499,58 @@ namespace KotHModLoaderGUI
                 {
                     VanillaImageStack2.Opacity = 0.3;
                     VanillaImageStack2.Background = new SolidColorBrush(Colors.Red);
+
+                    _modManager.WriteToMetaFile(selectedMod.MetaFile, Encoding.UTF8.GetString(bytes));
+                }
+            }
+        }
+
+        private void ToggleAssignVanillaAudio(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            TextBlock textBlock = (TextBlock)sender;
+
+            Mod selectedMod = _modManager.FindMod(lstNames.SelectedItem.ToString().Replace(".DISABLED", ""));
+            ModFile modFile = selectedMod.ModFiles[lstModAudioInfo.SelectedIndex + lstModInfo.Items.Count];
+
+            string vanillaFile = modFile.VanillaAudioCandidates[textBlock.Name.Contains("1") ? 0 : 1].name;
+            int index = modFile.VanillaAudioCandidates[textBlock.Name.Contains("1") ? 0 : 1].index;
+
+            byte[] bytes = _fmodManager.GetSampleData(index, out var sample);
+
+            if (textBlock.Name == "CandidateAudioText1")
+            {
+                if (CandidateAudioStack1.Opacity == 0.3)
+                {
+                    CandidateAudioStack1.Opacity = 1;
+                    CandidateAudioStack1.Background = new SolidColorBrush(Colors.White);
+                    CandidateAudioText1.Foreground = new SolidColorBrush(Colors.Black);
+
+                    _modManager.WriteToMetaFile(selectedMod.MetaFile, Encoding.UTF8.GetString(bytes), true);
+                }
+                else
+                {
+                    CandidateAudioStack1.Opacity = 0.3;
+                    CandidateAudioStack1.Background = new SolidColorBrush(Colors.Red);
+                    CandidateAudioText1.Foreground = new SolidColorBrush(Colors.White);
+
+                    _modManager.WriteToMetaFile(selectedMod.MetaFile, Encoding.UTF8.GetString(bytes));
+                }
+            }
+            if (textBlock.Name == "CandidateAudioText2")
+            {
+                if (CandidateAudioStack2.Opacity == 0.3)
+                {
+                    CandidateAudioStack2.Opacity = 1;
+                    CandidateAudioStack2.Background = new SolidColorBrush(Colors.White);
+                    CandidateAudioText2.Foreground = new SolidColorBrush(Colors.Black);
+
+                    _modManager.WriteToMetaFile(selectedMod.MetaFile, Encoding.UTF8.GetString(bytes), true);
+                }
+                else
+                {
+                    CandidateAudioStack2.Opacity = 0.3;
+                    CandidateAudioStack2.Background = new SolidColorBrush(Colors.Red);
+                    CandidateAudioText2.Foreground = new SolidColorBrush(Colors.White);
 
                     _modManager.WriteToMetaFile(selectedMod.MetaFile, Encoding.UTF8.GetString(bytes));
                 }
@@ -658,53 +757,6 @@ namespace KotHModLoaderGUI
             ModdedImageViewer.Source = null;
         }
 
-        private void DisplaySelectedModAudioInfo()
-        {
-            lstModAudioFileInfo.Items.Clear();
-            if (lstModAudioInfo.SelectedIndex > -1 && lstNames.SelectedIndex > -1)
-            {
-                Mod mod = _modManager.FindMod(lstNames.SelectedItem.ToString().Replace(".DISABLED", ""));
-                string fileName = lstModAudioInfo.SelectedItem.ToString().Replace(".DISABLED", "");
-                DirectoryInfo folder = _modManager.DirInfoMod;
-                FileInfo[] files = folder.GetFiles(fileName, SearchOption.AllDirectories);
-                FileInfo file = files[0];
-                ModFile modFile = _modManager.FindModFile(fileName);
-                FileInfo metaFile = mod.MetaFile;
-                dynamic modJson = LoadJson(metaFile.FullName);
-
-                CloseModFilesUI(AssetType.FMOD);
-
-                int candidateQty = 0;
-                List<VanillaAudioAssetCandidate> candidates = modFile.VanillaAudioCandidates;
-
-                //nom du fichier du mod
-                lstModAudioFileInfo.Items.Add("Nom du fichier audio: " + fileName);
-
-                //infos du fichier
-                foreach(string s in _fmodManager.GetOggFileInfos(file.FullName))
-                {
-                    lstModAudioFileInfo.Items.Add(s);
-                }
-                //vanilla assignés automatiquement
-                int i = 0;
-                foreach(VanillaAudioAssetCandidate candidate in candidates)
-                {
-                    if (i == 0)
-                    {
-                        CandidateAudioText1.Text = "Audio sample name: " + candidate.name;
-                    }
-                    else if(i == 1)
-                    {
-                        CandidateAudioText2.Text = "Audio sample name: " + candidate.name;
-                    }                   
-
-                    i++;
-                }
-
-                //vanilla assignés manuellement
-            }
-        }
-
         private byte[] GetSampleData(string fileName, int index)
         {
             ModFile modFile = _modManager.FindModFile(fileName.Replace(".DISABLED", ""));
@@ -737,60 +789,6 @@ namespace KotHModLoaderGUI
                     string path = _displayedModAudioFilesInfo[lstModAudioInfo.SelectedIndex].FullName;
 
                     _fmodManager.PlayOgg(path);
-                }
-            }
-        }
-
-        private void ToggleAssignVanillaAudio(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            TextBlock textBlock = (TextBlock)sender;
-
-            Mod selectedMod = _modManager.FindMod(lstNames.SelectedItem.ToString().Replace(".DISABLED", ""));
-            ModFile modFile = selectedMod.ModFiles[lstModAudioInfo.SelectedIndex + lstModInfo.Items.Count];
-
-            string vanillaFile = modFile.VanillaAudioCandidates[textBlock.Name.Contains("1") ? 0 : 1].name;
-
-            BlackListedVanillaAssets blacklisted = new BlackListedVanillaAssets();
-            blacklisted.index = modFile.VanillaAudioCandidates[textBlock.Name.Contains("1") ? 0 : 1].index;
-            blacklisted.name = modFile.VanillaAudioCandidates[textBlock.Name.Contains("1") ? 0 : 1].name;
-            blacklisted.path = modFile.File.FullName.Substring(modFile.File.FullName.IndexOf(selectedMod.Name) + selectedMod.Name.Length);
-
-            if (textBlock.Name == "CandidateAudioText1")
-            {
-                if (CandidateAudioStack1.Opacity == 0.3)
-                {
-                    CandidateAudioStack1.Opacity = 1;
-                    CandidateAudioStack1.Background = new SolidColorBrush(Colors.LightGray);
-                    CandidateAudioText1.Foreground = new SolidColorBrush(Colors.Red);
-
-                    //_modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted, true);
-                }
-                else
-                {
-                    CandidateAudioStack1.Opacity = 0.3;
-                    CandidateAudioStack1.Background = new SolidColorBrush(Colors.Red);
-                    CandidateAudioText1.Foreground = new SolidColorBrush(Colors.White);
-
-                    //_modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted);
-                }
-            }
-            if (textBlock.Name == "CandidateAudioText2")
-            {
-                if (CandidateAudioStack2.Opacity == 0.3)
-                {
-                    CandidateAudioStack2.Opacity = 1;
-                    CandidateAudioStack2.Background = new SolidColorBrush(Colors.LightGray);
-                    CandidateAudioText2.Foreground = new SolidColorBrush(Colors.Red);
-
-                    //_modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted, true);
-                }
-                else
-                {
-                    CandidateAudioStack2.Opacity = 0.3;
-                    CandidateAudioStack2.Background = new SolidColorBrush(Colors.Red);
-                    CandidateAudioText2.Foreground = new SolidColorBrush(Colors.White);
-
-                    //_modManager.WriteToMetaFile(selectedMod.MetaFile, blacklisted);
                 }
             }
         }

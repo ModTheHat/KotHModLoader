@@ -206,7 +206,11 @@ namespace KotHModLoaderGUI
 
         public string BuildMods()
         {
-            return MainWindow.ResMgr.BuildActiveModsTextures(_modsList);
+            string message = "";
+            message += MainWindow.ResMgr.BuildActiveModsTextures(_modsList);
+            message += MainWindow.FMODManager.BuildActiveModsFMODAudio(_modsList);
+
+            return message;
         }
 
         public Mod FindMod(string name)

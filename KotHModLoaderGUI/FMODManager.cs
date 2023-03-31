@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using static KotHModLoaderGUI.ModManager;
 
@@ -142,7 +143,7 @@ namespace KotHModLoaderGUI
             Process.Start("explorer.exe", _soundsPath);
         }
 
-        private byte[] GetSampleData(int index, out FmodSample sample)
+        public byte[] GetSampleData(int index, out FmodSample sample)
         {
             sample = _fmodSounds.Samples[index];
 
@@ -160,7 +161,7 @@ namespace KotHModLoaderGUI
         public string BuildActiveModsFMODAudio(List<Mod> mods)
         {
             //_replacers = new List<AssetsReplacer>();
-            //_alreadyModded = new List<string>();
+            _alreadyModded = new List<string>();
             //_alreadyModdedAsset = new List<int>();
             //_alreadyModdedWarning = "";
 
@@ -179,7 +180,7 @@ namespace KotHModLoaderGUI
                 if (!disabledAssets.Contains(@"\" + mod.Name))
                     foreach (FileInfo file in mod.AudioFiles)
                     {
-                        var assignedAssets = modJson["AssignedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
+                        var assignedAsset = modJson["AssignedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
 
                         if (!disabledAssets.Contains(@"\" + file.FullName.Substring(file.FullName.IndexOf(mod.Name))) && !_alreadyModded.Contains(file.Name))
                         {
@@ -195,11 +196,11 @@ namespace KotHModLoaderGUI
                             //                    if (ModVanillaTextureFromFileName(assigned.name.Value, bytes, image.Width, image.Height, strings, file))
                             //                        _alreadyModded.Add(file.Name);
                             //                }
-                            //                if (blacklisted == null && assigned == null)
-                            //                {
-                            //                    if (ModVanillaTextureFromFileName(file.Name, bytes, image.Width, image.Height, strings, file))
-                            //                        _alreadyModded.Add(file.Name);
-                            //                }
+                            if (!blacklistedAssets.Contains(file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)) && assignedAsset == null)
+                            {
+                                if (ModVanillaFMODAudioFromFileName(file.Name, bytes, 0, 0, new List<string>(), file))
+                                    _alreadyModded.Add(file.Name);
+                            }
                         }
                     }
             }
@@ -316,7 +317,9 @@ namespace KotHModLoaderGUI
 
         private byte[] GetSampleBytes(FileInfo file)
         {
-            return null;
+            byte[] data = File.ReadAllBytes(file.FullName);
+
+            return data;
         }
     }
 }
