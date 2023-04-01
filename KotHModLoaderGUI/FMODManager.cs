@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using static Fmod5Sharp.Util.Extensions;
 
 namespace KotHModLoaderGUI
 {
@@ -201,6 +202,106 @@ namespace KotHModLoaderGUI
                         }
                     }
             }
+
+            //var bankPath = "Master.bank";
+
+            var bytes2 = File.ReadAllBytes(_bankFilePath);
+
+            var index = bytes2.AsSpan().IndexOf(Encoding.ASCII.GetBytes("FSB5"));
+
+            if (index > 0)
+            {
+                bytes2 = bytes2.AsSpan(index).ToArray();
+            }
+
+            var bank = FsbLoader.LoadFsbFromByteArray(bytes2);
+
+
+            using MemoryStream stream = new(bytes2);
+            using BinaryReader reader = new(stream);
+
+            FmodAudioHeader header = new(reader);
+
+
+
+            //var masterBytes = File.ReadAllBytes(_bankFilePath);
+            //using MemoryStream stream = new(masterBytes);
+
+            //var index2 = masterBytes.AsSpan().IndexOf(Encoding.ASCII.GetBytes("FSB5"));
+
+            //if (index2 > 0)
+            //{
+            //    masterBytes = masterBytes.AsSpan(index).ToArray();
+            //}
+
+            //var bank2 = FsbLoader.LoadFsbFromByteArray(masterBytes);
+
+
+
+            //using BinaryReader reader = new(stream);
+            ////FmodAudioHeader masterHeader = new(reader);
+
+            ////Fmod5Sharp.Util.Extensions.Res
+
+            reader.BaseStream.Position = 0;
+
+            string magic = reader.ReadString(4);
+
+            if (magic != "FSB5")
+            {
+                //IsValid = false;
+                //return;
+            }
+
+            var version = reader.ReadUInt32(); //0x04
+            var numSamples = reader.ReadUInt32(); //0x08
+            var sizeOfSampleHeaders = reader.ReadUInt32();
+            var sizeOfNameTable = reader.ReadUInt32();
+            var sizeOfData = reader.ReadUInt32(); //0x14
+            var audioType = (FmodAudioType)reader.ReadUInt32(); //0x18
+
+            reader.ReadUInt32(); //Skip 0x1C which is always 0
+
+            if (version == 0)
+            {
+                var sizeOfThisHeader = 0x40;
+                reader.ReadUInt32(); //Version 0 has an extra field at 0x20 before flags
+            }
+            else
+            {
+                var sizeOfThisHeader = 0x3C;
+            }
+
+            reader.ReadUInt32(); //Skip 0x20 (flags)
+
+            //128-bit hash
+            var hashLower = reader.ReadUInt64(); //0x24
+            var hashUpper = reader.ReadUInt64(); //0x30
+
+            reader.ReadUInt64(); //Skip unknown value at 0x34
+
+            var sampleHeadersStart = reader.BaseStream.Position;
+            //var b = reader.ReadString(60);
+            //b = reader.ReadBytes(1);
+            //b = reader.ReadBytes(1);
+            //b = reader.ReadBytes(1);
+            //b = reader.ReadBytes(1);
+            //b = reader.ReadBytes(1);
+            //b = reader.ReadBytes(1);
+            //b = reader.ReadBytes(1);
+            //b = reader.ReadBytes(1);
+            //b = reader.ReadBytes(1);
+            //b = reader.ReadBytes(1);
+            //b = reader.ReadBytes(1);
+            //b = reader.ReadBytes(1);
+            //b = reader.ReadBytes(1);
+            //b = reader.ReadBytes(1);
+            //b = reader.ReadBytes(1);
+            //b = reader.ReadBytes(1);
+            //b = reader.ReadBytes(1);
+            //masterHeader.AudioType
+            //masterHeader.Version
+            //masterHeader.NumSamples
             //if (_alreadyModdedWarning != "")
             //    MessageBox.Show(_alreadyModdedWarning);
 
@@ -217,10 +318,12 @@ namespace KotHModLoaderGUI
         string _alreadyModdedWarning = "";
         List<int> _alreadyModdedAsset;
         byte[] _resSData;
-        private bool ModVanillaFMODAudioFromFileName(string filename, byte[] dataImage, int width, int height, List<string> blacklisted, FileInfo modFile)
+        private bool ModVanillaFMODAudioFromFileName(string filename, byte[] dataAudio, int width, int height, List<string> blacklisted, FileInfo modFile)
         {
             bool replaced = false;
-            
+            _alreadyModdedAsset = new List<int>();
+
+
             for (int i = 0; i < _fmodSounds.Samples.Count; i++)
             {
                 FmodSample sample = _fmodSounds.Samples[i];
@@ -243,59 +346,26 @@ namespace KotHModLoaderGUI
                     string str = Encoding.UTF8.GetString(bytes);
                     bool contains = blacklisted.Contains(str);
 
-                    //        if (!contains)
-                    //        {
-                    //            if (goBaseVanilla["image data"].AsByteArray.Length > 0)
-                    //            {
-                    //                AssetTypeValue value = new AssetTypeValue(dataImage, false);
+                    if (!contains)
+                    {
+                        FmodSampleMetadata header = new FmodSampleMetadata();
 
-                    //                if (goBaseVanilla["m_CompleteImageSize"].AsInt == dataImage.Length)
-                    //                {
-                    //                    goBaseVanilla["image data"].Value = value;
+                        //rebuild new header
+                        //dataoffset
+                        //header.IsStereo = ;
+                        //header.Channels = ;
+                        //header.Frequency = ;
+                        //header.SampleCount = ;
 
-                    //                    AssetsReplacerFromMemory replacer = new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla);
-                    //                    _replacers.Add(replacer);
-                    //                    replaced = true;
-                    //                    _alreadyModdedAsset.Add(i);
-                    //                }
-                    //                else
-                    //                {
-                    //                    differentSizesWarning += "File: " + modFile.Name + ", trying to replace asset: " + goBaseVanilla["m_Name"].AsString + "\n";
-                    //                    goBaseVanilla["image data"].Value = value;
-                    //                    goBaseVanilla["m_Width"].Value = new AssetTypeValue(width);
-                    //                    goBaseVanilla["m_Height"].Value = new AssetTypeValue(height);
-                    //                    goBaseVanilla["m_CompleteSize"].Value = new AssetTypeValue(width * height * 4);
-
-                    //                    AssetsReplacerFromMemory replacer = new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla);
-                    //                    _replacers.Add(replacer);
-                    //                    replaced = true;
-                    //                    _alreadyModdedAsset.Add(i);
-                    //                }
-                    //            }
-                    //            else
-                    //            {
-                    //                stream = goBaseVanilla["m_StreamData"];
-                    //                stream["path"].Value = new AssetTypeValue("resources.assets.modded.resS");
-                    //                stream["offset"].Value = new AssetTypeValue(_resSData.Length);
-                    //                stream["size"].Value = new AssetTypeValue(dataImage.Length / 4);
-                    //                goBaseVanilla["m_StreamData"].Value = new AssetTypeValue(AssetValueType.Array, stream);
-
-                    //                Array.Resize(ref _resSData, _resSData.Length + dataImage.Length);
-                    //                Buffer.BlockCopy(dataImage, 0, _resSData, _resSData.Length - dataImage.Length, dataImage.Length);
-
-                    //                AssetsReplacerFromMemory replacer = new AssetsReplacerFromMemory(_afileVanilla, goInfo, goBaseVanilla);
-                    //                _replacers.Add(replacer);
-                    //                replaced = true;
-                    //                _alreadyModdedAsset.Add(i);
-                    //            }
-                    //        }
+                        replaced = true;
+                        _alreadyModdedAsset.Add(i);
+                    }
                 }
             }
             //if (differentSizesWarning != "")
             //    MessageBox.Show(differentSizesWarning + "Modifying asset with different image sizes will bring weird behaviour unless modded in the code.");
 
-            //return replaced;
-            return false;
+            return replaced;
         }
 
         private byte[] GetSampleBytes(FileInfo file)

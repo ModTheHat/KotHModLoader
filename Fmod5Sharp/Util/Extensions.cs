@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Fmod5Sharp.Util
 {
-    internal static class Extensions
+    public static class Extensions
     {
         internal static T ReadEndian<T>(this BinaryReader reader) where T : IBinaryReadable, new()
         {
@@ -16,7 +16,7 @@ namespace Fmod5Sharp.Util
 
         internal static long Position(this BinaryReader reader) => reader.BaseStream.Position;
 
-        internal static string ReadString(this BinaryReader reader, int length, Encoding? encoding = null)
+        public static string ReadString(this BinaryReader reader, int length, Encoding? encoding = null)
         {
             if (encoding == null)
                 encoding = Encoding.UTF8;
