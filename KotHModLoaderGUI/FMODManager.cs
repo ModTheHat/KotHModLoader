@@ -5,7 +5,9 @@ using NAudio.Wave;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.DirectoryServices.ActiveDirectory;
 using System.IO;
+using System.Linq;
 using System.Text;
 using static Fmod5Sharp.Util.Extensions;
 
@@ -203,16 +205,31 @@ namespace KotHModLoaderGUI
                     }
             }
 
+            MemoryStream streamWrite = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(streamWrite);
+
+
+            FileInfo oggfile = new FileInfo(@"..\Mods\Forest-Take012.ogg");
+            byte[] data = GetSampleBytes(oggfile);
+
             //var bankPath = "Master.bank";
 
             var bytes2 = File.ReadAllBytes(_bankFilePath);
+            //var bytes2 = File.ReadAllBytes("juif2.bank");
+            File.WriteAllBytes("juif.bank", bytes2);
 
             var index = bytes2.AsSpan().IndexOf(Encoding.ASCII.GetBytes("FSB5"));
+
+            byte[] firstBytes = new byte[index + 4];
+
+            Buffer.BlockCopy(bytes2, 0, firstBytes, 0, index + 4);
+            File.WriteAllBytes("juif2.bank", firstBytes);
 
             if (index > 0)
             {
                 bytes2 = bytes2.AsSpan(index).ToArray();
             }
+
 
             var bank = FsbLoader.LoadFsbFromByteArray(bytes2);
 
@@ -281,6 +298,44 @@ namespace KotHModLoaderGUI
             reader.ReadUInt64(); //Skip unknown value at 0x34
 
             var sampleHeadersStart = reader.BaseStream.Position;
+
+            List<FmodSampleMetadata> Samples = new();
+            object ChunkReadingLock = new();
+
+            for (var i = 0; i < numSamples; i++)
+            {
+                var sampleMetadata = reader.ReadEndian<FmodSampleMetadata>();
+
+                if (!sampleMetadata.HasAnyChunks)
+                {
+                    Samples.Add(sampleMetadata);
+                    continue;
+                }
+
+                lock (ChunkReadingLock)
+                {
+                    //List<FmodSampleChunk> chunks = new();
+                    //FmodSampleChunk.CurrentSample = sampleMetadata;
+
+                    //    FmodSampleChunk nextChunk;
+                    //    do
+                    //    {
+                    //        nextChunk = reader.ReadEndian<FmodSampleChunk>();
+                    //        chunks.Add(nextChunk);
+                    //    } while (nextChunk.MoreChunks);
+
+                    //    FmodSampleChunk.CurrentSample = null;
+
+                    //    if (chunks.FirstOrDefault(c => c.ChunkType == FmodSampleChunkType.FREQUENCY) is { ChunkData: FrequencyChunkData fcd })
+                    //    {
+                    //        sampleMetadata.FrequencyId = fcd.ActualFrequencyId;
+                    //    }
+
+                    //    sampleMetadata.Chunks = chunks;
+
+                    //    Samples.Add(sampleMetadata);
+                }
+            }
             //var b = reader.ReadString(60);
             //b = reader.ReadBytes(1);
             //b = reader.ReadBytes(1);
@@ -370,6 +425,7 @@ namespace KotHModLoaderGUI
 
         private byte[] GetSampleBytes(FileInfo file)
         {
+            //string longPathSpecifier = @"\\?" + file.FullName;
             byte[] data = File.ReadAllBytes(file.FullName);
 
             return data;

@@ -2,7 +2,7 @@
 
 namespace Fmod5Sharp.Util
 {
-    internal interface IBinaryReadable
+    public interface IBinaryReadable
     {
         internal void Read(BinaryReader reader);
     }

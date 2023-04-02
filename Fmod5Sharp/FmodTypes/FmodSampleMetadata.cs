@@ -6,7 +6,7 @@ namespace Fmod5Sharp.FmodTypes
 {
 	public class FmodSampleMetadata : IBinaryReadable
 	{
-		internal bool HasAnyChunks;
+		public bool HasAnyChunks;
 		internal uint FrequencyId;
 		internal ulong DataOffset;
 		internal List<FmodSampleChunk> Chunks = new();
