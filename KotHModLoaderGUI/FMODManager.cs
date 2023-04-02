@@ -242,25 +242,6 @@ namespace KotHModLoaderGUI
 
 
 
-            //var masterBytes = File.ReadAllBytes(_bankFilePath);
-            //using MemoryStream stream = new(masterBytes);
-
-            //var index2 = masterBytes.AsSpan().IndexOf(Encoding.ASCII.GetBytes("FSB5"));
-
-            //if (index2 > 0)
-            //{
-            //    masterBytes = masterBytes.AsSpan(index).ToArray();
-            //}
-
-            //var bank2 = FsbLoader.LoadFsbFromByteArray(masterBytes);
-
-
-
-            //using BinaryReader reader = new(stream);
-            ////FmodAudioHeader masterHeader = new(reader);
-
-            ////Fmod5Sharp.Util.Extensions.Res
-
             reader.BaseStream.Position = 0;
 
             string magic = reader.ReadString(4);
@@ -329,45 +310,15 @@ namespace KotHModLoaderGUI
 
                     if (chunks.FirstOrDefault(c => c.ChunkType == FmodSampleChunkType.FREQUENCY) is { ChunkData: FrequencyChunkData fcd })
                     {
-                        //        sampleMetadata.FrequencyId = fcd.ActualFrequencyId;
+                        sampleMetadata.FrequencyId = fcd.ActualFrequencyId;
                     }
 
-                    //    sampleMetadata.Chunks = chunks;
+                    sampleMetadata.Chunks = chunks;
 
-                    //    Samples.Add(sampleMetadata);
+                    Samples.Add(sampleMetadata);
                 }
             }
-            //var b = reader.ReadString(60);
-            //b = reader.ReadBytes(1);
-            //b = reader.ReadBytes(1);
-            //b = reader.ReadBytes(1);
-            //b = reader.ReadBytes(1);
-            //b = reader.ReadBytes(1);
-            //b = reader.ReadBytes(1);
-            //b = reader.ReadBytes(1);
-            //b = reader.ReadBytes(1);
-            //b = reader.ReadBytes(1);
-            //b = reader.ReadBytes(1);
-            //b = reader.ReadBytes(1);
-            //b = reader.ReadBytes(1);
-            //b = reader.ReadBytes(1);
-            //b = reader.ReadBytes(1);
-            //b = reader.ReadBytes(1);
-            //b = reader.ReadBytes(1);
-            //b = reader.ReadBytes(1);
-            //masterHeader.AudioType
-            //masterHeader.Version
-            //masterHeader.NumSamples
-            //if (_alreadyModdedWarning != "")
-            //    MessageBox.Show(_alreadyModdedWarning);
 
-            //File.WriteAllBytes(_resDir + @"\resources.assets.modded.resS", _resSData);
-
-            //var writer = new AssetsFileWriter(_resDir + @"\" + _resNoFlavor);
-            //_afileVanilla.Write(writer, 0, _replacers);
-            //writer.Close();
-
-            //return _replacers.Count + " vanilla textures replaced.";
             return null;
         }
 

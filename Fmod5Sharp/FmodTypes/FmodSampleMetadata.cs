@@ -7,9 +7,9 @@ namespace Fmod5Sharp.FmodTypes
 	public class FmodSampleMetadata : IBinaryReadable
 	{
 		public bool HasAnyChunks;
-		internal uint FrequencyId;
+		public uint FrequencyId;
 		internal ulong DataOffset;
-		internal List<FmodSampleChunk> Chunks = new();
+		public List<FmodSampleChunk> Chunks = new();
 		internal int NumChannels;
 
 		public bool IsStereo;
