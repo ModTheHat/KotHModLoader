@@ -5,11 +5,11 @@ using Fmod5Sharp.Util;
 
 namespace Fmod5Sharp.FmodTypes
 {
-	internal class FmodSampleChunk : IBinaryReadable
+	public class FmodSampleChunk : IBinaryReadable
 	{
 		internal static FmodSampleMetadata? CurrentSample;
 		
-		public FmodSampleChunkType ChunkType;
+		internal FmodSampleChunkType ChunkType;
 		public uint ChunkSize;
 		public bool MoreChunks;
 #pragma warning disable 8618 //Non-nullable value is not defined.

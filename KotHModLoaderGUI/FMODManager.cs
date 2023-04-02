@@ -314,7 +314,7 @@ namespace KotHModLoaderGUI
 
                 lock (ChunkReadingLock)
                 {
-                    //List<FmodSampleChunk> chunks = new();
+                    List<FmodSampleChunk> chunks = new();
                     //FmodSampleChunk.CurrentSample = sampleMetadata;
 
                     //    FmodSampleChunk nextChunk;
