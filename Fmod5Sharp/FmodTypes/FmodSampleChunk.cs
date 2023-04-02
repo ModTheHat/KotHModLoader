@@ -7,13 +7,13 @@ namespace Fmod5Sharp.FmodTypes
 {
 	public class FmodSampleChunk : IBinaryReadable
 	{
-		internal static FmodSampleMetadata? CurrentSample;
+		public static FmodSampleMetadata? CurrentSample;
 		
-		internal FmodSampleChunkType ChunkType;
+		public FmodSampleChunkType ChunkType;
 		public uint ChunkSize;
 		public bool MoreChunks;
 #pragma warning disable 8618 //Non-nullable value is not defined.
-		internal IChunkData ChunkData;
+		public IChunkData ChunkData;
 #pragma warning restore 8618
 
 		void IBinaryReadable.Read(BinaryReader reader)

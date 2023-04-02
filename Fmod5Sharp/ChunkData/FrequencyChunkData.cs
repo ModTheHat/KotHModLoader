@@ -2,7 +2,7 @@
 
 namespace Fmod5Sharp.ChunkData
 {
-	internal class FrequencyChunkData : IChunkData
+	public class FrequencyChunkData : IChunkData
 	{
 		public uint ActualFrequencyId;
 

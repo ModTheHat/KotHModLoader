@@ -2,7 +2,7 @@
 
 namespace Fmod5Sharp.ChunkData
 {
-	internal  interface IChunkData
+	public  interface IChunkData
 	{
 		public void Read(BinaryReader reader, uint expectedSize);
 	}

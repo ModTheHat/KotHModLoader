@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using static Fmod5Sharp.Util.Extensions;
+using Fmod5Sharp.ChunkData;
 
 namespace KotHModLoaderGUI
 {
@@ -315,21 +316,21 @@ namespace KotHModLoaderGUI
                 lock (ChunkReadingLock)
                 {
                     List<FmodSampleChunk> chunks = new();
-                    //FmodSampleChunk.CurrentSample = sampleMetadata;
+                    FmodSampleChunk.CurrentSample = sampleMetadata;
 
-                    //    FmodSampleChunk nextChunk;
-                    //    do
-                    //    {
-                    //        nextChunk = reader.ReadEndian<FmodSampleChunk>();
-                    //        chunks.Add(nextChunk);
-                    //    } while (nextChunk.MoreChunks);
+                    FmodSampleChunk nextChunk;
+                    do
+                    {
+                        nextChunk = reader.ReadEndian<FmodSampleChunk>();
+                        chunks.Add(nextChunk);
+                    } while (nextChunk.MoreChunks);
 
-                    //    FmodSampleChunk.CurrentSample = null;
+                    FmodSampleChunk.CurrentSample = null;
 
-                    //    if (chunks.FirstOrDefault(c => c.ChunkType == FmodSampleChunkType.FREQUENCY) is { ChunkData: FrequencyChunkData fcd })
-                    //    {
-                    //        sampleMetadata.FrequencyId = fcd.ActualFrequencyId;
-                    //    }
+                    if (chunks.FirstOrDefault(c => c.ChunkType == FmodSampleChunkType.FREQUENCY) is { ChunkData: FrequencyChunkData fcd })
+                    {
+                        //        sampleMetadata.FrequencyId = fcd.ActualFrequencyId;
+                    }
 
                     //    sampleMetadata.Chunks = chunks;
 

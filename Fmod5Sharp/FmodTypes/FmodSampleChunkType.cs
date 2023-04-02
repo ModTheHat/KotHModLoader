@@ -1,6 +1,6 @@
 ﻿namespace Fmod5Sharp.FmodTypes
 {
-	internal enum FmodSampleChunkType : uint
+	public enum FmodSampleChunkType : uint
 	{
 		CHANNELS = 1,
 		FREQUENCY = 2,
