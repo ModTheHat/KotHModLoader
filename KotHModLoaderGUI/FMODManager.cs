@@ -208,49 +208,39 @@ namespace KotHModLoaderGUI
 
             MemoryStream streamWrite = new MemoryStream();
             BinaryWriter writer = new BinaryWriter(streamWrite);
-
+            //File.WriteAllBytes("Master.modded.bank", vanillaBytes);
 
             FileInfo oggfile = new FileInfo(@"..\Mods\Forest-Take012.ogg");
-            byte[] data = GetSampleBytes(oggfile);
 
-            //var bankPath = "Master.bank";
+            //byte[] dataModFile = GetSampleBytes(oggfile);
 
-            var bytes2 = File.ReadAllBytes(_bankFilePath);
-            //var bytes2 = File.ReadAllBytes("juif2.bank");
-            File.WriteAllBytes("juif.bank", bytes2);
+            //VANILLA MASTER.BANK FULL FILE DATA
+            byte[] vanillaMasterBytes = File.ReadAllBytes(_bankFilePath);
 
-            var index = bytes2.AsSpan().IndexOf(Encoding.ASCII.GetBytes("FSB5"));
+            //VANILLA MASTER.BANK FILE HEADER
+            int headerIndex = vanillaMasterBytes.AsSpan().IndexOf(Encoding.ASCII.GetBytes("FSB5"));
+            byte[] headerBytes = new byte[headerIndex];
+            Buffer.BlockCopy(vanillaMasterBytes, 0, headerBytes, 0, headerIndex);
 
-            byte[] firstBytes = new byte[index + 4];
-
-            Buffer.BlockCopy(bytes2, 0, firstBytes, 0, index + 4);
-            File.WriteAllBytes("juif2.bank", firstBytes);
-
-            if (index > 0)
+            //VANILLA MASTER.BANK METADATA, SAMPLES AND STREAMING DATA
+            byte[] vanillaMasterNoHeaderBytes = null;
+            if (headerIndex > 0)
             {
-                bytes2 = bytes2.AsSpan(index).ToArray();
+                vanillaMasterNoHeaderBytes = vanillaMasterBytes.AsSpan(headerIndex).ToArray();
             }
 
+            //VANILLA MASTER.BANK METADATA, SAMPLES AND STREAMING FMODSOUNDBANK OBJECT
+            FmodSoundBank masterBank = FsbLoader.LoadFsbFromByteArray(vanillaMasterNoHeaderBytes);
 
-            var bank = FsbLoader.LoadFsbFromByteArray(bytes2);
-
-
-            using MemoryStream stream = new(bytes2);
+            //VANILLA MASTER.BANK STREAM AND BINARYREADER
+            using MemoryStream stream = new(vanillaMasterNoHeaderBytes);
             using BinaryReader reader = new(stream);
 
+            //VANILLA MASTER.BANK FMODAUDIOHEADER METADATA PART
             FmodAudioHeader header = new(reader);
 
-
-
+            //READ VANILLA MASTER.BANK BYTES FOR METADATA
             reader.BaseStream.Position = 0;
-
-            string magic = reader.ReadString(4);
-
-            if (magic != "FSB5")
-            {
-                //IsValid = false;
-                //return;
-            }
 
             var version = reader.ReadUInt32(); //0x04
             var numSamples = reader.ReadUInt32(); //0x08
@@ -259,26 +249,41 @@ namespace KotHModLoaderGUI
             var sizeOfData = reader.ReadUInt32(); //0x14
             var audioType = (FmodAudioType)reader.ReadUInt32(); //0x18
 
-            reader.ReadUInt32(); //Skip 0x1C which is always 0
+            //WRITE NEW MASTER.BANK METADATA
+            writer.Write(version);
+            writer.Write(numSamples);
+            writer.Write(sizeOfSampleHeaders);
+            writer.Write(sizeOfNameTable);
+            writer.Write(sizeOfData);
+            writer.Write((UInt32)audioType);
+
+            writer.Write(reader.ReadUInt32()); //Reader Skip 0x1C which is always 0
 
             if (version == 0)
             {
                 var sizeOfThisHeader = 0x40;
-                reader.ReadUInt32(); //Version 0 has an extra field at 0x20 before flags
+                writer.Write(reader.ReadUInt32()); //Version 0 has an extra field at 0x20 before flags
             }
             else
             {
                 var sizeOfThisHeader = 0x3C;
             }
 
-            reader.ReadUInt32(); //Skip 0x20 (flags)
+            writer.Write(reader.ReadUInt32()); //Skip 0x20 (flags)
 
             //128-bit hash
             var hashLower = reader.ReadUInt64(); //0x24
             var hashUpper = reader.ReadUInt64(); //0x30
 
-            reader.ReadUInt64(); //Skip unknown value at 0x34
+            writer.Write(hashLower);
+            writer.Write(hashUpper);
 
+            writer.Write(reader.ReadUInt64()); //Skip unknown value at 0x34
+
+           // File.WriteAllText(writer);
+            //VANILLA MASTER.BANK END OF METADATA READ BYTES
+            
+            //VANILLA MASTER.BANK SAMPLES AND STREAMING START
             var sampleHeadersStart = reader.BaseStream.Position;
 
             List<FmodSampleMetadata> Samples = new();
@@ -318,6 +323,7 @@ namespace KotHModLoaderGUI
                     Samples.Add(sampleMetadata);
                 }
             }
+            //VANILLA MASTER.BANK SAMPLES, STREAMING AND FILE END
 
             return null;
         }
