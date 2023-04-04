@@ -11,6 +11,7 @@ using System.Linq;
 using System.Text;
 using static Fmod5Sharp.Util.Extensions;
 using Fmod5Sharp.ChunkData;
+using System.Diagnostics.Metrics;
 
 namespace KotHModLoaderGUI
 {
@@ -205,6 +206,23 @@ namespace KotHModLoaderGUI
                         }
                     }
             }
+            //WRITING FILE TEST
+            byte[] testFile = null;
+            if (File.Exists("Master.modded.bank") && false)
+            {
+                testFile = File.ReadAllBytes("Master.modded.bank");
+                int headerIndexTest = testFile.AsSpan().IndexOf(Encoding.ASCII.GetBytes("FSB5"));
+                byte[] headerBytesTest = new byte[headerIndexTest];
+                Buffer.BlockCopy(testFile, 0, headerBytesTest, 0, headerIndexTest);
+                byte[] testNoHeaderBytes = null;
+                if (headerIndexTest > 0)
+                {
+                    testNoHeaderBytes = testFile.AsSpan(headerIndexTest).ToArray();
+                }
+                FmodSoundBank testBank = FsbLoader.LoadFsbFromByteArray(testNoHeaderBytes);
+            }
+
+
 
             MemoryStream streamWrite = new MemoryStream();
             BinaryWriter writer = new BinaryWriter(streamWrite);
@@ -219,8 +237,9 @@ namespace KotHModLoaderGUI
 
             //VANILLA MASTER.BANK FILE HEADER
             int headerIndex = vanillaMasterBytes.AsSpan().IndexOf(Encoding.ASCII.GetBytes("FSB5"));
-            byte[] headerBytes = new byte[headerIndex];
-            Buffer.BlockCopy(vanillaMasterBytes, 0, headerBytes, 0, headerIndex);
+            byte[] headerBytes = new byte[vanillaMasterBytes.Length];
+            Buffer.BlockCopy(vanillaMasterBytes, 0, headerBytes, 0, headerIndex + 60 + 10000000);
+            File.WriteAllBytes("Master.modded.bank", headerBytes);
 
             //VANILLA MASTER.BANK METADATA, SAMPLES AND STREAMING DATA
             byte[] vanillaMasterNoHeaderBytes = null;
@@ -240,7 +259,7 @@ namespace KotHModLoaderGUI
             FmodAudioHeader header = new(reader);
 
             //READ VANILLA MASTER.BANK BYTES FOR METADATA
-            reader.BaseStream.Position = 0;
+            reader.BaseStream.Position = 4;
 
             var version = reader.ReadUInt32(); //0x04
             var numSamples = reader.ReadUInt32(); //0x08
