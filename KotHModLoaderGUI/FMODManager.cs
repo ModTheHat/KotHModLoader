@@ -208,7 +208,7 @@ namespace KotHModLoaderGUI
             }
             //WRITING FILE TEST
             byte[] testFile = null;
-            if (File.Exists("Master.modded.bank") && false)
+            if (File.Exists("Master.modded.bank"))
             {
                 testFile = File.ReadAllBytes("Master.modded.bank");
                 int headerIndexTest = testFile.AsSpan().IndexOf(Encoding.ASCII.GetBytes("FSB5"));
@@ -222,24 +222,25 @@ namespace KotHModLoaderGUI
                 FmodSoundBank testBank = FsbLoader.LoadFsbFromByteArray(testNoHeaderBytes);
             }
 
-
-
             MemoryStream streamWrite = new MemoryStream();
             BinaryWriter writer = new BinaryWriter(streamWrite);
-            //File.WriteAllBytes("Master.modded.bank", vanillaBytes);
 
             FileInfo oggfile = new FileInfo(@"..\Mods\Forest-Take012.ogg");
 
-            //byte[] dataModFile = GetSampleBytes(oggfile);
+            byte[] dataModFile = GetSampleBytes(oggfile);
 
             //VANILLA MASTER.BANK FULL FILE DATA
             byte[] vanillaMasterBytes = File.ReadAllBytes(_bankFilePath);
 
+            //NEW MASTER.BANK INITIALISATION
+            byte[] newMasterBytes = new byte[vanillaMasterBytes.Length];
+
             //VANILLA MASTER.BANK FILE HEADER
             int headerIndex = vanillaMasterBytes.AsSpan().IndexOf(Encoding.ASCII.GetBytes("FSB5"));
-            byte[] headerBytes = new byte[vanillaMasterBytes.Length];
-            Buffer.BlockCopy(vanillaMasterBytes, 0, headerBytes, 0, headerIndex + 60 + 10000000);
-            File.WriteAllBytes("Master.modded.bank", headerBytes);
+            byte[] headerBytes = new byte[headerIndex + 60];
+            Buffer.BlockCopy(vanillaMasterBytes, 0, headerBytes, 0, headerIndex + 60);
+            Buffer.BlockCopy(vanillaMasterBytes, 0, newMasterBytes, 0, headerIndex + 60);
+            //File.WriteAllBytes("Master.modded.bank", headerBytes);
 
             //VANILLA MASTER.BANK METADATA, SAMPLES AND STREAMING DATA
             byte[] vanillaMasterNoHeaderBytes = null;
@@ -308,6 +309,10 @@ namespace KotHModLoaderGUI
             List<FmodSampleMetadata> Samples = new();
             object ChunkReadingLock = new();
 
+            //ADD SAMPLE HEADERS TO NEW MASTER
+            Buffer.BlockCopy(vanillaMasterBytes, headerIndex + 60, newMasterBytes, headerIndex + 60, (int)sizeOfSampleHeaders);
+            int lastPos = headerIndex + 60 + (int)sizeOfSampleHeaders;
+
             for (var i = 0; i < numSamples; i++)
             {
                 var sampleMetadata = reader.ReadEndian<FmodSampleMetadata>();
@@ -341,8 +346,25 @@ namespace KotHModLoaderGUI
 
                     Samples.Add(sampleMetadata);
                 }
+
+                //ADD SAMPLE STREAMING DATA TO NEW MASTER
+                var sampleName = masterBank.Samples[i].Name.Contains("KotH_UI_LandingScreen_PressStart_v2-01");
+                if (sampleName)
+                {
+                    int length = vanillaMasterBytes.Length - headerIndex - 60 - (int)sizeOfSampleHeaders - (int)sampleMetadata.DataOffset > dataModFile.Length ? dataModFile.Length : vanillaMasterBytes.Length - headerIndex - 60 - (int)sizeOfSampleHeaders - (int)sampleMetadata.DataOffset;
+                    byte[] zeros = new byte[length];
+                    Buffer.BlockCopy(zeros, 0, newMasterBytes, (int)sampleMetadata.DataOffset + headerIndex + 60 + (int)sizeOfSampleHeaders, length);
+                }
+                else
+                {
+                    byte[] zeros = new byte[vanillaMasterBytes.Length - headerIndex - 60 - (int)sizeOfSampleHeaders - (int)sampleMetadata.DataOffset];
+                    Buffer.BlockCopy(vanillaMasterBytes, (int)sampleMetadata.DataOffset + headerIndex + 60 + (int)sizeOfSampleHeaders, newMasterBytes, (int)sampleMetadata.DataOffset + headerIndex + 60 + (int)sizeOfSampleHeaders, vanillaMasterBytes.Length - headerIndex - 60 - (int)sizeOfSampleHeaders - (int)sampleMetadata.DataOffset);
+                    //Buffer.BlockCopy(zeros, 0, newMasterBytes, (int)sampleMetadata.DataOffset + headerIndex + 60 + (int)sizeOfSampleHeaders, zeros.Length);
+                }
             }
             //VANILLA MASTER.BANK SAMPLES, STREAMING AND FILE END
+
+            File.WriteAllBytes("Master.modded.bank", newMasterBytes);
 
             return null;
         }

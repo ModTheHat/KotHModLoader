@@ -17,7 +17,7 @@ namespace Fmod5Sharp.FmodTypes
 		public readonly uint NumSamples;
 
 		internal readonly uint SizeOfThisHeader;
-		internal readonly uint SizeOfSampleHeaders;
+        internal readonly uint SizeOfSampleHeaders;
 		internal readonly uint SizeOfNameTable;
 		internal readonly uint SizeOfData;
 		

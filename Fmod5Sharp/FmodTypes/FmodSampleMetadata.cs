@@ -8,7 +8,7 @@ namespace Fmod5Sharp.FmodTypes
 	{
 		public bool HasAnyChunks;
 		public uint FrequencyId;
-		internal ulong DataOffset;
+		public ulong DataOffset;
 		public List<FmodSampleChunk> Chunks = new();
 		internal int NumChannels;
 
