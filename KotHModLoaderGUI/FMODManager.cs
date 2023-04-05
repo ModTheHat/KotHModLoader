@@ -12,6 +12,7 @@ using System.Text;
 using static Fmod5Sharp.Util.Extensions;
 using Fmod5Sharp.ChunkData;
 using System.Diagnostics.Metrics;
+using System.Windows.Shapes;
 
 namespace KotHModLoaderGUI
 {
@@ -225,9 +226,11 @@ namespace KotHModLoaderGUI
             MemoryStream streamWrite = new MemoryStream();
             BinaryWriter writer = new BinaryWriter(streamWrite);
 
-            FileInfo oggfile = new FileInfo(@"..\Mods\Forest-Take012.ogg");
+            FileInfo oggfile = new FileInfo(@"..\Mods\Forest-Take01.ogg");
 
             byte[] dataModFile = GetSampleBytes(oggfile);
+            Stream streamModFile = new MemoryStream(File.ReadAllBytes(@"..\Mods\Forest-Take01.ogg"));
+            VorbisWaveReader vorbis = new VorbisWaveReader(streamModFile);
 
             //VANILLA MASTER.BANK FULL FILE DATA
             byte[] vanillaMasterBytes = File.ReadAllBytes(_bankFilePath);
@@ -325,6 +328,10 @@ namespace KotHModLoaderGUI
 
                 lock (ChunkReadingLock)
                 {
+                    if(masterBank.Samples[i].Name.Equals("Forest-Take01"))
+                    {
+
+                    }
                     List<FmodSampleChunk> chunks = new();
                     FmodSampleChunk.CurrentSample = sampleMetadata;
 
@@ -347,18 +354,33 @@ namespace KotHModLoaderGUI
                     Samples.Add(sampleMetadata);
                 }
 
+                byte[] byteTest = GetSampleData(i, out var sampleTest);
+
                 //ADD SAMPLE STREAMING DATA TO NEW MASTER
-                var sampleName = masterBank.Samples[i].Name.Contains("KotH_UI_LandingScreen_PressStart_v2-01");
+                var sampleName = masterBank.Samples[i].Name.Contains("Forest-Take01");
+                int headerLength = headerIndex - 60 - (int)sizeOfSampleHeaders;
+                int sampleLength;
+                if (i + 1 < numSamples)
+                {
+                    sampleLength = (int)masterBank.Samples[i + 1].Metadata.DataOffset - (int)sampleMetadata.DataOffset;
+                }
+                else
+                {
+                    sampleLength = vanillaMasterBytes.Length - (int)sampleMetadata.DataOffset - headerLength;
+                }
                 if (sampleName)
                 {
-                    int length = vanillaMasterBytes.Length - headerIndex - 60 - (int)sizeOfSampleHeaders - (int)sampleMetadata.DataOffset > dataModFile.Length ? dataModFile.Length : vanillaMasterBytes.Length - headerIndex - 60 - (int)sizeOfSampleHeaders - (int)sampleMetadata.DataOffset;
-                    byte[] zeros = new byte[length];
-                    Buffer.BlockCopy(zeros, 0, newMasterBytes, (int)sampleMetadata.DataOffset + headerIndex + 60 + (int)sizeOfSampleHeaders, length);
+                    byte[] zeros = new byte[sampleLength];
+                    byte[] theseBytes = new byte[sampleLength];
+                    Buffer.BlockCopy(vanillaMasterBytes, (int)sampleMetadata.DataOffset + headerLength, theseBytes, 0, sampleLength);
+                    Buffer.BlockCopy(zeros, 0, newMasterBytes, (int)sampleMetadata.DataOffset + headerIndex + 60 + (int)sizeOfSampleHeaders, sampleLength);
                 }
                 else
                 {
                     byte[] zeros = new byte[vanillaMasterBytes.Length - headerIndex - 60 - (int)sizeOfSampleHeaders - (int)sampleMetadata.DataOffset];
-                    Buffer.BlockCopy(vanillaMasterBytes, (int)sampleMetadata.DataOffset + headerIndex + 60 + (int)sizeOfSampleHeaders, newMasterBytes, (int)sampleMetadata.DataOffset + headerIndex + 60 + (int)sizeOfSampleHeaders, vanillaMasterBytes.Length - headerIndex - 60 - (int)sizeOfSampleHeaders - (int)sampleMetadata.DataOffset);
+                    byte[] theseBytes = new byte[sampleLength];
+                    Buffer.BlockCopy(vanillaMasterBytes, (int)sampleMetadata.DataOffset + headerLength, theseBytes, 0, sampleLength);
+                    Buffer.BlockCopy(vanillaMasterBytes, (int)sampleMetadata.DataOffset + headerLength, newMasterBytes, (int)sampleMetadata.DataOffset + headerLength, sampleLength);
                     //Buffer.BlockCopy(zeros, 0, newMasterBytes, (int)sampleMetadata.DataOffset + headerIndex + 60 + (int)sizeOfSampleHeaders, zeros.Length);
                 }
             }
