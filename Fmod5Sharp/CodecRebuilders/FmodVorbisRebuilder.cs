@@ -32,9 +32,7 @@ namespace Fmod5Sharp.CodecRebuilders
             var dataChunk = sample.Metadata.Chunks.FirstOrDefault(f => f.ChunkType == FmodSampleChunkType.VORBISDATA);
 
             if (dataChunk == null)
-            {
                 throw new Exception("Rebuilding Vorbis data requires a VORBISDATA chunk, which wasn't found");
-            }
 
             var chunkData = (VorbisChunkData)dataChunk.ChunkData;
             var crc32 = chunkData.Crc32;

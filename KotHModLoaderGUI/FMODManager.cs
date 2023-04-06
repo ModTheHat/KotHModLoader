@@ -1,18 +1,17 @@
 ﻿using Fmod5Sharp;
+using Fmod5Sharp.ChunkData;
 using Fmod5Sharp.FmodTypes;
 using NAudio.Vorbis;
 using NAudio.Wave;
+using Newtonsoft.Json.Linq;
+using OggVorbisEncoder;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.DirectoryServices.ActiveDirectory;
 using System.IO;
 using System.Linq;
 using System.Text;
 using static Fmod5Sharp.Util.Extensions;
-using Fmod5Sharp.ChunkData;
-using System.Diagnostics.Metrics;
-using System.Windows.Shapes;
 
 namespace KotHModLoaderGUI
 {
@@ -25,8 +24,9 @@ namespace KotHModLoaderGUI
         private static string _extractedPath = _rootPath + @"\Extracted Assets";
         private static string _soundsPath = _extractedPath + @"\Sounds";
 
+        private JObject _indexesByNames = new();
 
-        FmodSoundBank _fmodSounds;
+        private FmodSoundBank _fmodSounds;
 
         public FmodSoundBank FmodSoundBank => _fmodSounds;
         public void InitialisePaths()
@@ -38,20 +38,26 @@ namespace KotHModLoaderGUI
         {
             var bytes = File.ReadAllBytes(_bankFilePath);
 
-            var index = bytes.AsSpan().IndexOf(Encoding.ASCII.GetBytes("FSB5"));
+            var index = bytes.AsSpan().IndexOf(System.Text.Encoding.ASCII.GetBytes("FSB5"));
 
-            if (index > 0)
-            {
-                bytes = bytes.AsSpan(index).ToArray();
-            }
+            bytes = index > 0 ? bytes.AsSpan(index).ToArray() : bytes;
 
             _fmodSounds = FsbLoader.LoadFsbFromByteArray(bytes);
+
+            for (int i = 0; i < _fmodSounds.Samples.Count; i++) 
+            {
+                FmodSample sample = _fmodSounds.Samples[i];
+                if (_indexesByNames[sample.Name] != null)
+                    _indexesByNames[sample.Name].AddAfterSelf(i);
+                else
+                    _indexesByNames[sample.Name] = new JArray(i);
+            }
         }
 
         public List<string> GetBankAssets()
         {
             List<string> assets = new List<string>();
-            var i = 0;
+
             foreach (var bankSample in _fmodSounds.Samples)
             {
                 assets.Add(bankSample.Name);
@@ -69,12 +75,6 @@ namespace KotHModLoaderGUI
 
             infos.Add("Name: " + sample.Name + "\n");
             infos.Add("Sample Bytes: " + sample.SampleBytes.Length + "\n");
-#if false
-            foreach(var samplebytes in sample.SampleBytes)
-            {
-                infos.Add(samplebytes + ", ");
-            }
-#endif
             infos.Add("Channels: " + sample.Metadata.Channels + "\n");
             infos.Add("Is Stereo: " + sample.Metadata.IsStereo + "\n");
             infos.Add("Sample Count: " + sample.Metadata.SampleCount + "\n");
@@ -128,11 +128,10 @@ namespace KotHModLoaderGUI
         {
             int assetsQty = indexes == null ? GetBankAssets().Count : indexes.Count;
 
-            if (Directory.Exists(_extractedPath))
-                if (!Directory.Exists(_soundsPath))
-                    Directory.CreateDirectory(_soundsPath);
-                else
-                    Directory.CreateDirectory(_soundsPath);
+            if (!Directory.Exists(_extractedPath))
+                Directory.CreateDirectory(_extractedPath);
+            if (!Directory.Exists(_soundsPath))
+                Directory.CreateDirectory(_soundsPath);
 
             byte[] data;
             int index;
@@ -144,6 +143,16 @@ namespace KotHModLoaderGUI
                 File.WriteAllBytes(_soundsPath + @"\" + sample.Name + @"-" + index + @".ogg", data);
             }
             Process.Start("explorer.exe", _soundsPath);
+        }
+
+        public byte[] GetSampleData(int index, FmodSample sample)
+        {
+            if (!sample.RebuildAsStandardFileFormat(out var data, out var extension))
+            {
+                Console.WriteLine($"Failed to extract sample {sample.Name}");
+            }
+
+            return data;
         }
 
         public byte[] GetSampleData(int index, out FmodSample sample)
@@ -158,91 +167,43 @@ namespace KotHModLoaderGUI
             return data;
         }
 
-
-        List<string> _alreadyModded;
-        //List<AssetsReplacer> _replacers;
-        public string BuildActiveModsFMODAudio(List<Mod> mods)
+        private void ReadModdedMasterFile(out byte[] moddedFileByte, out FmodSoundBank moddedSoundBank)
         {
-            //_replacers = new List<AssetsReplacer>();
-            _alreadyModded = new List<string>();
-            //_alreadyModdedAsset = new List<int>();
-            //_alreadyModdedWarning = "";
-
-            ////byte array for new .resS file
-            //_resSData = new byte[0];
-
-            ////list of index to be replaced, byte array for changes from mod files
-
-            foreach (var mod in mods)
-            {
-                FileInfo metaFile = mod.MetaFile;
-                dynamic modJson = LoadJson(metaFile.FullName);
-                List<string> blacklistedAssets = (List<string>)modJson["BlackListedVanillaAssets"].ToObject(typeof(List<string>));
-                List<string> disabledAssets = (List<string>)modJson["DisabledModsOrFiles"].ToObject(typeof(List<string>));
-
-                if (!disabledAssets.Contains(@"\" + mod.Name))
-                    foreach (FileInfo file in mod.AudioFiles)
-                    {
-                        var assignedAsset = modJson["AssignedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
-
-                        if (!disabledAssets.Contains(@"\" + file.FullName.Substring(file.FullName.IndexOf(mod.Name))) && !_alreadyModded.Contains(file.Name))
-                        {
-                            byte[] bytes = GetSampleBytes(file);
-                            //                SixLabors.ImageSharp.Image image;
-                            //                using (image = SixLabors.ImageSharp.Image.Load(file.FullName))
-                            //                {
-                            //                    var width = image.Width;
-                            //                    var height = image.Height;
-                            //                }
-                            //                if (assigned != null)
-                            //                {
-                            //                    if (ModVanillaTextureFromFileName(assigned.name.Value, bytes, image.Width, image.Height, strings, file))
-                            //                        _alreadyModded.Add(file.Name);
-                            //                }
-                            if (!blacklistedAssets.Contains(file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)) && assignedAsset == null)
-                            {
-                                if (ModVanillaFMODAudioFromFileName(file.Name, bytes, 0, 0, blacklistedAssets, file))
-                                    _alreadyModded.Add(file.Name);
-                            }
-                        }
-                    }
-            }
-            //WRITING FILE TEST
-            byte[] testFile = null;
+            moddedFileByte = null;
+            moddedSoundBank = null;
             if (File.Exists("Master.modded.bank"))
             {
-                testFile = File.ReadAllBytes("Master.modded.bank");
-                int headerIndexTest = testFile.AsSpan().IndexOf(Encoding.ASCII.GetBytes("FSB5"));
+                moddedFileByte = File.ReadAllBytes("Master.modded.bank");
+                int headerIndexTest = moddedFileByte.AsSpan().IndexOf(System.Text.Encoding.ASCII.GetBytes("FSB5"));
                 byte[] headerBytesTest = new byte[headerIndexTest];
-                Buffer.BlockCopy(testFile, 0, headerBytesTest, 0, headerIndexTest);
-                byte[] testNoHeaderBytes = null;
+                Buffer.BlockCopy(moddedFileByte, 0, headerBytesTest, 0, headerIndexTest);
+                byte[] noHeaderBytes = null;
                 if (headerIndexTest > 0)
                 {
-                    testNoHeaderBytes = testFile.AsSpan(headerIndexTest).ToArray();
+                    noHeaderBytes = moddedFileByte.AsSpan(headerIndexTest).ToArray();
                 }
-                FmodSoundBank testBank = FsbLoader.LoadFsbFromByteArray(testNoHeaderBytes);
+                moddedSoundBank = FsbLoader.LoadFsbFromByteArray(noHeaderBytes);
             }
+        }
 
-            MemoryStream streamWrite = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(streamWrite);
-
+        private byte[] ReadModdedOGGFile()
+        {
             FileInfo oggfile = new FileInfo(@"..\Mods\Forest-Take01.ogg");
 
             byte[] dataModFile = GetSampleBytes(oggfile);
-            Stream streamModFile = new MemoryStream(File.ReadAllBytes(@"..\Mods\Forest-Take01.ogg"));
-            VorbisWaveReader vorbis = new VorbisWaveReader(streamModFile);
 
+            return dataModFile;
+        }
+
+        private void ReadVanillaMasterFileHeaders(out FmodSoundBank masterBank, out byte[] vanillaMasterBytes)
+        {
             //VANILLA MASTER.BANK FULL FILE DATA
-            byte[] vanillaMasterBytes = File.ReadAllBytes(_bankFilePath);
-
-            //NEW MASTER.BANK INITIALISATION
-            byte[] newMasterBytes = new byte[vanillaMasterBytes.Length];
+            vanillaMasterBytes = File.ReadAllBytes(_bankFilePath);
 
             //VANILLA MASTER.BANK FILE HEADER
-            int headerIndex = vanillaMasterBytes.AsSpan().IndexOf(Encoding.ASCII.GetBytes("FSB5"));
+            int headerIndex = vanillaMasterBytes.AsSpan().IndexOf(System.Text.Encoding.ASCII.GetBytes("FSB5"));
             byte[] headerBytes = new byte[headerIndex + 60];
             Buffer.BlockCopy(vanillaMasterBytes, 0, headerBytes, 0, headerIndex + 60);
-            Buffer.BlockCopy(vanillaMasterBytes, 0, newMasterBytes, 0, headerIndex + 60);
             //File.WriteAllBytes("Master.modded.bank", headerBytes);
 
             //VANILLA MASTER.BANK METADATA, SAMPLES AND STREAMING DATA
@@ -253,7 +214,7 @@ namespace KotHModLoaderGUI
             }
 
             //VANILLA MASTER.BANK METADATA, SAMPLES AND STREAMING FMODSOUNDBANK OBJECT
-            FmodSoundBank masterBank = FsbLoader.LoadFsbFromByteArray(vanillaMasterNoHeaderBytes);
+            masterBank = FsbLoader.LoadFsbFromByteArray(vanillaMasterNoHeaderBytes);
 
             //VANILLA MASTER.BANK STREAM AND BINARYREADER
             using MemoryStream stream = new(vanillaMasterNoHeaderBytes);
@@ -272,51 +233,45 @@ namespace KotHModLoaderGUI
             var sizeOfData = reader.ReadUInt32(); //0x14
             var audioType = (FmodAudioType)reader.ReadUInt32(); //0x18
 
-            //WRITE NEW MASTER.BANK METADATA
-            writer.Write(version);
-            writer.Write(numSamples);
-            writer.Write(sizeOfSampleHeaders);
-            writer.Write(sizeOfNameTable);
-            writer.Write(sizeOfData);
-            writer.Write((UInt32)audioType);
-
-            writer.Write(reader.ReadUInt32()); //Reader Skip 0x1C which is always 0
+            reader.ReadUInt32(); //Reader Skip 0x1C which is always 0
 
             if (version == 0)
             {
                 var sizeOfThisHeader = 0x40;
-                writer.Write(reader.ReadUInt32()); //Version 0 has an extra field at 0x20 before flags
+                reader.ReadUInt32(); //Version 0 has an extra field at 0x20 before flags
             }
             else
             {
                 var sizeOfThisHeader = 0x3C;
             }
 
-            writer.Write(reader.ReadUInt32()); //Skip 0x20 (flags)
+            reader.ReadUInt32(); //Skip 0x20 (flags)
 
             //128-bit hash
             var hashLower = reader.ReadUInt64(); //0x24
             var hashUpper = reader.ReadUInt64(); //0x30
 
-            writer.Write(hashLower);
-            writer.Write(hashUpper);
+            reader.ReadUInt64(); //Skip unknown value at 0x34
 
-            writer.Write(reader.ReadUInt64()); //Skip unknown value at 0x34
-
-           // File.WriteAllText(writer);
             //VANILLA MASTER.BANK END OF METADATA READ BYTES
-            
+
             //VANILLA MASTER.BANK SAMPLES AND STREAMING START
             var sampleHeadersStart = reader.BaseStream.Position;
 
             List<FmodSampleMetadata> Samples = new();
             object ChunkReadingLock = new();
 
-            //ADD SAMPLE HEADERS TO NEW MASTER
-            Buffer.BlockCopy(vanillaMasterBytes, headerIndex + 60, newMasterBytes, headerIndex + 60, (int)sizeOfSampleHeaders);
-            int lastPos = headerIndex + 60 + (int)sizeOfSampleHeaders;
+            int headersSize = (int)masterBank.Header.SampleHeadersSize;
 
-            for (var i = 0; i < numSamples; i++)
+            //NEW MASTER.BANK INITIALISATION
+            byte[] newMasterBytes = new byte[vanillaMasterBytes.Length];
+            Buffer.BlockCopy(vanillaMasterBytes, 0, newMasterBytes, 0, headerIndex + 60);
+
+            //ADD SAMPLE HEADERS TO NEW MASTER
+            Buffer.BlockCopy(vanillaMasterBytes, headerIndex + 60, newMasterBytes, headerIndex + 60, headersSize);
+            int lastPos = headerIndex + 60 + headersSize;
+
+            for (var i = 0; i < masterBank.Samples.Count; i++)
             {
                 var sampleMetadata = reader.ReadEndian<FmodSampleMetadata>();
 
@@ -328,7 +283,7 @@ namespace KotHModLoaderGUI
 
                 lock (ChunkReadingLock)
                 {
-                    if(masterBank.Samples[i].Name.Equals("Forest-Take01"))
+                    if (masterBank.Samples[i].Name.Equals("Forest-Take01"))
                     {
 
                     }
@@ -353,40 +308,107 @@ namespace KotHModLoaderGUI
 
                     Samples.Add(sampleMetadata);
                 }
+            }
+        }
 
-                byte[] byteTest = GetSampleData(i, out var sampleTest);
+        List<string> _alreadyModded;
+        //List<AssetsReplacer> _replacers;
+        public string BuildActiveModsFMODAudio(List<Mod> mods)
+        {
+            //_replacers = new List<AssetsReplacer>();
+            _alreadyModded = new List<string>();
+            //_alreadyModdedAsset = new List<int>();
+            //_alreadyModdedWarning = "";
 
-                //ADD SAMPLE STREAMING DATA TO NEW MASTER
-                var sampleName = masterBank.Samples[i].Name.Contains("Forest-Take01");
-                int headerLength = headerIndex - 60 - (int)sizeOfSampleHeaders;
-                int sampleLength;
-                if (i + 1 < numSamples)
+            ////byte array for new .resS file
+            //_resSData = new byte[0];
+
+            ////list of index to be replaced, byte array for changes from mod files
+
+            ReadModdedMasterFile(out var moddedFileByte, out var moddedSoundBank);
+
+            ReadVanillaMasterFileHeaders(out var masterBank, out var vanillaMasterBytes);
+            int masterHeaderIndex = vanillaMasterBytes.AsSpan().IndexOf(System.Text.Encoding.ASCII.GetBytes("FSB5"));
+
+            byte[] dataModFile = ReadModdedOGGFile();
+
+            //NEW MASTER.BANK INITIALISATION
+            byte[] newMasterBytes = new byte[vanillaMasterBytes.Length];
+            Buffer.BlockCopy(vanillaMasterBytes, 0, newMasterBytes, 0, masterHeaderIndex + (int)masterBank.Header.ThisHeaderSize);
+
+            //ADD SAMPLE HEADERS TO NEW MASTER
+            Buffer.BlockCopy(vanillaMasterBytes, masterHeaderIndex + 60, newMasterBytes, masterHeaderIndex + 60, (int)masterBank.Header.ThisHeaderSize);
+            int lastPos = masterHeaderIndex + 60 + (int)masterBank.Header.ThisHeaderSize;
+
+            foreach (var mod in mods)
+            {
+                FileInfo metaFile = mod.MetaFile;
+                dynamic modJson = LoadJson(metaFile.FullName);
+                List<string> blacklistedAssets = (List<string>)modJson["BlackListedVanillaAssets"].ToObject(typeof(List<string>));
+                List<string> disabledAssets = (List<string>)modJson["DisabledModsOrFiles"].ToObject(typeof(List<string>));
+
+                //if (!disabledAssets.Contains(@"\" + mod.Name))
+                if (disabledAssets.Contains(@"\" + mod.Name)) continue;
+
+                foreach (FileInfo file in mod.AudioFiles)
                 {
-                    sampleLength = (int)masterBank.Samples[i + 1].Metadata.DataOffset - (int)sampleMetadata.DataOffset;
+                    var assignedAsset = modJson["AssignedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
+
+                    //if (!disabledAssets.Contains(@"\" + file.FullName.Substring(file.FullName.IndexOf(mod.Name))) && !_alreadyModded.Contains(file.Name))
+                    if (disabledAssets.Contains(@"\" + file.FullName.Substring(file.FullName.IndexOf(mod.Name))) || _alreadyModded.Contains(file.Name)) continue;
+                                        
+                    byte[] bytes = GetSampleBytes(file);
+
+                    //                if (assigned != null)
+                    //                {
+                    //                    if (ModVanillaTextureFromFileName(assigned.name.Value, bytes, image.Width, image.Height, strings, file))
+                    //                        _alreadyModded.Add(file.Name);
+                    //                }
+                    //if (!blacklistedAssets.Contains(file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)) && assignedAsset == null)
+                    if (blacklistedAssets.Contains(file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)) || assignedAsset != null) continue;
+                    
+                    if (ModVanillaFMODAudioFromFileName(file.Name, bytes, 0, 0, blacklistedAssets, file))
+                        _alreadyModded.Add(file.Name);
                 }
-                else
-                {
-                    sampleLength = vanillaMasterBytes.Length - (int)sampleMetadata.DataOffset - headerLength;
-                }
-                if (sampleName)
-                {
-                    byte[] zeros = new byte[sampleLength];
-                    byte[] theseBytes = new byte[sampleLength];
-                    Buffer.BlockCopy(vanillaMasterBytes, (int)sampleMetadata.DataOffset + headerLength, theseBytes, 0, sampleLength);
-                    Buffer.BlockCopy(zeros, 0, newMasterBytes, (int)sampleMetadata.DataOffset + headerIndex + 60 + (int)sizeOfSampleHeaders, sampleLength);
-                }
-                else
-                {
-                    byte[] zeros = new byte[vanillaMasterBytes.Length - headerIndex - 60 - (int)sizeOfSampleHeaders - (int)sampleMetadata.DataOffset];
-                    byte[] theseBytes = new byte[sampleLength];
-                    Buffer.BlockCopy(vanillaMasterBytes, (int)sampleMetadata.DataOffset + headerLength, theseBytes, 0, sampleLength);
-                    Buffer.BlockCopy(vanillaMasterBytes, (int)sampleMetadata.DataOffset + headerLength, newMasterBytes, (int)sampleMetadata.DataOffset + headerLength, sampleLength);
-                    //Buffer.BlockCopy(zeros, 0, newMasterBytes, (int)sampleMetadata.DataOffset + headerIndex + 60 + (int)sizeOfSampleHeaders, zeros.Length);
-                }
+            }
+
+            for (var i = 0; i < masterBank.Samples.Count; i++)
+            {
+                //byte[] byteTest = GetSampleData(i, out var sampleTest);
+
+                ////ADD SAMPLE STREAMING DATA TO NEW MASTER
+                //var sampleName = masterBank.Samples[i].Name.Contains("Forest-Take01");
+                ////int headerLength = headerIndex - 60 - headersSize;
+                //int headerLength = (int)masterBank.Header.NameTableSize;
+                //int 
+                //int sampleLength;
+                //if (i + 1 < masterBank.Samples.Count)
+                //{
+                //    sampleLength = (int)masterBank.Samples[i + 1].Metadata.DataOffset - (int)sampleMetadata.DataOffset;
+                //}
+                //else
+                //{
+                //    sampleLength = vanillaMasterBytes.Length - (int)sampleMetadata.DataOffset - headerLength;
+                //}
+                //if (sampleName)
+                //{
+                //    byte[] zeros = new byte[sampleLength];
+                //    byte[] theseBytes = new byte[sampleLength];
+                //    Buffer.BlockCopy(vanillaMasterBytes, (int)sampleMetadata.DataOffset + headerLength, theseBytes, 0, sampleLength);
+                //    Buffer.BlockCopy(zeros, 0, newMasterBytes, (int)sampleMetadata.DataOffset + headerIndex + 60 + headersSize, sampleLength);
+                //}
+                //else
+                //{
+                //    byte[] zeros = new byte[vanillaMasterBytes.Length - headerIndex - 60 - headersSize - (int)sampleMetadata.DataOffset];
+                //    byte[] theseBytes = new byte[sampleLength];
+                //    Buffer.BlockCopy(vanillaMasterBytes, (int)sampleMetadata.DataOffset + headerLength, theseBytes, 0, sampleLength);
+                //    Buffer.BlockCopy(vanillaMasterBytes, (int)sampleMetadata.DataOffset + headerLength, newMasterBytes, (int)sampleMetadata.DataOffset + headerLength, sampleLength);
+                //    //Buffer.BlockCopy(zeros, 0, newMasterBytes, (int)sampleMetadata.DataOffset + headerIndex + 60 + (int)sizeOfSampleHeaders, zeros.Length);
+                //}
             }
             //VANILLA MASTER.BANK SAMPLES, STREAMING AND FILE END
 
-            File.WriteAllBytes("Master.modded.bank", newMasterBytes);
+            //File.WriteAllBytes("Master.modded.bank", newMasterBytes);
 
             return null;
         }
@@ -399,49 +421,108 @@ namespace KotHModLoaderGUI
             bool replaced = false;
             _alreadyModdedAsset = new List<int>();
 
+            JArray indexes = (JArray)_indexesByNames[filename.Replace(".ogg", "")];
 
-            for (int i = 0; i < _fmodSounds.Samples.Count; i++)
+            foreach(int index in indexes)
             {
-                FmodSample sample = _fmodSounds.Samples[i];
+                FmodSample sample = _fmodSounds.Samples[index];
                 string name = sample.Name;
 
-                if (filename.Contains(name))
+                //if (filename.Contains(name))
+                if (!filename.Contains(name)) continue;
+
+                if (_alreadyModdedAsset.Contains(index))
                 {
-                    if (_alreadyModdedAsset.Contains(i))
-                    {
-                        _alreadyModdedWarning += "More than one modded file tried to modify the asset: " + name + ".\n" +
-                            "Only one file will modify the asset.";
-                        continue;
-                    }
-
-                    if (!sample.RebuildAsStandardFileFormat(out var bytes, out var extension))
-                    {
-                        Console.WriteLine($"Failed to extract sample {sample.Name}");
-                    }
-
-                    string str = Encoding.UTF8.GetString(bytes);
-                    bool contains = blacklisted.Contains(str);
-
-                    if (!contains)
-                    {
-                        FmodSampleMetadata header = new FmodSampleMetadata();
-
-                        //rebuild new header
-                        //dataoffset
-                        //header.IsStereo = ;
-                        //header.Channels = ;
-                        //header.Frequency = ;
-                        //header.SampleCount = ;
-
-                        replaced = true;
-                        _alreadyModdedAsset.Add(i);
-                    }
+                    _alreadyModdedWarning += "More than one modded file tried to modify the asset: " + name + ".\n" +
+                        "Only one file will modify the asset.";
+                    continue;
                 }
+
+                if (!sample.RebuildAsStandardFileFormat(out var bytes, out var extension))
+                    Console.WriteLine($"Failed to extract sample {sample.Name}");
+
+                string str = System.Text.Encoding.UTF8.GetString(bytes);
+                bool contains = blacklisted.Contains(str);
+
+                //if (!contains)
+                if (contains) continue;
+
+                FmodSampleMetadata header = new FmodSampleMetadata();
+
+                //rebuild new header
+                //dataoffset    
+                //header.IsStereo = ;
+                //header.Channels = ;
+                //header.Frequency = ;
+                //header.SampleCount = ;
+
+                byte[] byteSample = GetSampleData(index, sample);
+
+                ////ADD SAMPLE STREAMING DATA TO NEW MASTER
+                int sampleLength = index + 1 < _fmodSounds.Samples.Count ?
+                    (int)_fmodSounds.Samples[index + 1].Metadata.DataOffset - (int)_fmodSounds.Samples[index].Metadata.DataOffset :
+                    (int)_fmodSounds.Header.DataSize - (int)_fmodSounds.Samples[index].Metadata.DataOffset;
+                //if (sampleName)
+                //{
+                //    byte[] zeros = new byte[sampleLength];
+                //    byte[] theseBytes = new byte[sampleLength];
+                //    Buffer.BlockCopy(vanillaMasterBytes, (int)sampleMetadata.DataOffset + headerLength, theseBytes, 0, sampleLength);
+                //    Buffer.BlockCopy(zeros, 0, newMasterBytes, (int)sampleMetadata.DataOffset + headerIndex + 60 + headersSize, sampleLength);
+                //}
+                //else
+                //{
+                //    byte[] zeros = new byte[vanillaMasterBytes.Length - headerIndex - 60 - headersSize - (int)sampleMetadata.DataOffset];
+                //    byte[] theseBytes = new byte[sampleLength];
+                //    Buffer.BlockCopy(vanillaMasterBytes, (int)sampleMetadata.DataOffset + headerLength, theseBytes, 0, sampleLength);
+                //    Buffer.BlockCopy(vanillaMasterBytes, (int)sampleMetadata.DataOffset + headerLength, newMasterBytes, (int)sampleMetadata.DataOffset + headerLength, sampleLength);
+                //    //Buffer.BlockCopy(zeros, 0, newMasterBytes, (int)sampleMetadata.DataOffset + headerIndex + 60 + (int)sizeOfSampleHeaders, zeros.Length);
+                //}
+
+                replaced = true;
+                _alreadyModdedAsset.Add(index);
             }
-            //if (differentSizesWarning != "")
-            //    MessageBox.Show(differentSizesWarning + "Modifying asset with different image sizes will bring weird behaviour unless modded in the code.");
 
             return replaced;
+        }
+        private static byte[] RebuildOggSample(byte[] fileBytes)
+        {
+            //Need to rebuild the vorbis header, which requires reading the known blobs from the json file.
+            //This requires knowing the crc32 of the data, which is in a VORBISDATA chunk.
+            //var dataChunk = sample.Metadata.Chunks.FirstOrDefault(f => f.ChunkType == FmodSampleChunkType.VORBISDATA);
+
+            //if (dataChunk == null)
+            //{
+            //    throw new Exception("Rebuilding Vorbis data requires a VORBISDATA chunk, which wasn't found");
+            //}
+
+            //var chunkData = (VorbisChunkData)dataChunk.ChunkData;
+            //var crc32 = chunkData.Crc32;
+
+            //Ok, we have the crc32, now we need to find the header data.
+            //if (headers == null)
+            //    LoadVorbisHeaders();
+            //var vorbisData = headers![crc32];
+
+            //vorbisData.InitBlockFlags();
+
+            //var infoPacket = BuildInfoPacket((byte)sample.Metadata.Channels, sample.Metadata.Frequency);
+            //var commentPacket = BuildCommentPacket("Fmod5Sharp (Samboy063)");
+            //var setupPacket = new OggPacket(vorbisData.HeaderBytes, false, 0, 2);
+
+            //Begin building the final stream
+            //var oggStream = new OggStream(1);
+            //using var outputStream = new MemoryStream();
+
+            //oggStream.PacketIn(infoPacket);
+            //oggStream.PacketIn(commentPacket);
+            //oggStream.PacketIn(setupPacket);
+
+            //oggStream.FlushAndCopyTo(outputStream, true);
+
+            //CopySampleData(vorbisData, sample.SampleBytes, oggStream, outputStream);
+
+            //return outputStream.ToArray();
+            return null;
         }
 
         private byte[] GetSampleBytes(FileInfo file)

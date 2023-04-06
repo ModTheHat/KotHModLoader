@@ -20,8 +20,13 @@ namespace Fmod5Sharp.FmodTypes
         internal readonly uint SizeOfSampleHeaders;
 		internal readonly uint SizeOfNameTable;
 		internal readonly uint SizeOfData;
-		
-		internal readonly List<FmodSampleMetadata> Samples = new();
+
+        public uint SampleHeadersSize => SizeOfSampleHeaders;
+        public uint DataSize => SizeOfData;
+        public uint ThisHeaderSize => SizeOfThisHeader;
+        public uint NameTableSize => SizeOfNameTable;
+
+        internal readonly List<FmodSampleMetadata> Samples = new();
 
 		public FmodAudioHeader(BinaryReader reader)
 		{
