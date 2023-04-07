@@ -188,11 +188,43 @@ namespace KotHModLoaderGUI
 
         private byte[] ReadModdedOGGFile()
         {
-            FileInfo oggfile = new FileInfo(@"..\Mods\Forest-Take01.ogg");
+            FileInfo oggfile = new FileInfo(@"..\Mods\New folder\KotH_UI_LandingScreen_PressStart_v2-01.ogg");
 
             byte[] dataModFile = GetSampleBytes(oggfile);
 
-            return dataModFile;
+            using MemoryStream stream = new MemoryStream(dataModFile);
+            using BinaryReader reader = new BinaryReader(stream);
+
+            reader.ReadBytes(27);
+            int length = reader.ReadByte();
+            reader.ReadBytes(length + 26);
+            int length2 = reader.ReadByte();
+            int lengths = 0;
+            for(int i = 0; i < length2; i++)
+            {
+                lengths += reader.ReadByte();
+            }
+            reader.ReadBytes(lengths);
+
+            List<byte> newStreamingData = new List<byte>();
+            while (reader.BaseStream.Position < reader.BaseStream.Length)
+            {
+                reader.ReadBytes(26);
+                int chunkLength = reader.ReadByte();
+                List<int> lengthsHeader = new List<int>();
+                for (int i = 0; i < chunkLength; i++)
+                {
+                    lengthsHeader.Add(reader.ReadByte());
+                }
+                for (int i = 0; i < chunkLength; i++)
+                {
+                    newStreamingData.Add((byte)lengthsHeader[i]);
+                    newStreamingData.Add(0);
+                    newStreamingData.AddRange(reader.ReadBytes(lengthsHeader[i]).ToArray());
+                }
+            }
+
+            return newStreamingData.ToArray();
         }
 
         private void ReadVanillaMasterFileHeaders(out FmodSoundBank masterBank, out byte[] vanillaMasterBytes)
@@ -330,8 +362,6 @@ namespace KotHModLoaderGUI
             ReadVanillaMasterFileHeaders(out var masterBank, out var vanillaMasterBytes);
             int masterHeaderIndex = vanillaMasterBytes.AsSpan().IndexOf(System.Text.Encoding.ASCII.GetBytes("FSB5"));
 
-            byte[] dataModFile = ReadModdedOGGFile();
-
             //NEW MASTER.BANK INITIALISATION
             byte[] newMasterBytes = new byte[vanillaMasterBytes.Length];
             Buffer.BlockCopy(vanillaMasterBytes, 0, newMasterBytes, 0, masterHeaderIndex + (int)masterBank.Header.ThisHeaderSize);
@@ -423,7 +453,12 @@ namespace KotHModLoaderGUI
 
             JArray indexes = (JArray)_indexesByNames[filename.Replace(".ogg", "")];
 
-            foreach(int index in indexes)
+            ReadVanillaMasterFileHeaders(out var masterBank, out var vanillaMasterBytes);
+
+            int headerIndex = vanillaMasterBytes.AsSpan().IndexOf(System.Text.Encoding.ASCII.GetBytes("FSB5"));
+            int streamDataIndex = vanillaMasterBytes.Length - (int)_fmodSounds.Header.DataSize;
+
+            foreach (int index in indexes)
             {
                 FmodSample sample = _fmodSounds.Samples[index];
                 string name = sample.Name;
@@ -458,6 +493,7 @@ namespace KotHModLoaderGUI
 
                 byte[] byteSample = GetSampleData(index, sample);
 
+                byte[] dataModFile = ReadModdedOGGFile();
                 ////ADD SAMPLE STREAMING DATA TO NEW MASTER
                 int sampleLength = index + 1 < _fmodSounds.Samples.Count ?
                     (int)_fmodSounds.Samples[index + 1].Metadata.DataOffset - (int)_fmodSounds.Samples[index].Metadata.DataOffset :
@@ -465,8 +501,10 @@ namespace KotHModLoaderGUI
                 //if (sampleName)
                 //{
                 //    byte[] zeros = new byte[sampleLength];
-                //    byte[] theseBytes = new byte[sampleLength];
-                //    Buffer.BlockCopy(vanillaMasterBytes, (int)sampleMetadata.DataOffset + headerLength, theseBytes, 0, sampleLength);
+                byte[] theseBytes = new byte[sampleLength];
+                int headerLength = headerIndex - (int)_fmodSounds.Header.ThisHeaderSize - (int)_fmodSounds.Header.SampleHeadersSize;
+                //int headerLength = headerIndex - 60 - headersSize;
+                Buffer.BlockCopy(theseBytes, 0, vanillaMasterBytes, (int)sample.Metadata.DataOffset + streamDataIndex, sampleLength);
                 //    Buffer.BlockCopy(zeros, 0, newMasterBytes, (int)sampleMetadata.DataOffset + headerIndex + 60 + headersSize, sampleLength);
                 //}
                 //else
@@ -480,6 +518,8 @@ namespace KotHModLoaderGUI
 
                 replaced = true;
                 _alreadyModdedAsset.Add(index);
+
+                File.WriteAllBytes("Master.modded.bank", vanillaMasterBytes);
             }
 
             return replaced;
