@@ -67,8 +67,12 @@ namespace Fmod5Sharp.FmodTypes
 
 			var sampleHeadersStart = reader.Position();
 			for (var i = 0; i < NumSamples; i++)
-			{
-				var sampleMetadata = reader.ReadEndian<FmodSampleMetadata>();
+            {
+                if (i == 1205)
+                {
+
+                }
+                var sampleMetadata = reader.ReadEndian<FmodSampleMetadata>();
 
 				if (!sampleMetadata.HasAnyChunks)
 				{
