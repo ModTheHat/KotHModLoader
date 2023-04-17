@@ -1,17 +1,14 @@
 ﻿using Fmod5Sharp;
 using Fmod5Sharp.ChunkData;
 using Fmod5Sharp.FmodTypes;
-using Microsoft.VisualBasic.ApplicationServices;
 using NAudio.Vorbis;
 using NAudio.Wave;
 using Newtonsoft.Json.Linq;
-using OggVorbisEncoder;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using static Fmod5Sharp.Util.Extensions;
 
 namespace KotHModLoaderGUI
@@ -233,227 +230,6 @@ namespace KotHModLoaderGUI
             }
 
             return newStreamingData.ToArray();
-        }
-
-        private void ReadVanillaMasterFileHeaders(out FmodSoundBank masterBank, out byte[] vanillaMasterBytes)
-        {
-            //VANILLA MASTER.BANK FULL FILE DATA
-            vanillaMasterBytes = File.ReadAllBytes(_bankFilePath);
-
-            //VANILLA MASTER.BANK FILE HEADER
-            int headerIndex = vanillaMasterBytes.AsSpan().IndexOf(System.Text.Encoding.ASCII.GetBytes("FSB5"));
-            byte[] headerBytes = new byte[headerIndex + 60];
-            Buffer.BlockCopy(vanillaMasterBytes, 0, headerBytes, 0, headerIndex + 60);
-            //File.WriteAllBytes("Master.modded.bank", headerBytes);
-
-            //VANILLA MASTER.BANK METADATA, SAMPLES AND STREAMING DATA
-            byte[] vanillaMasterNoHeaderBytes = null;
-            if (headerIndex > 0)
-            {
-                vanillaMasterNoHeaderBytes = vanillaMasterBytes.AsSpan(headerIndex).ToArray();
-            }
-
-            //VANILLA MASTER.BANK METADATA, SAMPLES AND STREAMING FMODSOUNDBANK OBJECT
-            masterBank = FsbLoader.LoadFsbFromByteArray(vanillaMasterNoHeaderBytes);
-
-            //VANILLA MASTER.BANK STREAM AND BINARYREADER
-            using MemoryStream stream = new(vanillaMasterNoHeaderBytes);
-            using BinaryReader reader = new(stream);
-
-            //VANILLA MASTER.BANK FMODAUDIOHEADER METADATA PART
-            FmodAudioHeader header = new(reader);
-
-            //READ VANILLA MASTER.BANK BYTES FOR METADATA
-            reader.BaseStream.Position = 4;
-
-            var version = reader.ReadUInt32(); //0x04
-            var numSamples = reader.ReadUInt32(); //0x08
-            var sizeOfSampleHeaders = reader.ReadUInt32();
-            var sizeOfNameTable = reader.ReadUInt32();
-            var sizeOfData = reader.ReadUInt32(); //0x14
-            var audioType = (FmodAudioType)reader.ReadUInt32(); //0x18
-
-            reader.ReadUInt32(); //Reader Skip 0x1C which is always 0
-
-            if (version == 0)
-            {
-                var sizeOfThisHeader = 0x40;
-                reader.ReadUInt32(); //Version 0 has an extra field at 0x20 before flags
-            }
-            else
-            {
-                var sizeOfThisHeader = 0x3C;
-            }
-
-            reader.ReadUInt32(); //Skip 0x20 (flags)
-
-            //128-bit hash
-            var hashLower = reader.ReadUInt64(); //0x24
-            var hashUpper = reader.ReadUInt64(); //0x30
-
-            reader.ReadUInt64(); //Skip unknown value at 0x34
-
-            //VANILLA MASTER.BANK END OF METADATA READ BYTES
-
-            //VANILLA MASTER.BANK SAMPLES AND STREAMING START
-            var sampleHeadersStart = reader.BaseStream.Position;
-
-            List<FmodSampleMetadata> Samples = new();
-            object ChunkReadingLock = new();
-
-            int headersSize = (int)masterBank.Header.SampleHeadersSize;
-
-            //NEW MASTER.BANK INITIALISATION
-            byte[] newMasterBytes = new byte[vanillaMasterBytes.Length];
-            Buffer.BlockCopy(vanillaMasterBytes, 0, newMasterBytes, 0, headerIndex + 60);
-
-            //ADD SAMPLE HEADERS TO NEW MASTER
-            Buffer.BlockCopy(vanillaMasterBytes, headerIndex + 60, newMasterBytes, headerIndex + 60, headersSize);
-            int lastPos = headerIndex + 60 + headersSize;
-
-            for (var i = 0; i < masterBank.Samples.Count; i++)
-            {
-                var sampleMetadata = reader.ReadEndian<FmodSampleMetadata>();
-
-                if (!sampleMetadata.HasAnyChunks)
-                {
-                    Samples.Add(sampleMetadata);
-                    continue;
-                }
-
-                lock (ChunkReadingLock)
-                {
-                    if (masterBank.Samples[i].Name.Equals("Forest-Take01"))
-                    {
-
-                    }
-                    List<FmodSampleChunk> chunks = new();
-                    FmodSampleChunk.CurrentSample = sampleMetadata;
-
-                    FmodSampleChunk nextChunk;
-                    do
-                    {
-                        nextChunk = reader.ReadEndian<FmodSampleChunk>();
-                        chunks.Add(nextChunk);
-                    } while (nextChunk.MoreChunks);
-
-                    FmodSampleChunk.CurrentSample = null;
-
-                    if (chunks.FirstOrDefault(c => c.ChunkType == FmodSampleChunkType.FREQUENCY) is { ChunkData: FrequencyChunkData fcd })
-                    {
-                        sampleMetadata.FrequencyId = fcd.ActualFrequencyId;
-                    }
-
-                    sampleMetadata.Chunks = chunks;
-
-                    Samples.Add(sampleMetadata);
-                }
-            }
-        }
-
-
-        private void ReadFBTMasterFileHeaders(out FmodSoundBank fbtMasterBank, out byte[] fbtMasterBytes)
-        {
-            //VANILLA MASTER.BANK FULL FILE DATA
-            fbtMasterBytes = File.ReadAllBytes("Master.FMODBANKTOOL.bank");
-
-            //VANILLA MASTER.BANK FILE HEADER
-            int headerIndex = fbtMasterBytes.AsSpan().IndexOf(System.Text.Encoding.ASCII.GetBytes("FSB5"));
-            byte[] headerBytes = new byte[headerIndex + 60];
-            Buffer.BlockCopy(fbtMasterBytes, 0, headerBytes, 0, headerIndex + 60);
-            //File.WriteAllBytes("Master.modded.bank", headerBytes);
-
-            //FMODBankTool MASTER.BANK METADATA, SAMPLES AND STREAMING DATA
-            byte[] fbtMasterNoHeaderBytes = null;
-            if (headerIndex > 0)
-            {
-                fbtMasterNoHeaderBytes = fbtMasterBytes.AsSpan(headerIndex).ToArray();
-            }
-
-            //FMODBankTool MASTER.BANK METADATA, SAMPLES AND STREAMING FMODSOUNDBANK OBJECT
-            fbtMasterBank = FsbLoader.LoadFsbFromByteArray(fbtMasterNoHeaderBytes);
-
-            //FMODBankTool MASTER.BANK STREAM AND BINARYREADER
-            using MemoryStream stream = new(fbtMasterNoHeaderBytes);
-            using BinaryReader reader = new(stream);
-
-            //FMODBankTool MASTER.BANK FMODAUDIOHEADER METADATA PART
-            FmodAudioHeader header = new(reader);
-
-            //READ FMODBankTool MASTER.BANK BYTES FOR METADATA
-            reader.BaseStream.Position = 4;
-
-            var version = reader.ReadUInt32(); //0x04
-            var numSamples = reader.ReadUInt32(); //0x08
-            var sizeOfSampleHeaders = reader.ReadUInt32();
-            var sizeOfNameTable = reader.ReadUInt32();
-            var sizeOfData = reader.ReadUInt32(); //0x14
-            var audioType = (FmodAudioType)reader.ReadUInt32(); //0x18
-
-            reader.ReadUInt32(); //Reader Skip 0x1C which is always 0
-
-            if (version == 0)
-            {
-                var sizeOfThisHeader = 0x40;
-                reader.ReadUInt32(); //Version 0 has an extra field at 0x20 before flags
-            }
-            else
-            {
-                var sizeOfThisHeader = 0x3C;
-            }
-
-            reader.ReadUInt32(); //Skip 0x20 (flags)
-
-            //128-bit hash
-            var hashLower = reader.ReadUInt64(); //0x24
-            var hashUpper = reader.ReadUInt64(); //0x30
-
-            reader.ReadUInt64(); //Skip unknown value at 0x34
-
-            //FMODBankTool MASTER.BANK END OF METADATA READ BYTES
-
-            //FMODBankTool MASTER.BANK SAMPLES AND STREAMING START
-            var sampleHeadersStart = reader.BaseStream.Position;
-
-            List<FmodSampleMetadata> Samples = new();
-            object ChunkReadingLock = new();
-
-            int headersSize = (int)fbtMasterBank.Header.SampleHeadersSize;
-
-            for (var i = 0; i < fbtMasterBank.Samples.Count; i++)
-            {
-                var sampleMetadata = reader.ReadEndian<FmodSampleMetadata>();
-
-                if (!sampleMetadata.HasAnyChunks)
-                {
-                    Samples.Add(sampleMetadata);
-                    continue;
-                }
-
-                lock (ChunkReadingLock)
-                {
-                    List<FmodSampleChunk> chunks = new();
-                    FmodSampleChunk.CurrentSample = sampleMetadata;
-
-                    FmodSampleChunk nextChunk;
-                    do
-                    {
-                        nextChunk = reader.ReadEndian<FmodSampleChunk>();
-                        chunks.Add(nextChunk);
-                    } while (nextChunk.MoreChunks);
-
-                    FmodSampleChunk.CurrentSample = null;
-
-                    if (chunks.FirstOrDefault(c => c.ChunkType == FmodSampleChunkType.FREQUENCY) is { ChunkData: FrequencyChunkData fcd })
-                    {
-                        sampleMetadata.FrequencyId = fcd.ActualFrequencyId;
-                    }
-
-                    sampleMetadata.Chunks = chunks;
-
-                    Samples.Add(sampleMetadata);
-                }
-            }
         }
 
         private void ReadMasterFileHeaders(string file, out FmodSoundBank masterBank, out byte[] masterBytes)
@@ -747,6 +523,23 @@ namespace KotHModLoaderGUI
             
             ReadMasterFileHeaders("D:\\smallfile.fsb", out var smallFileBank, out var smallFileBytes);
 
+            //NEW BIG HEADER
+            byte[] newBigHeader = new byte[masterHeaderIndex];
+            Buffer.BlockCopy(vanillaMasterBytes, 0, newBigHeader, 0, masterHeaderIndex);
+
+            //NEW FMOD SOUND BANK HEADER
+            byte[] newBankHeader = new byte[60];
+            Buffer.BlockCopy(vanillaMasterBytes, masterHeaderIndex, newBigHeader, 0, 60);
+
+            //NEW SAMPLE HEADERS
+            List<byte> newSampleHeader = new List<byte>();
+
+            //NEW NAME TABLES
+
+            //NEW STREAMING DATA
+            List<byte> newStreamingData = new List<byte>();
+
+
             //NEW MASTER.BANK INITIALISATION
             byte[] newMasterBytes = new byte[vanillaMasterBytes.Length];
             Buffer.BlockCopy(vanillaMasterBytes, 0, newMasterBytes, 0, masterHeaderIndex + (int)masterBank.Header.ThisHeaderSize);
@@ -803,7 +596,7 @@ namespace KotHModLoaderGUI
 
             JArray indexes = (JArray)_indexesByNames[filename.Replace(".ogg", "")];
 
-            ReadVanillaMasterFileHeaders(out var masterBank, out var vanillaMasterBytes);
+            ReadMasterFileHeaders(_bankFilePath, out var masterBank, out var vanillaMasterBytes);
             //int masterHeaderIndex = vanillaMasterBytes.AsSpan().IndexOf(System.Text.Encoding.ASCII.GetBytes("FSB5"));
             int headerIndex = vanillaMasterBytes.AsSpan().IndexOf(System.Text.Encoding.ASCII.GetBytes("FSB5"));
             //byte[] masterHeaderBytes = new byte[headerIndex];
