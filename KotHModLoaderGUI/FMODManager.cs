@@ -9,12 +9,17 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
 using static Fmod5Sharp.Util.Extensions;
 
 namespace KotHModLoaderGUI
 {
     public class FMODManager : ModManager
     {
+        [DllImport("FSBankNative.dll")]
+        public static extern int Create(string path);
+
         private static string _rootPath = @"..";
         private static string _dataDirPath = _rootPath + @"\KingOfTheHat_Data";
         private static string _streamingDirPath = _dataDirPath + @"\StreamingAssets";
@@ -32,6 +37,7 @@ namespace KotHModLoaderGUI
 
         public void InitialisePaths()
         {
+            int test = Create("D:/file_example_WAV_1MG.wav");
             LoadFMODManager();
         }
 
