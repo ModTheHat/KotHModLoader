@@ -1,6 +1,7 @@
 ﻿using Fmod5Sharp;
 using Fmod5Sharp.ChunkData;
 using Fmod5Sharp.FmodTypes;
+using NAudio.SoundFont;
 using NAudio.Vorbis;
 using NAudio.Wave;
 using Newtonsoft.Json.Linq;
@@ -492,23 +493,13 @@ namespace KotHModLoaderGUI
         }
 
         List<string> _alreadyModded;
-        //List<AssetsReplacer> _replacers;
         public string BuildActiveModsFMODAudio(List<Mod> mods)
         {
-            //_replacers = new List<AssetsReplacer>();
             _alreadyModded = new List<string>();
             _replacers = new Dictionary<int, string>();
-            //_alreadyModdedAsset = new List<int>();
-            //_alreadyModdedWarning = "";
-
-            ////byte array for new .resS file
-            //_resSData = new byte[0];
-
-            ////list of index to be replaced, byte array for changes from mod files
 
             ReadModdedMasterFile(out var moddedFileByte, out var moddedSoundBank);
 
-            //ReadFBTMasterFileHeaders(out var fbtMasterBank, out var fbtMasterBytes);
             ReadMasterFileHeaders("Master.FMODBANKTOOL.bank", out var fbtMasterBank, out var fbtMasterBytes);
             int fbtMasterHeaderIndex = fbtMasterBytes.AsSpan().IndexOf(System.Text.Encoding.ASCII.GetBytes("FSB5"));
             byte[] fbtHeaderBytes = new byte[fbtMasterHeaderIndex];
@@ -518,7 +509,6 @@ namespace KotHModLoaderGUI
             byte[] fbtSampleHeadersBytes = new byte[fbtMasterBank.Header.SampleHeadersSize];
             Buffer.BlockCopy(fbtMasterBytes, fbtMasterHeaderIndex + 60, fbtSampleHeadersBytes, 0, (int)fbtMasterBank.Header.SampleHeadersSize);
 
-            //ReadVanillaMasterFileHeaders(out var masterBank, out var vanillaMasterBytes);
             ReadMasterFileHeaders(_bankFilePath, out var masterBank, out var vanillaMasterBytes);
             int masterHeaderIndex = vanillaMasterBytes.AsSpan().IndexOf(System.Text.Encoding.ASCII.GetBytes("FSB5"));
             byte[] masterHeaderBytes = new byte[masterHeaderIndex];
@@ -531,10 +521,6 @@ namespace KotHModLoaderGUI
             Buffer.BlockCopy(vanillaMasterBytes, masterHeaderIndex + 60 + (int)masterBank.Header.SampleHeadersSize, masterNameTableBytes, 0, (int)masterBank.Header.NameTableSize);
             byte[] masterSampleStreamingDataBytes = new byte[masterBank.Header.DataSize];
             Buffer.BlockCopy(vanillaMasterBytes, masterHeaderIndex + 60 + (int)masterBank.Header.SampleHeadersSize + (int)masterBank.Header.NameTableSize, masterSampleStreamingDataBytes, 0, (int)masterBank.Header.DataSize);
-
-            ReadMasterFileHeaders("D:\\FSBank5.Net 202\\FSBankNet\\bin\\Debug\\net5.0\\test.fsb5", out var fsbBank, out var fsbBytes);
-            
-            ReadMasterFileHeaders("D:\\smallfile.fsb", out var smallFileBank, out var smallFileBytes);
 
             //NEW BIG HEADER
             byte[] newBigHeader = new byte[masterHeaderIndex];
@@ -551,7 +537,6 @@ namespace KotHModLoaderGUI
 
             //NEW STREAMING DATA
             List<byte> newStreamingData = new List<byte>();
-
 
             //NEW MASTER.BANK INITIALISATION
             byte[] newMasterBytes = new byte[vanillaMasterBytes.Length];
@@ -575,17 +560,10 @@ namespace KotHModLoaderGUI
                 {
                     var assignedAsset = modJson["AssignedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
 
-                    //if (!disabledAssets.Contains(@"\" + file.FullName.Substring(file.FullName.IndexOf(mod.Name))) && !_alreadyModded.Contains(file.Name))
                     if (disabledAssets.Contains(@"\" + file.FullName.Substring(file.FullName.IndexOf(mod.Name))) || _alreadyModded.Contains(file.Name)) continue;
                                         
                     byte[] bytes = GetSampleBytes(file);
 
-                    //                if (assigned != null)
-                    //                {
-                    //                    if (ModVanillaTextureFromFileName(assigned.name.Value, bytes, image.Width, image.Height, strings, file))
-                    //                        _alreadyModded.Add(file.Name);
-                    //                }
-                    //if (!blacklistedAssets.Contains(file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)) && assignedAsset == null)
                     if (blacklistedAssets.Contains(file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)) || assignedAsset != null) continue;
                     
                     if (ModVanillaFMODAudioFromFileName(file.Name, bytes, 0, 0, blacklistedAssets, file))
@@ -594,15 +572,62 @@ namespace KotHModLoaderGUI
             }
             //VANILLA MASTER.BANK SAMPLES, STREAMING AND FILE END
 
-            ReplaceSamples(in masterSampleStreamingDataBytes, in newStreamingData, in masterSampleHeadersBytes, in newSampleHeader);
+            ReplaceSamples(masterSampleStreamingDataBytes, in newStreamingData, masterSampleHeadersBytes, in newSampleHeader);
 
-            //File.WriteAllBytes("Master.modded.bank", newMasterBytes);
+            List<byte> newMaster = new List<byte>();
 
-            
+            byte[] newHeaderBytes = new byte[masterHeaderBytes.Length];
+            Buffer.BlockCopy(masterHeaderBytes, 0, newHeaderBytes, 0, masterHeaderBytes.Length);
+            int fullSize = masterHeaderBytes.Length + masterInfoBytes.Length + masterSampleHeadersBytes.Length + masterNameTableBytes.Length + newStreamingData.Count - 8;
+            string headerFull = Convert.ToString(fullSize, 2).PadLeft(32, '0');
+            string headerFourStr = headerFull[0..8];
+            string headerFiveStr = headerFull[8..16];
+            string headerSixStr = headerFull[16..24];
+            string headerSevenStr = headerFull[24..32];
+            int headerFour = Convert.ToInt32(headerFourStr, 2);
+            int headerFive = Convert.ToInt32(headerFiveStr, 2);
+            int headerSix = Convert.ToInt32(headerSixStr, 2);
+            int headerSeven = Convert.ToInt32(headerSevenStr, 2);
+            newHeaderBytes[4] = (byte)headerSeven;
+            newHeaderBytes[5] = (byte)headerSix;
+            newHeaderBytes[6] = (byte)headerFive;
+            newHeaderBytes[7] = (byte)headerFour;
+
+            int noHeaderSize = masterInfoBytes.Length + masterSampleHeadersBytes.Length + masterNameTableBytes.Length + newStreamingData.Count;
+            string noHeaderFull = Convert.ToString(noHeaderSize, 2).PadLeft(32, '0');
+            string noHeaderFourStr = noHeaderFull[0..8];
+            string noHeaderFiveStr = noHeaderFull[8..16];
+            string noHeaderSixStr = noHeaderFull[16..24];
+            string noHeaderSevenStr = noHeaderFull[24..32];
+            int noHeaderFour = Convert.ToInt32(noHeaderFourStr, 2);
+            int noHeaderFive = Convert.ToInt32(noHeaderFiveStr, 2);
+            int noHeaderSix = Convert.ToInt32(noHeaderSixStr, 2);
+            int noHeaderSeven = Convert.ToInt32(noHeaderSevenStr, 2);
+            newHeaderBytes[1856504] = (byte)noHeaderSeven;
+            newHeaderBytes[1856505] = (byte)noHeaderSix;
+            newHeaderBytes[1856506] = (byte)noHeaderFive;
+            newHeaderBytes[1856507] = (byte)noHeaderFour;
+
+            newMaster.AddRange(masterHeaderBytes);
+            newMaster.AddRange(masterInfoBytes);
+            newMaster.AddRange(masterSampleHeadersBytes);
+            newMaster.AddRange(masterNameTableBytes);
+            newMaster.AddRange(newStreamingData);
+
+            byte[] test = new byte[masterHeaderBytes.Length + masterInfoBytes.Length + masterSampleHeadersBytes.Length + masterNameTableBytes.Length + masterSampleStreamingDataBytes.Length];
+            Buffer.BlockCopy(masterHeaderBytes, 0, test, 0, masterHeaderBytes.Length);
+            Buffer.BlockCopy(masterInfoBytes, 0, test, masterHeaderBytes.Length, masterInfoBytes.Length);
+            Buffer.BlockCopy(masterSampleHeadersBytes, 0, test, masterHeaderBytes.Length + masterInfoBytes.Length, masterSampleHeadersBytes.Length);
+            Buffer.BlockCopy(masterNameTableBytes, 0, test, masterHeaderBytes.Length + masterInfoBytes.Length + masterSampleHeadersBytes.Length, masterNameTableBytes.Length);
+            Buffer.BlockCopy(masterSampleStreamingDataBytes, 0, test, masterHeaderBytes.Length + masterInfoBytes.Length + masterSampleHeadersBytes.Length + masterNameTableBytes.Length, masterSampleStreamingDataBytes.Length);
+
+
+            File.WriteAllBytes("Master.modded.bank", newMaster.ToArray());
+
             return null;
         }
 
-        private void ReplaceSamples(in byte[] vanillaStreamingBytes, in List<byte> newStreamingDataBytes, in byte[] vanillaSampleHeadersBytes, in List<byte> newSampleHeadersBytes)
+        private void ReplaceSamples(byte[] vanillaStreamingBytes, in List<byte> newStreamingDataBytes, byte[] vanillaSampleHeadersBytes, in List<byte> newSampleHeadersBytes)
         {
             var _sortedReplacers = _replacers.ToImmutableSortedDictionary();
 
@@ -631,7 +656,14 @@ namespace KotHModLoaderGUI
                 ReadMasterFileHeaders("temp.fsb", out var fsbBank, out var fsbBytes);
 
                 newStreamingDataBytes.AddRange(vanillaSampleBytesBefore);
-                newStreamingDataBytes.AddRange(fsbBank.Samples[0].SampleBytes);
+
+                byte[] newStream = new byte[vanillaStreamingNextIndex - vanillaStreamingIndex];
+                Buffer.BlockCopy(fsbBank.Samples[0].SampleBytes, 0, newStream, 0, vanillaStreamingNextIndex - vanillaStreamingIndex > fsbBank.Samples[0].SampleBytes.Length ? fsbBank.Samples[0].SampleBytes.Length : vanillaStreamingNextIndex - vanillaStreamingIndex);
+                //newStreamingDataBytes.Clear();
+                //newStreamingDataBytes.AddRange(newStream);
+
+                //newStreamingDataBytes.AddRange(fsbBank.Samples[0].SampleBytes);
+                newStreamingDataBytes.AddRange(newStream);
 
                 //Headers Replacement
                 int vanillaHeaderIndex = _sampleHeadersIndexes[index];
@@ -640,12 +672,11 @@ namespace KotHModLoaderGUI
                 if (lastReplacerIndex >= 0)
                 {
                     //go through all headers before and change the dataoffset
-                    for(int h = _sortedReplacers.Keys.ToArray()[lastReplacerIndex] + 1; h <= index; h++)
+                    for(int h = _sortedReplacers.Keys.ToArray()[lastReplacerIndex] + 1; h < index; h++)
                     {
                         int size = h < _sampleHeadersIndexes.Length ? _sampleHeadersIndexes[h + 1] - _sampleHeadersIndexes[h] : vanillaSampleHeadersBytes.Length - _sampleHeadersIndexes[h];
                         byte[] sampleHeader = new byte[size];
                         Buffer.BlockCopy(vanillaSampleHeadersBytes, _sampleHeadersIndexes[h], sampleHeader, 0, size);
-                        //string zero = sampleHeader[0];
                         string zero = Convert.ToString(sampleHeader[0], 2).PadLeft(8, '0');
                         string one = Convert.ToString(sampleHeader[1], 2).PadLeft(8, '0');
                         string two = Convert.ToString(sampleHeader[2], 2).PadLeft(8, '0');
@@ -677,7 +708,7 @@ namespace KotHModLoaderGUI
                     }
                 }
 
-                streamOffset += vanillaStreamingIndex - newStreamingDataBytes.Count;
+                streamOffset += vanillaStreamingIndex - newStream.Length;
 
                 byte[] vanillaHeaderBytesBefore = new byte[vanillaHeaderIndex - lastHeaderReplacementIndex];
                 Buffer.BlockCopy(vanillaSampleHeadersBytes, lastHeaderReplacementIndex, vanillaHeaderBytesBefore, 0, vanillaHeaderIndex - lastHeaderReplacementIndex);
@@ -686,6 +717,32 @@ namespace KotHModLoaderGUI
 
                 byte[] fsbHeaderBytes = new byte[fsbBank.Header.SampleHeadersSize];
                 Buffer.BlockCopy(fsbBytes, (int)fsbBank.Header.ThisHeaderSize, fsbHeaderBytes, 0, (int)fsbBank.Header.SampleHeadersSize);
+
+                string fsbZero = Convert.ToString(fsbHeaderBytes[0], 2).PadLeft(8, '0');
+                string fsbOne = Convert.ToString(fsbHeaderBytes[1], 2).PadLeft(8, '0');
+                string fsbTwo = Convert.ToString(fsbHeaderBytes[2], 2).PadLeft(8, '0');
+                string fsbThree = Convert.ToString(fsbHeaderBytes[3], 2).PadLeft(8, '0');
+                string fsbFour = Convert.ToString(fsbHeaderBytes[4], 2).PadLeft(8, '0');
+                string fsbFull = fsbFour[6].ToString() + fsbFour[7].ToString() + fsbThree + fsbTwo + fsbOne + fsbZero[0].ToString();
+                int fsbDataOffset = Convert.ToInt32(fsbFull, 2) * 32;
+                fsbDataOffset = newStream.Length / 32;
+                string fsbNewData = Convert.ToString(fsbDataOffset, 2).PadLeft(27, '0');
+                string fsbNewFour = fsbFour[0..6] + fsbNewData[0].ToString() + fsbNewData[1].ToString();
+                string fsbNewThree = fsbNewData[2..10].ToString();
+                string fsbNewTwo = fsbNewData[10..18].ToString();
+                string fsbNewOne = fsbNewData[18..26].ToString();
+                string fsbNewZero = fsbNewData[26].ToString() + fsbZero[1..8];
+                int fsbByteZero = Convert.ToInt32(fsbNewZero, 2);
+                int fsbByteOne = Convert.ToInt32(fsbNewOne, 2);
+                int fsbByteTwo = Convert.ToInt32(fsbNewTwo, 2);
+                int fsbByteThree = Convert.ToInt32(fsbNewThree, 2);
+                int fsbByteFour = Convert.ToInt32(fsbNewFour, 2);
+
+                fsbHeaderBytes[0] = (byte)fsbByteZero;
+                fsbHeaderBytes[1] = (byte)fsbByteOne;
+                fsbHeaderBytes[2] = (byte)fsbByteTwo;
+                fsbHeaderBytes[3] = (byte)fsbByteThree;
+                fsbHeaderBytes[4] = (byte)fsbByteFour;
 
                 newSampleHeadersBytes.AddRange(vanillaHeaderBytesBefore);
                 newSampleHeadersBytes.AddRange(fsbHeaderBytes);
@@ -719,12 +776,7 @@ namespace KotHModLoaderGUI
             JArray indexes = (JArray)_indexesByNames[filename.Replace(".ogg", "")];
 
             ReadMasterFileHeaders(_bankFilePath, out var masterBank, out var vanillaMasterBytes);
-            //int masterHeaderIndex = vanillaMasterBytes.AsSpan().IndexOf(System.Text.Encoding.ASCII.GetBytes("FSB5"));
             int headerIndex = vanillaMasterBytes.AsSpan().IndexOf(System.Text.Encoding.ASCII.GetBytes("FSB5"));
-            //byte[] masterHeaderBytes = new byte[headerIndex];
-            //Buffer.BlockCopy(vanillaMasterBytes, 0, masterHeaderBytes, 0, headerIndex);
-            //byte[] masterInfoBytes = new byte[60];
-            //Buffer.BlockCopy(vanillaMasterBytes, headerIndex, masterInfoBytes, 0, 60);
             byte[] masterSampleHeadersBytes = new byte[masterBank.Header.SampleHeadersSize];
             Buffer.BlockCopy(vanillaMasterBytes, headerIndex + 60, masterSampleHeadersBytes, 0, (int)masterBank.Header.SampleHeadersSize);
 
@@ -737,7 +789,6 @@ namespace KotHModLoaderGUI
                 FmodSample sample = _fmodSounds.Samples[index];
                 string name = sample.Name;
 
-                //if (filename.Contains(name))
                 if (!filename.Contains(name)) continue;
 
                 if (_alreadyModdedAsset.Contains(index))
@@ -755,15 +806,6 @@ namespace KotHModLoaderGUI
 
                 if (contains) continue;
 
-                FmodSampleMetadata header = new FmodSampleMetadata();
-
-                //rebuild new header
-                //dataoffset    
-                //header.IsStereo = ;
-                //header.Channels = ;
-                //header.Frequency = ;
-                //header.SampleCount = ;
-
                 byte[] byteSample = GetSampleData(index, sample);
 
                 byte[] dataModFile = ReadModdedOGGFile(modFile);
@@ -771,116 +813,15 @@ namespace KotHModLoaderGUI
                 int sampleLength = index + 1 < _fmodSounds.Samples.Count ?
                     (int)_fmodSounds.Samples[index + 1].Metadata.DataOffset - (int)_fmodSounds.Samples[index].Metadata.DataOffset :
                     (int)_fmodSounds.Header.DataSize - (int)_fmodSounds.Samples[index].Metadata.DataOffset;
-                //if (sampleName)
-                //{
-                //    byte[] zeros = new byte[sampleLength];
+
                 byte[] theseBytes = new byte[sampleLength];
                 byte[] originalBytes = new byte[sampleLength];
                 Buffer.BlockCopy(dataModFile, 0, theseBytes, 0, dataModFile.Length > sampleLength ? sampleLength : dataModFile.Length);
                 int headerLength = headerIndex - (int)_fmodSounds.Header.ThisHeaderSize - (int)_fmodSounds.Header.SampleHeadersSize;
-                //int headerLength = headerIndex - 60 - headersSize;
-
-                //Buffer.BlockCopy(vanillaMasterBytes, (int)sample.Metadata.DataOffset + streamDataIndex, originalBytes, 0, sampleLength);
-                //vanillaMasterBytes[headerIndex + 44] = 0;   //hashupper change to 0, still play fine
-                //vanillaMasterBytes[headerIndex + 45] = 0;
-                //vanillaMasterBytes[headerIndex + 46] = 0;
-                //vanillaMasterBytes[headerIndex + 47] = 0;
-                //vanillaMasterBytes[headerIndex + 48] = 0;
-                //vanillaMasterBytes[headerIndex + 49] = 0;
-                //vanillaMasterBytes[headerIndex + 50] = 0;
-                //vanillaMasterBytes[headerIndex + 51] = 0;
-
-                ////vanillaMasterBytes[headerIndex + 8] = 110;  //changing sample number definitely changes something
-                ////vanillaMasterBytes[headerIndex + 9] = 5;
-
-                //vanillaMasterBytes[headerIndex + 52] = 0;   //unknown value change to 0, still play fine
-                //vanillaMasterBytes[headerIndex + 53] = 0;
-                //vanillaMasterBytes[headerIndex + 54] = 0;
-                //vanillaMasterBytes[headerIndex + 55] = 0;
-                //vanillaMasterBytes[headerIndex + 56] = 0;
-                //vanillaMasterBytes[headerIndex + 57] = 0;
-                //vanillaMasterBytes[headerIndex + 58] = 0;
-                //vanillaMasterBytes[headerIndex + 59] = 0;
-
-
-                //ReadMasterFileHeaders("D:\\FSBank5.Net 202\\FSBankNet\\bin\\Debug\\net5.0\\test.fsb5", out var fsbBank, out var fsbBytes);
-                //theseBytes = fsbBank.Samples[0].SampleBytes;
-
-                //Buffer.BlockCopy(theseBytes, 0, vanillaMasterBytes, (int)sample.Metadata.DataOffset + streamDataIndex, sampleLength);
-
-                //Buffer.BlockCopy(theseBytes, 0, vanillaMasterBytes, (int)sample.Metadata.DataOffset + streamDataIndex, sampleLength);
-                //    Buffer.BlockCopy(zeros, 0, newMasterBytes, (int)sampleMetadata.DataOffset + headerIndex + 60 + headersSize, sampleLength);
-                //}
-                //else
-                //{
-                //    byte[] zeros = new byte[vanillaMasterBytes.Length - headerIndex - 60 - headersSize - (int)sampleMetadata.DataOffset];
-                //    byte[] theseBytes = new byte[sampleLength];
-                //    Buffer.BlockCopy(vanillaMasterBytes, (int)sampleMetadata.DataOffset + headerLength, theseBytes, 0, sampleLength);
-                //    Buffer.BlockCopy(vanillaMasterBytes, (int)sampleMetadata.DataOffset + headerLength, newMasterBytes, (int)sampleMetadata.DataOffset + headerLength, sampleLength);
-                //    //Buffer.BlockCopy(zeros, 0, newMasterBytes, (int)sampleMetadata.DataOffset + headerIndex + 60 + (int)sizeOfSampleHeaders, zeros.Length);
-                //}
 
                 _replacers.Add(index, modFile.FullName);
                 replaced = true;
                 _alreadyModdedAsset.Add(index);
-
-
-                if (index == 138000000000)
-                {
-                    //int test = vanillaMasterBytes[headerIndex + 60 + (int)address + 12];
-                    //vanillaMasterBytes[headerIndex + 60 + (int)address + 12] = 202;
-                    //Buffer.BlockCopy(sampleHeaderBytes, 0, vanillaMasterBytes, headerIndex + 60 + (int)address, 8);
-                    long testad = GetSampleHeaderIndex(masterSampleHeadersBytes, 9);
-
-                    long address = GetSampleHeaderIndex(masterSampleHeadersBytes, index);
-                    byte[] sampleHeaderBytes = new byte[8];
-                    Buffer.BlockCopy(vanillaMasterBytes, headerIndex + 60 + (int)address, sampleHeaderBytes, 0, 8);
-                    sampleHeaderBytes[6] = 0;      //change nothing...
-                    //sampleHeaderBytes[5] = 0;
-                    //sampleHeaderBytes[4] = 0;
-                    int test = vanillaMasterBytes[headerIndex + 60 + 8842];
-                    vanillaMasterBytes[headerIndex + 60 + 8840] = 172;
-                    vanillaMasterBytes[headerIndex + 60 + 8841] = 156;
-                    vanillaMasterBytes[headerIndex + 60 + 8842] = 8;
-                    int test2 = vanillaMasterBytes[headerIndex + 60 + 8848];
-                    vanillaMasterBytes[headerIndex + 60 + 8848] = 2;
-                    vanillaMasterBytes[headerIndex + 60 + 8849] = 99;
-                    vanillaMasterBytes[headerIndex + 60 + 8850] = 239;
-                    vanillaMasterBytes[headerIndex + 60 + 8851] = 105;
-                    vanillaMasterBytes[headerIndex + 60 + 8852] = 16;
-                    vanillaMasterBytes[headerIndex + 60 + 8853] = 0;
-                    vanillaMasterBytes[headerIndex + 60 + 8854] = 0;
-                    vanillaMasterBytes[headerIndex + 60 + 8855] = 0;
-                    vanillaMasterBytes[headerIndex + 60 + 8856] = 64;
-                    vanillaMasterBytes[headerIndex + 60 + 8857] = 185;
-                    vanillaMasterBytes[headerIndex + 60 + 8858] = 0;
-                    vanillaMasterBytes[headerIndex + 60 + 8859] = 0;
-                    vanillaMasterBytes[headerIndex + 60 + 8860] = 175;
-                    vanillaMasterBytes[headerIndex + 60 + 8861] = 93;
-                    vanillaMasterBytes[headerIndex + 60 + 8862] = 0;
-                    vanillaMasterBytes[headerIndex + 60 + 8863] = 0;
-                    vanillaMasterBytes[headerIndex + 60 + 8864] = 64;
-                    vanillaMasterBytes[headerIndex + 60 + 8865] = 117;
-                    vanillaMasterBytes[headerIndex + 60 + 8866] = 1;
-                    vanillaMasterBytes[headerIndex + 60 + 8867] = 0;
-                    vanillaMasterBytes[headerIndex + 60 + 8868] = 146;
-                    vanillaMasterBytes[headerIndex + 60 + 8869] = 107;
-                    vanillaMasterBytes[headerIndex + 60 + 8870] = 0;
-                    vanillaMasterBytes[headerIndex + 60 + 8871] = 0;
-
-                    vanillaMasterBytes[headerIndex + 60 + 8876] = 0;
-                    vanillaMasterBytes[headerIndex + 60 + 8877] = 254;
-                    vanillaMasterBytes[headerIndex + 60 + 8878] = 127;
-                    vanillaMasterBytes[headerIndex + 60 + 8879] = 63;
-
-
-                    ReadMasterFileHeaders("D:\\FSBank5.Net 202\\FSBankNet\\bin\\Debug\\net5.0\\test.fsb5", out var fsbBank, out var fsbBytes);
-                    theseBytes = fsbBank.Samples[0].SampleBytes;
-
-                    Buffer.BlockCopy(theseBytes, 0, vanillaMasterBytes, (int)sample.Metadata.DataOffset + streamDataIndex, theseBytes.Length);
-                }
-
-                //File.WriteAllBytes("Master.modded.bank", vanillaMasterBytes);
             }
 
             return replaced;
