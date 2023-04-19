@@ -608,6 +608,8 @@ namespace KotHModLoaderGUI
 
             int lastStreamReplacementIndex = 0;
             int lastHeaderReplacementIndex = 0;
+            int lastReplacerIndex = -1;
+            int streamOffset = 0;
 
             foreach (KeyValuePair<int, string> replacement in _sortedReplacers)
             {
@@ -635,10 +637,47 @@ namespace KotHModLoaderGUI
                 int vanillaHeaderIndex = _sampleHeadersIndexes[index];
                 int vanillaHeaderNextIndex = index + 1 >= _fmodSounds.Samples.Count ? vanillaSampleHeadersBytes.Length : _sampleHeadersIndexes[index + 1];
 
-                if (lastHeaderReplacementIndex != 0)
+                if (lastReplacerIndex >= 0)
                 {
                     //go through all headers before and change the dataoffset
+                    for(int h = _sortedReplacers.Keys.ToArray()[lastReplacerIndex] + 1; h <= index; h++)
+                    {
+                        int size = h < _sampleHeadersIndexes.Length ? _sampleHeadersIndexes[h + 1] - _sampleHeadersIndexes[h] : vanillaSampleHeadersBytes.Length - _sampleHeadersIndexes[h];
+                        byte[] sampleHeader = new byte[size];
+                        Buffer.BlockCopy(vanillaSampleHeadersBytes, _sampleHeadersIndexes[h], sampleHeader, 0, size);
+                        //string zero = sampleHeader[0];
+                        string zero = Convert.ToString(sampleHeader[0], 2).PadLeft(8, '0');
+                        string one = Convert.ToString(sampleHeader[1], 2).PadLeft(8, '0');
+                        string two = Convert.ToString(sampleHeader[2], 2).PadLeft(8, '0');
+                        string three = Convert.ToString(sampleHeader[3], 2).PadLeft(8, '0');
+                        string four = Convert.ToString(sampleHeader[4], 2).PadLeft(8, '0');
+                        string full = four[6].ToString() + four[7].ToString() + three + two + one + zero[0].ToString();
+                        int dataOffset = Convert.ToInt32(full, 2) * 32;
+                        dataOffset += streamOffset;
+                        dataOffset /= 32;
+                        string newData = Convert.ToString(dataOffset, 2).PadLeft(27, '0');
+                        string newFour = four[0..6] + newData[0].ToString() + newData[1].ToString();
+                        string newThree = newData[2..10].ToString();
+                        string newTwo = newData[10..18].ToString();
+                        string newOne = newData[18..26].ToString();
+                        string newZero = newData[26].ToString() + zero[1..8];
+                        int byteZero = Convert.ToInt32(newZero, 2);
+                        int byteOne = Convert.ToInt32(newOne, 2);
+                        int byteTwo = Convert.ToInt32(newTwo, 2);
+                        int byteThree = Convert.ToInt32(newThree, 2);
+                        int byteFour = Convert.ToInt32(newFour, 2);
+
+                        sampleHeader[0] = (byte)byteZero;
+                        sampleHeader[1] = (byte)byteOne;
+                        sampleHeader[2] = (byte)byteTwo;
+                        sampleHeader[3] = (byte)byteThree;
+                        sampleHeader[4] = (byte)byteFour;
+
+                        newSampleHeadersBytes.AddRange(sampleHeader);
+                    }
                 }
+
+                streamOffset += vanillaStreamingIndex - newStreamingDataBytes.Count;
 
                 byte[] vanillaHeaderBytesBefore = new byte[vanillaHeaderIndex - lastHeaderReplacementIndex];
                 Buffer.BlockCopy(vanillaSampleHeadersBytes, lastHeaderReplacementIndex, vanillaHeaderBytesBefore, 0, vanillaHeaderIndex - lastHeaderReplacementIndex);
@@ -650,6 +689,8 @@ namespace KotHModLoaderGUI
 
                 newSampleHeadersBytes.AddRange(vanillaHeaderBytesBefore);
                 newSampleHeadersBytes.AddRange(fsbHeaderBytes);
+
+                lastReplacerIndex++;
             }
 
             if (lastStreamReplacementIndex < _fmodSounds.Header.DataSize)
