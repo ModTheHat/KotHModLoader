@@ -24,7 +24,8 @@ int Create(const char* path)
 	subsound.desiredSampleRate = 0;
 	subsound.numFiles = 1;
 	const FSBANK_SUBSOUND* newSubsound = &subsound;
-	const char* output = "test.fsb5";
+	const char* output = ((string)path + ".fsb").c_str();
+	output = "temp.fsb";
 
 	result = FSBank_Build(newSubsound, 1, FSBANK_FORMAT_VORBIS, FSBANK_BUILD_DEFAULT | FSBANK_BUILD_DONTLOOP | FSBANK_BUILD_WRITEPEAKVOLUME, 82, NULL, output);
 	cout << FSBANK_RESULT(result) << endl;

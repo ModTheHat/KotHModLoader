@@ -594,7 +594,7 @@ namespace KotHModLoaderGUI
             }
             //VANILLA MASTER.BANK SAMPLES, STREAMING AND FILE END
 
-            ReplaceSamples(in masterSampleStreamingDataBytes, in newStreamingData);
+            ReplaceSamples(in masterSampleStreamingDataBytes, in newStreamingData, in masterSampleHeadersBytes, in newSampleHeader);
 
             //File.WriteAllBytes("Master.modded.bank", newMasterBytes);
 
@@ -602,40 +602,69 @@ namespace KotHModLoaderGUI
             return null;
         }
 
-        private void ReplaceSamples(in byte[] vanillaStreamingBytes, in List<byte> newBytes)
+        private void ReplaceSamples(in byte[] vanillaStreamingBytes, in List<byte> newStreamingDataBytes, in byte[] vanillaSampleHeadersBytes, in List<byte> newSampleHeadersBytes)
         {
             var _sortedReplacers = _replacers.ToImmutableSortedDictionary();
 
-            int lastReplacementIndex = 0;
+            int lastStreamReplacementIndex = 0;
+            int lastHeaderReplacementIndex = 0;
 
-            foreach(KeyValuePair<int, string> replacement in _sortedReplacers)
+            foreach (KeyValuePair<int, string> replacement in _sortedReplacers)
             {
                 int index = replacement.Key;
                 string filePath = replacement.Value;
 
-                int vanillaIndex = (int)_fmodSounds.Samples[index].Metadata.DataOffset;
-                int vanillaNextIndex = index + 1 >= _fmodSounds.Samples.Count ? vanillaStreamingBytes.Length : (int)_fmodSounds.Samples[index + 1].Metadata.DataOffset;
+                //Streaming replacements
+                int vanillaStreamingIndex = (int)_fmodSounds.Samples[index].Metadata.DataOffset;
+                int vanillaStreamingNextIndex = index + 1 >= _fmodSounds.Samples.Count ? vanillaStreamingBytes.Length : (int)_fmodSounds.Samples[index + 1].Metadata.DataOffset;
 
-                byte[] vanillaSampleBytes = new byte[vanillaNextIndex - vanillaIndex];
-                Buffer.BlockCopy(vanillaStreamingBytes, vanillaIndex, vanillaSampleBytes, 0, vanillaNextIndex - vanillaIndex);
-                byte[] vanillaSampleBytesBefore = new byte[vanillaIndex];
-                Buffer.BlockCopy(vanillaStreamingBytes, lastReplacementIndex, vanillaSampleBytesBefore, 0, vanillaIndex);
+                byte[] vanillaSampleBytes = new byte[vanillaStreamingNextIndex - vanillaStreamingIndex];
+                Buffer.BlockCopy(vanillaStreamingBytes, vanillaStreamingIndex, vanillaSampleBytes, 0, vanillaStreamingNextIndex - vanillaStreamingIndex);
+                byte[] vanillaSampleBytesBefore = new byte[vanillaStreamingIndex - lastStreamReplacementIndex];
+                Buffer.BlockCopy(vanillaStreamingBytes, lastStreamReplacementIndex, vanillaSampleBytesBefore, 0, vanillaStreamingIndex - lastStreamReplacementIndex);
 
-                lastReplacementIndex = vanillaNextIndex;
+                lastStreamReplacementIndex = vanillaStreamingNextIndex;
 
-                byte[] dataModFile = ReadModdedOGGFile(new FileInfo(filePath));
+                Create(filePath);
+                ReadMasterFileHeaders("temp.fsb", out var fsbBank, out var fsbBytes);
 
-                newBytes.AddRange(vanillaSampleBytesBefore);
-                newBytes.AddRange(dataModFile);
+                newStreamingDataBytes.AddRange(vanillaSampleBytesBefore);
+                newStreamingDataBytes.AddRange(fsbBank.Samples[0].SampleBytes);
+
+                //Headers Replacement
+                int vanillaHeaderIndex = _sampleHeadersIndexes[index];
+                int vanillaHeaderNextIndex = index + 1 >= _fmodSounds.Samples.Count ? vanillaSampleHeadersBytes.Length : _sampleHeadersIndexes[index + 1];
+
+                if (lastHeaderReplacementIndex != 0)
+                {
+                    //go through all headers before and change the dataoffset
+                }
+
+                byte[] vanillaHeaderBytesBefore = new byte[vanillaHeaderIndex - lastHeaderReplacementIndex];
+                Buffer.BlockCopy(vanillaSampleHeadersBytes, lastHeaderReplacementIndex, vanillaHeaderBytesBefore, 0, vanillaHeaderIndex - lastHeaderReplacementIndex);
+
+                lastHeaderReplacementIndex = vanillaHeaderNextIndex;
+
+                byte[] fsbHeaderBytes = new byte[fsbBank.Header.SampleHeadersSize];
+                Buffer.BlockCopy(fsbBytes, (int)fsbBank.Header.ThisHeaderSize, fsbHeaderBytes, 0, (int)fsbBank.Header.SampleHeadersSize);
+
+                newSampleHeadersBytes.AddRange(vanillaHeaderBytesBefore);
+                newSampleHeadersBytes.AddRange(fsbHeaderBytes);
             }
 
-            if (lastReplacementIndex < _fmodSounds.Header.DataSize)
+            if (lastStreamReplacementIndex < _fmodSounds.Header.DataSize)
             {
-                byte[] vanillaSampleBytesToEnd = new byte[_fmodSounds.Header.DataSize - lastReplacementIndex];
-                Buffer.BlockCopy(vanillaStreamingBytes, lastReplacementIndex, vanillaSampleBytesToEnd, 0, (int)_fmodSounds.Header.DataSize - lastReplacementIndex);
-                newBytes.AddRange(vanillaSampleBytesToEnd);
+                byte[] vanillaSampleBytesToEnd = new byte[_fmodSounds.Header.DataSize - lastStreamReplacementIndex];
+                Buffer.BlockCopy(vanillaStreamingBytes, lastStreamReplacementIndex, vanillaSampleBytesToEnd, 0, (int)_fmodSounds.Header.DataSize - lastStreamReplacementIndex);
+                newStreamingDataBytes.AddRange(vanillaSampleBytesToEnd);
             }
 
+            if (lastHeaderReplacementIndex < _fmodSounds.Header.SampleHeadersSize)
+            {
+                byte[] vanillaHeadersBytesToEnd = new byte[_fmodSounds.Header.SampleHeadersSize - lastHeaderReplacementIndex];
+                Buffer.BlockCopy(vanillaSampleHeadersBytes, lastHeaderReplacementIndex, vanillaHeadersBytesToEnd, 0, (int)_fmodSounds.Header.SampleHeadersSize - lastHeaderReplacementIndex);
+                newSampleHeadersBytes.AddRange(vanillaHeadersBytesToEnd);
+            }
         }
 
         string _alreadyModdedWarning = "";
