@@ -731,8 +731,7 @@ namespace KotHModLoaderGUI
                         newSampleHeadersBytes.AddRange(sampleHeader);
                     }
                 }
-
-                streamOffset = vanillaStreamingNextIndex - newStreamingDataBytes.Count;
+                streamOffset = (int)newStreamingDataBytes.Count - (int)vanillaStreamingNextIndex;
 
                 byte[] vanillaHeaderBytes = new byte[vanillaHeaderNextIndex - vanillaHeaderIndex];
                 Buffer.BlockCopy(vanillaSampleHeadersBytes, vanillaHeaderIndex, vanillaHeaderBytes, 0, vanillaHeaderNextIndex - vanillaHeaderIndex);
