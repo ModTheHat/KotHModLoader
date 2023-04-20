@@ -11,6 +11,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using static Fmod5Sharp.Util.Extensions;
 
@@ -531,7 +532,7 @@ namespace KotHModLoaderGUI
 
             //NEW FMOD SOUND BANK HEADER
             byte[] newBankHeader = new byte[60];
-            Buffer.BlockCopy(vanillaMasterBytes, masterHeaderIndex, newBigHeader, 0, 60);
+            Buffer.BlockCopy(vanillaMasterBytes, masterHeaderIndex, newBankHeader, 0, 60);
 
             //NEW SAMPLE HEADERS
             List<byte> newSampleHeader = new List<byte>();
@@ -582,22 +583,22 @@ namespace KotHModLoaderGUI
             //BIG FIRST HEADER
             byte[] newHeaderBytes = new byte[masterHeaderBytes.Length];
             Buffer.BlockCopy(masterHeaderBytes, 0, newHeaderBytes, 0, masterHeaderBytes.Length);
-            int fullSize = masterHeaderBytes.Length + masterInfoBytes.Length + masterSampleHeadersBytes.Length + masterNameTableBytes.Length + newStreamingData.Count - 8;
+            int fullSize = newHeaderBytes.Length + newBankHeader.Length + newSampleHeader.Count + masterNameTableBytes.Length + newStreamingData.Count - 8;
             string headerFull = Convert.ToString(fullSize, 2).PadLeft(32, '0');
-            string headerFourStr = headerFull[0..8];
-            string headerFiveStr = headerFull[8..16];
-            string headerSixStr = headerFull[16..24];
-            string headerSevenStr = headerFull[24..32];
-            int headerFour = Convert.ToInt32(headerFourStr, 2);
-            int headerFive = Convert.ToInt32(headerFiveStr, 2);
-            int headerSix = Convert.ToInt32(headerSixStr, 2);
-            int headerSeven = Convert.ToInt32(headerSevenStr, 2);
-            newHeaderBytes[4] = (byte)headerSeven;
-            newHeaderBytes[5] = (byte)headerSix;
-            newHeaderBytes[6] = (byte)headerFive;
-            newHeaderBytes[7] = (byte)headerFour;
+            string header4 = headerFull[24..32];
+            string header5 = headerFull[16..24];
+            string header6 = headerFull[8..16]; 
+            string header7 = headerFull[0..8]; 
+            int header4Byte = Convert.ToInt32(header4, 2);
+            int header5Byte = Convert.ToInt32(header5, 2);
+            int header6Byte = Convert.ToInt32(header6, 2);
+            int header7Byte = Convert.ToInt32(header7, 2);
+            newHeaderBytes[4] = (byte)header4Byte;
+            newHeaderBytes[5] = (byte)header5Byte;
+            newHeaderBytes[6] = (byte)header6Byte;
+            newHeaderBytes[7] = (byte)header7Byte;
 
-            int noHeaderSize = masterInfoBytes.Length + masterSampleHeadersBytes.Length + masterNameTableBytes.Length + newStreamingData.Count;
+            int noHeaderSize = newBankHeader.Length + newSampleHeader.Count + masterNameTableBytes.Length + newStreamingData.Count;
             string noHeaderFull = Convert.ToString(noHeaderSize, 2).PadLeft(32, '0');
             string noHeaderFourStr = noHeaderFull[0..8];
             string noHeaderFiveStr = noHeaderFull[8..16];
@@ -614,11 +615,25 @@ namespace KotHModLoaderGUI
 
             //BANK HEADER (60-64 bytes)
                 //sample header (12-15)
-                //size of data  (20-23)
+            string newBankLength = Convert.ToString(newSampleHeader.Count, 2).PadLeft(32, '0');
+            string newBank12 = newBankLength[24..32];
+            string newBank13 = newBankLength[16..24];
+            string newBank14 = newBankLength[8..16];
+            string newBank15 = newBankLength[0..8];
+            byte newBank12Byte = (byte)Convert.ToInt32(newBank12, 2);
+            byte newBank13Byte = (byte)Convert.ToInt32(newBank13, 2);
+            byte newBank14Byte = (byte)Convert.ToInt32(newBank14, 2);
+            byte newBank15Byte = (byte)Convert.ToInt32(newBank15, 2);
+
+            newBankHeader[12] = newBank12Byte;
+            newBankHeader[13] = newBank13Byte;
+            newBankHeader[14] = newBank14Byte;
+            newBankHeader[15] = newBank15Byte;
+            //size of data  (20-23)
             //newBankHeader
 
-            newMaster.AddRange(masterHeaderBytes);
-            newMaster.AddRange(masterInfoBytes);
+            newMaster.AddRange(newHeaderBytes);
+            newMaster.AddRange(newBankHeader);
             newMaster.AddRange(newSampleHeader);
             newMaster.AddRange(masterNameTableBytes);
             newMaster.AddRange(newStreamingData);
@@ -671,8 +686,8 @@ namespace KotHModLoaderGUI
                 //newStreamingDataBytes.Clear();
                 //newStreamingDataBytes.AddRange(newStream);
 
-                //newStreamingDataBytes.AddRange(fsbBank.Samples[0].SampleBytes);
-                newStreamingDataBytes.AddRange(newStream);
+                newStreamingDataBytes.AddRange(fsbBank.Samples[0].SampleBytes);
+                //newStreamingDataBytes.AddRange(newStream);
 
                 //Headers Replacement
                 int vanillaHeaderIndex = _sampleHeadersIndexes[index];
@@ -683,7 +698,7 @@ namespace KotHModLoaderGUI
                     //go through all headers before and change the dataoffset
                     for(int h = _sortedReplacers.Keys.ToArray()[lastReplacerIndex] + 1; h < index; h++)
                     {
-                        int size = h < _sampleHeadersIndexes.Length ? _sampleHeadersIndexes[h + 1] - _sampleHeadersIndexes[h] : vanillaSampleHeadersBytes.Length - _sampleHeadersIndexes[h];
+                        int size = h + 1 < _sampleHeadersIndexes.Length ? _sampleHeadersIndexes[h + 1] - _sampleHeadersIndexes[h] : vanillaSampleHeadersBytes.Length - _sampleHeadersIndexes[h];
                         byte[] sampleHeader = new byte[size];
                         Buffer.BlockCopy(vanillaSampleHeadersBytes, _sampleHeadersIndexes[h], sampleHeader, 0, size);
                         string zero = Convert.ToString(sampleHeader[0], 2).PadLeft(8, '0');
@@ -717,7 +732,7 @@ namespace KotHModLoaderGUI
                     }
                 }
 
-                streamOffset += vanillaStreamingIndex - newStream.Length;
+                streamOffset = vanillaStreamingNextIndex - newStreamingDataBytes.Count;
 
                 byte[] vanillaHeaderBytes = new byte[vanillaHeaderNextIndex - vanillaHeaderIndex];
                 Buffer.BlockCopy(vanillaSampleHeadersBytes, vanillaHeaderIndex, vanillaHeaderBytes, 0, vanillaHeaderNextIndex - vanillaHeaderIndex);
@@ -778,7 +793,43 @@ namespace KotHModLoaderGUI
             {
                 byte[] vanillaHeadersBytesToEnd = new byte[_fmodSounds.Header.SampleHeadersSize - lastHeaderReplacementIndex];
                 Buffer.BlockCopy(vanillaSampleHeadersBytes, lastHeaderReplacementIndex, vanillaHeadersBytesToEnd, 0, (int)_fmodSounds.Header.SampleHeadersSize - lastHeaderReplacementIndex);
-                newSampleHeadersBytes.AddRange(vanillaHeadersBytesToEnd);
+                //newSampleHeadersBytes.AddRange(vanillaHeadersBytesToEnd);
+
+                //go through all headers before and change the dataoffset
+                for (int h = _sortedReplacers.Keys.ToArray()[lastReplacerIndex] + 1; h < _fmodSounds.Samples.Count; h++)
+                {
+                    int size = h + 1 < _sampleHeadersIndexes.Length ? _sampleHeadersIndexes[h + 1] - _sampleHeadersIndexes[h] : vanillaSampleHeadersBytes.Length - _sampleHeadersIndexes[h];
+                    byte[] sampleHeader = new byte[size];
+                    Buffer.BlockCopy(vanillaSampleHeadersBytes, _sampleHeadersIndexes[h], sampleHeader, 0, size);
+                    string zero = Convert.ToString(sampleHeader[0], 2).PadLeft(8, '0');
+                    string one = Convert.ToString(sampleHeader[1], 2).PadLeft(8, '0');
+                    string two = Convert.ToString(sampleHeader[2], 2).PadLeft(8, '0');
+                    string three = Convert.ToString(sampleHeader[3], 2).PadLeft(8, '0');
+                    string four = Convert.ToString(sampleHeader[4], 2).PadLeft(8, '0');
+                    string full = four[6].ToString() + four[7].ToString() + three + two + one + zero[0].ToString();
+                    int dataOffset = Convert.ToInt32(full, 2) * 32;
+                    dataOffset += streamOffset;
+                    dataOffset /= 32;
+                    string newData = Convert.ToString(dataOffset, 2).PadLeft(27, '0');
+                    string newFour = four[0..6] + newData[0].ToString() + newData[1].ToString();
+                    string newThree = newData[2..10].ToString();
+                    string newTwo = newData[10..18].ToString();
+                    string newOne = newData[18..26].ToString();
+                    string newZero = newData[26].ToString() + zero[1..8];
+                    int byteZero = Convert.ToInt32(newZero, 2);
+                    int byteOne = Convert.ToInt32(newOne, 2);
+                    int byteTwo = Convert.ToInt32(newTwo, 2);
+                    int byteThree = Convert.ToInt32(newThree, 2);
+                    int byteFour = Convert.ToInt32(newFour, 2);
+
+                    sampleHeader[0] = (byte)byteZero;
+                    sampleHeader[1] = (byte)byteOne;
+                    sampleHeader[2] = (byte)byteTwo;
+                    sampleHeader[3] = (byte)byteThree;
+                    sampleHeader[4] = (byte)byteFour;
+
+                    newSampleHeadersBytes.AddRange(sampleHeader);
+                }
             }
         }
 
