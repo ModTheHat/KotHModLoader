@@ -451,6 +451,9 @@ namespace KotHModLoaderGUI
 
             while (reader.BaseStream.Position < stream.Length)
             {
+                if(index == 138)
+                {
+                }
                 _sampleHeadersIndexes[index] = (int)reader.BaseStream.Position;
 
                 header = reader.ReadBytes(8);
@@ -576,6 +579,7 @@ namespace KotHModLoaderGUI
 
             List<byte> newMaster = new List<byte>();
 
+            //BIG FIRST HEADER
             byte[] newHeaderBytes = new byte[masterHeaderBytes.Length];
             Buffer.BlockCopy(masterHeaderBytes, 0, newHeaderBytes, 0, masterHeaderBytes.Length);
             int fullSize = masterHeaderBytes.Length + masterInfoBytes.Length + masterSampleHeadersBytes.Length + masterNameTableBytes.Length + newStreamingData.Count - 8;
@@ -608,9 +612,14 @@ namespace KotHModLoaderGUI
             newHeaderBytes[1856506] = (byte)noHeaderFive;
             newHeaderBytes[1856507] = (byte)noHeaderFour;
 
+            //BANK HEADER (60-64 bytes)
+                //sample header (12-15)
+                //size of data  (20-23)
+            //newBankHeader
+
             newMaster.AddRange(masterHeaderBytes);
             newMaster.AddRange(masterInfoBytes);
-            newMaster.AddRange(masterSampleHeadersBytes);
+            newMaster.AddRange(newSampleHeader);
             newMaster.AddRange(masterNameTableBytes);
             newMaster.AddRange(newStreamingData);
 
@@ -710,6 +719,8 @@ namespace KotHModLoaderGUI
 
                 streamOffset += vanillaStreamingIndex - newStream.Length;
 
+                byte[] vanillaHeaderBytes = new byte[vanillaHeaderNextIndex - vanillaHeaderIndex];
+                Buffer.BlockCopy(vanillaSampleHeadersBytes, vanillaHeaderIndex, vanillaHeaderBytes, 0, vanillaHeaderNextIndex - vanillaHeaderIndex);
                 byte[] vanillaHeaderBytesBefore = new byte[vanillaHeaderIndex - lastHeaderReplacementIndex];
                 Buffer.BlockCopy(vanillaSampleHeadersBytes, lastHeaderReplacementIndex, vanillaHeaderBytesBefore, 0, vanillaHeaderIndex - lastHeaderReplacementIndex);
 
@@ -725,7 +736,7 @@ namespace KotHModLoaderGUI
                 string fsbFour = Convert.ToString(fsbHeaderBytes[4], 2).PadLeft(8, '0');
                 string fsbFull = fsbFour[6].ToString() + fsbFour[7].ToString() + fsbThree + fsbTwo + fsbOne + fsbZero[0].ToString();
                 int fsbDataOffset = Convert.ToInt32(fsbFull, 2) * 32;
-                fsbDataOffset = newStream.Length / 32;
+                fsbDataOffset = vanillaStreamingIndex / 32;
                 string fsbNewData = Convert.ToString(fsbDataOffset, 2).PadLeft(27, '0');
                 string fsbNewFour = fsbFour[0..6] + fsbNewData[0].ToString() + fsbNewData[1].ToString();
                 string fsbNewThree = fsbNewData[2..10].ToString();
@@ -745,6 +756,12 @@ namespace KotHModLoaderGUI
                 fsbHeaderBytes[4] = (byte)fsbByteFour;
 
                 newSampleHeadersBytes.AddRange(vanillaHeaderBytesBefore);
+
+                //TESTSTTSTS
+               // fsbHeaderBytes = 
+
+                //FIN TESTSTS
+
                 newSampleHeadersBytes.AddRange(fsbHeaderBytes);
 
                 lastReplacerIndex++;
