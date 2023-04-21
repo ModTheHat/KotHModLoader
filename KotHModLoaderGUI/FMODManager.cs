@@ -507,18 +507,6 @@ namespace KotHModLoaderGUI
             _alreadyModded = new List<string>();
             _replacers = new Dictionary<int, string>();
 
-            //ReadModdedMasterFile(out var moddedFileByte, out var moddedSoundBank);
-            ReadMasterFileHeaders("Master.modded.bank", out var moddedSoundBank, out var moddedFileByte);
-
-            ReadMasterFileHeaders("Master.FMODBANKTOOL.bank", out var fbtMasterBank, out var fbtMasterBytes);
-            int fbtMasterHeaderIndex = fbtMasterBytes.AsSpan().IndexOf(System.Text.Encoding.ASCII.GetBytes("FSB5"));
-            byte[] fbtHeaderBytes = new byte[fbtMasterHeaderIndex];
-            Buffer.BlockCopy(fbtMasterBytes, 0, fbtHeaderBytes, 0, fbtMasterHeaderIndex);
-            byte[] fbtInfoBytes = new byte[60];
-            Buffer.BlockCopy(fbtMasterBytes, fbtMasterHeaderIndex, fbtInfoBytes, 0, 60);
-            byte[] fbtSampleHeadersBytes = new byte[fbtMasterBank.Header.SampleHeadersSize];
-            Buffer.BlockCopy(fbtMasterBytes, fbtMasterHeaderIndex + 60, fbtSampleHeadersBytes, 0, (int)fbtMasterBank.Header.SampleHeadersSize);
-
             ReadMasterFileHeaders(_bankFilePath, out var masterBank, out var vanillaMasterBytes);
             int masterHeaderIndex = vanillaMasterBytes.AsSpan().IndexOf(System.Text.Encoding.ASCII.GetBytes("FSB5"));
             byte[] masterHeaderBytes = new byte[masterHeaderIndex];
@@ -533,8 +521,8 @@ namespace KotHModLoaderGUI
             Buffer.BlockCopy(vanillaMasterBytes, masterHeaderIndex + 60 + (int)masterBank.Header.SampleHeadersSize + (int)masterBank.Header.NameTableSize, masterSampleStreamingDataBytes, 0, (int)masterBank.Header.DataSize);
 
             //NEW BIG HEADER
-            byte[] newBigHeader = new byte[masterHeaderIndex];
-            Buffer.BlockCopy(vanillaMasterBytes, 0, newBigHeader, 0, masterHeaderIndex);
+            byte[] newHeaderBytes = new byte[masterHeaderIndex];
+            Buffer.BlockCopy(masterHeaderBytes, 0, newHeaderBytes, 0, masterHeaderIndex);
 
             //NEW FMOD SOUND BANK HEADER
             byte[] newBankHeader = new byte[60];
@@ -543,18 +531,11 @@ namespace KotHModLoaderGUI
             //NEW SAMPLE HEADERS
             List<byte> newSampleHeader = new List<byte>();
 
-            //NEW NAME TABLES
-
             //NEW STREAMING DATA
             List<byte> newStreamingData = new List<byte>();
 
             //NEW MASTER.BANK INITIALISATION
-            byte[] newMasterBytes = new byte[vanillaMasterBytes.Length];
-            Buffer.BlockCopy(vanillaMasterBytes, 0, newMasterBytes, 0, masterHeaderIndex + (int)masterBank.Header.ThisHeaderSize);
-
-            //ADD SAMPLE HEADERS TO NEW MASTER
-            Buffer.BlockCopy(vanillaMasterBytes, masterHeaderIndex + 60, newMasterBytes, masterHeaderIndex + 60, (int)masterBank.Header.ThisHeaderSize);
-            int lastPos = masterHeaderIndex + 60 + (int)masterBank.Header.ThisHeaderSize;
+            List<byte> newMaster = new List<byte>();
 
             foreach (var mod in mods)
             {
@@ -563,7 +544,6 @@ namespace KotHModLoaderGUI
                 List<string> blacklistedAssets = (List<string>)modJson["BlackListedVanillaAssets"].ToObject(typeof(List<string>));
                 List<string> disabledAssets = (List<string>)modJson["DisabledModsOrFiles"].ToObject(typeof(List<string>));
 
-                //if (!disabledAssets.Contains(@"\" + mod.Name))
                 if (disabledAssets.Contains(@"\" + mod.Name)) continue;
 
                 foreach (FileInfo file in mod.AudioFiles)
@@ -580,15 +560,10 @@ namespace KotHModLoaderGUI
                         _alreadyModded.Add(file.Name);
                 }
             }
-            //VANILLA MASTER.BANK SAMPLES, STREAMING AND FILE END
 
             ReplaceSamples(masterSampleStreamingDataBytes, in newStreamingData, masterSampleHeadersBytes, in newSampleHeader);
 
-            List<byte> newMaster = new List<byte>();
-
-            //BIG FIRST HEADER
-            byte[] newHeaderBytes = new byte[masterHeaderBytes.Length];
-            Buffer.BlockCopy(masterHeaderBytes, 0, newHeaderBytes, 0, masterHeaderBytes.Length);
+            //BIG FIRST HEADER (1 923 456 bytes)
             int fullSize = newHeaderBytes.Length + newBankHeader.Length + newSampleHeader.Count + masterNameTableBytes.Length + newStreamingData.Count - 8;
             string headerFull = Convert.ToString(fullSize, 2).PadLeft(32, '0');
             string header4 = headerFull[24..32];
@@ -606,22 +581,22 @@ namespace KotHModLoaderGUI
 
             int noHeaderSize = newBankHeader.Length + newSampleHeader.Count + masterNameTableBytes.Length + newStreamingData.Count;
             string noHeaderFull = Convert.ToString(noHeaderSize, 2).PadLeft(32, '0');
-            string noHeaderFourStr = noHeaderFull[0..8];
-            string noHeaderFiveStr = noHeaderFull[8..16];
-            string noHeaderSixStr = noHeaderFull[16..24];
-            string noHeaderSevenStr = noHeaderFull[24..32];
-            int noHeaderFour = Convert.ToInt32(noHeaderFourStr, 2);
-            int noHeaderFive = Convert.ToInt32(noHeaderFiveStr, 2);
-            int noHeaderSix = Convert.ToInt32(noHeaderSixStr, 2);
-            int noHeaderSeven = Convert.ToInt32(noHeaderSevenStr, 2);
-            newHeaderBytes[1856504] = (byte)noHeaderSeven;
-            newHeaderBytes[1856505] = (byte)noHeaderSix;
-            newHeaderBytes[1856506] = (byte)noHeaderFive;
-            newHeaderBytes[1856507] = (byte)noHeaderFour;
+            string noHeader4 = noHeaderFull[0..8];
+            string noHeader5 = noHeaderFull[8..16];
+            string noHeader6 = noHeaderFull[16..24];
+            string noHeader7 = noHeaderFull[24..32];
+            int noHeader4Bytes = Convert.ToInt32(noHeader4, 2);
+            int noHeader5Bytes = Convert.ToInt32(noHeader5, 2);
+            int noHeader6Bytes = Convert.ToInt32(noHeader6, 2);
+            int noHeader7Bytes = Convert.ToInt32(noHeader7, 2);
+            newHeaderBytes[1856504] = (byte)noHeader7Bytes;
+            newHeaderBytes[1856505] = (byte)noHeader6Bytes;
+            newHeaderBytes[1856506] = (byte)noHeader5Bytes;
+            newHeaderBytes[1856507] = (byte)noHeader4Bytes;
 
             //BANK HEADER (60-64 bytes)
 
-                //sample header (12-15)
+                //sample header (Bytes 12-15)
             string newBankLength = Convert.ToString(newSampleHeader.Count, 2).PadLeft(32, '0');
             string newBank12 = newBankLength[24..32];
             string newBank13 = newBankLength[16..24];
@@ -637,7 +612,7 @@ namespace KotHModLoaderGUI
             newBankHeader[14] = newBank14Byte;
             newBankHeader[15] = newBank15Byte;
 
-                //size of data  (20-23)
+                //size of data  (Bytes 20-23)
             string newStreamingDataLength = Convert.ToString(newStreamingData.Count, 2).PadLeft(32, '0');
             string newBank20 = newStreamingDataLength[24..32];
             string newBank21 = newStreamingDataLength[16..24];
@@ -658,14 +633,6 @@ namespace KotHModLoaderGUI
             newMaster.AddRange(newSampleHeader);
             newMaster.AddRange(masterNameTableBytes);
             newMaster.AddRange(newStreamingData);
-
-            byte[] test = new byte[masterHeaderBytes.Length + masterInfoBytes.Length + masterSampleHeadersBytes.Length + masterNameTableBytes.Length + masterSampleStreamingDataBytes.Length];
-            Buffer.BlockCopy(masterHeaderBytes, 0, test, 0, masterHeaderBytes.Length);
-            Buffer.BlockCopy(masterInfoBytes, 0, test, masterHeaderBytes.Length, masterInfoBytes.Length);
-            Buffer.BlockCopy(masterSampleHeadersBytes, 0, test, masterHeaderBytes.Length + masterInfoBytes.Length, masterSampleHeadersBytes.Length);
-            Buffer.BlockCopy(masterNameTableBytes, 0, test, masterHeaderBytes.Length + masterInfoBytes.Length + masterSampleHeadersBytes.Length, masterNameTableBytes.Length);
-            Buffer.BlockCopy(masterSampleStreamingDataBytes, 0, test, masterHeaderBytes.Length + masterInfoBytes.Length + masterSampleHeadersBytes.Length + masterNameTableBytes.Length, masterSampleStreamingDataBytes.Length);
-
 
             File.WriteAllBytes("Master.modded.bank", newMaster.ToArray());
 
