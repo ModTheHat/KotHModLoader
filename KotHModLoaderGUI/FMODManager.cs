@@ -26,6 +26,7 @@ namespace KotHModLoaderGUI
         private static string _dataDirPath = _rootPath + @"\KingOfTheHat_Data";
         private static string _streamingDirPath = _dataDirPath + @"\StreamingAssets";
         private static string _bankFilePath = _streamingDirPath + @"\Master.bank";
+        private static string _bankVanilla = _streamingDirPath + @"\Master.bank.VANILLA";
         private static string _extractedPath = _rootPath + @"\Extracted Assets";
         private static string _soundsPath = _extractedPath + @"\Sounds";
 
@@ -41,20 +42,20 @@ namespace KotHModLoaderGUI
 
         public void InitialisePaths()
         {
-            //int test = Create("D:/file_example_WAV_1MG.wav");
             LoadFMODManager();
         }
 
         private void LoadFMODManager()
         {
-            var bytes = File.ReadAllBytes(_bankFilePath);
+            if (!File.Exists(_bankFilePath))
+                File.Copy(_bankFilePath, _bankVanilla);
+
+            var bytes = File.ReadAllBytes(_bankVanilla);
             var index = bytes.AsSpan().IndexOf(System.Text.Encoding.ASCII.GetBytes("FSB5"));
             var bankBytes = index > 0 ? bytes.AsSpan(index).ToArray() : bytes;
             _fmodSounds = FsbLoader.LoadFsbFromByteArray(bankBytes);
             byte[] masterSampleHeadersBytes = new byte[_fmodSounds.Header.SampleHeadersSize];
             Buffer.BlockCopy(bytes, index + 60, masterSampleHeadersBytes, 0, (int)_fmodSounds.Header.SampleHeadersSize);
-
-
 
             _sampleHeadersIndexes = new int[_fmodSounds.Header.NumSamples];
             LoadSampleHeadersIndexes(masterSampleHeadersBytes);
@@ -182,29 +183,8 @@ namespace KotHModLoaderGUI
             return data;
         }
 
-        private void ReadModdedMasterFile(out byte[] moddedFileByte, out FmodSoundBank moddedSoundBank)
-        {
-            moddedFileByte = null;
-            moddedSoundBank = null;
-            if (File.Exists("Master.modded.bank"))
-            {
-                moddedFileByte = File.ReadAllBytes("Master.modded.bank");
-                int headerIndexTest = moddedFileByte.AsSpan().IndexOf(System.Text.Encoding.ASCII.GetBytes("FSB5"));
-                byte[] headerBytesTest = new byte[headerIndexTest];
-                Buffer.BlockCopy(moddedFileByte, 0, headerBytesTest, 0, headerIndexTest);
-                byte[] noHeaderBytes = null;
-                if (headerIndexTest > 0)
-                {
-                    noHeaderBytes = moddedFileByte.AsSpan(headerIndexTest).ToArray();
-                }
-                moddedSoundBank = FsbLoader.LoadFsbFromByteArray(noHeaderBytes);
-            }
-        }
-
         private byte[] ReadModdedOGGFile(FileInfo oggFile)
         {
-            //FileInfo oggfile = new FileInfo(@"..\Mods\New folder\KotH_UI_LandingScreen_PressStart_v2-01.ogg");
-
             byte[] dataModFile = GetSampleBytes(oggFile);
 
             using MemoryStream stream = new MemoryStream(dataModFile);
@@ -256,7 +236,6 @@ namespace KotHModLoaderGUI
             int headerIndex = masterBytes.AsSpan().IndexOf(System.Text.Encoding.ASCII.GetBytes("FSB5"));
             byte[] headerBytes = new byte[headerIndex + 60];
             Buffer.BlockCopy(masterBytes, 0, headerBytes, 0, headerIndex + 60);
-            //File.WriteAllBytes("Master.modded.bank", headerBytes);
 
             //FMODBankTool MASTER.BANK METADATA, SAMPLES AND STREAMING DATA
             byte[] masterNoHeaderBytes = null;
@@ -351,81 +330,6 @@ namespace KotHModLoaderGUI
             }
         }
 
-        private long GetSampleHeaderIndex(byte[] headerBytes, int sampleIndex)
-        {
-            int index = 0;
-            long address = -1;
-
-            MemoryStream stream = new MemoryStream(headerBytes);
-            BinaryReader reader = new BinaryReader(stream);
-
-            byte[] header = null;
-            string headerString = "";
-            string sampleCount = null;
-            int sampleC = -1;
-            string dataOffset = null;
-            int dataO = -1;
-            string powpow = null;
-            string freqId = null;
-            int freqI = -1;
-            string hasChunk = null;
-
-            byte[] chunk = null;
-            string chunkString = "";
-            string chunkType = null;
-            int chunkT = -1;
-            string chunkSize = null;
-            int chunkS = -1;
-            string moreChunk = null;
-            int moreC = -1;
-            byte[] chunkData = null;
-
-            while (reader.BaseStream.Position < stream.Length)
-            {
-                if (index == sampleIndex)
-                    address = reader.BaseStream.Position;
-
-                header = reader.ReadBytes(8);
-                headerString = "";
-                for (int i = header.Length - 1; i >= 0; i--)
-                {
-                    headerString += Convert.ToString(header[i], 2).PadLeft(8, '0');
-                }
-                sampleCount = headerString[0..30];
-                sampleC = Convert.ToInt32(sampleCount, 2);
-                dataOffset = headerString[30..57];
-                dataO = Convert.ToInt32(dataOffset, 2);
-                powpow = headerString[57..59];
-                freqId = headerString[59..63];
-                freqI = Convert.ToInt32(freqId, 2);
-                hasChunk = headerString[63].ToString();
-
-                bool stillHasChunk = hasChunk == "1" ? true : false;
-                while (stillHasChunk)
-                {
-                    chunk = reader.ReadBytes(4);
-                    chunkString = "";
-                    for (int i = chunk.Length - 1; i >= 0; i--)
-                    {
-                        chunkString += Convert.ToString(chunk[i], 2).PadLeft(8, '0');
-                    }
-                    chunkType = chunkString[0..7];
-                    chunkT = Convert.ToInt32(chunkType, 2);
-                    chunkSize = chunkString[7..31];
-                    chunkS = Convert.ToInt32(chunkSize, 2);
-                    moreChunk = chunkString[31].ToString();
-
-                    chunkData = reader.ReadBytes(chunkS);
-
-                    stillHasChunk = moreChunk == "1" ? true : false;
-                }
-
-                index++;
-            }
-
-            return address;
-        }
-
         private void LoadSampleHeadersIndexes(byte[] headerBytes)
         {
             int index = 0;
@@ -507,7 +411,7 @@ namespace KotHModLoaderGUI
             _alreadyModded = new List<string>();
             _replacers = new Dictionary<int, string>();
 
-            ReadMasterFileHeaders(_bankFilePath, out var masterBank, out var vanillaMasterBytes);
+            ReadMasterFileHeaders(_bankVanilla, out var masterBank, out var vanillaMasterBytes);
             int masterHeaderIndex = vanillaMasterBytes.AsSpan().IndexOf(System.Text.Encoding.ASCII.GetBytes("FSB5"));
             byte[] masterHeaderBytes = new byte[masterHeaderIndex];
             Buffer.BlockCopy(vanillaMasterBytes, 0, masterHeaderBytes, 0, masterHeaderIndex);
@@ -634,7 +538,7 @@ namespace KotHModLoaderGUI
             newMaster.AddRange(masterNameTableBytes);
             newMaster.AddRange(newStreamingData);
 
-            File.WriteAllBytes("Master.modded.bank", newMaster.ToArray());
+            File.WriteAllBytes(_bankFilePath, newMaster.ToArray());
 
             return null;
         }
@@ -672,13 +576,9 @@ namespace KotHModLoaderGUI
 
                 byte[] newStream = new byte[vanillaStreamingNextIndex - vanillaStreamingIndex];
                 Buffer.BlockCopy(fsbBank.Samples[0].SampleBytes, 0, newStream, 0, vanillaStreamingNextIndex - vanillaStreamingIndex > fsbBank.Samples[0].SampleBytes.Length ? fsbBank.Samples[0].SampleBytes.Length : vanillaStreamingNextIndex - vanillaStreamingIndex);
-                //newStreamingDataBytes.Clear();
-                //newStreamingDataBytes.AddRange(newStream);
-
 
                 newStreamingIndex = newStreamingDataBytes.Count;
                 newStreamingDataBytes.AddRange(fsbBank.Samples[0].SampleBytes);
-                //newStreamingDataBytes.AddRange(newStream);
 
                 //Headers Replacement
                 int vanillaHeaderIndex = _sampleHeadersIndexes[index];
@@ -692,33 +592,32 @@ namespace KotHModLoaderGUI
                         int size = h + 1 < _sampleHeadersIndexes.Length ? _sampleHeadersIndexes[h + 1] - _sampleHeadersIndexes[h] : vanillaSampleHeadersBytes.Length - _sampleHeadersIndexes[h];
                         byte[] sampleHeader = new byte[size];
                         Buffer.BlockCopy(vanillaSampleHeadersBytes, _sampleHeadersIndexes[h], sampleHeader, 0, size);
-                        string zero = Convert.ToString(sampleHeader[0], 2).PadLeft(8, '0');
-                        string one = Convert.ToString(sampleHeader[1], 2).PadLeft(8, '0');
-                        string two = Convert.ToString(sampleHeader[2], 2).PadLeft(8, '0');
-                        string three = Convert.ToString(sampleHeader[3], 2).PadLeft(8, '0');
-                        string four = Convert.ToString(sampleHeader[4], 2).PadLeft(8, '0');
-                        string full = four[6].ToString() + four[7].ToString() + three + two + one + zero[0].ToString();
+                        string vanilla0 = Convert.ToString(sampleHeader[0], 2).PadLeft(8, '0');
+                        string vanilla1 = Convert.ToString(sampleHeader[1], 2).PadLeft(8, '0');
+                        string vanilla2 = Convert.ToString(sampleHeader[2], 2).PadLeft(8, '0');
+                        string vanilla3 = Convert.ToString(sampleHeader[3], 2).PadLeft(8, '0');
+                        string vanilla4 = Convert.ToString(sampleHeader[4], 2).PadLeft(8, '0');
+                        string full = vanilla4[6].ToString() + vanilla4[7].ToString() + vanilla3 + vanilla2 + vanilla1 + vanilla0[0].ToString();
                         int dataOffset = Convert.ToInt32(full, 2) * 32;
                         dataOffset += streamOffset;
-                        //dataOffset = newStreamingDataBytes.Count;
                         dataOffset /= 32;
                         string newData = Convert.ToString(dataOffset, 2).PadLeft(27, '0');
-                        string newFour = four[0..6] + newData[0].ToString() + newData[1].ToString();
-                        string newThree = newData[2..10].ToString();
-                        string newTwo = newData[10..18].ToString();
-                        string newOne = newData[18..26].ToString();
-                        string newZero = newData[26].ToString() + zero[1..8];
-                        int byteZero = Convert.ToInt32(newZero, 2);
-                        int byteOne = Convert.ToInt32(newOne, 2);
-                        int byteTwo = Convert.ToInt32(newTwo, 2);
-                        int byteThree = Convert.ToInt32(newThree, 2);
-                        int byteFour = Convert.ToInt32(newFour, 2);
+                        string new4 = vanilla4[0..6] + newData[0].ToString() + newData[1].ToString();
+                        string new3 = newData[2..10].ToString();
+                        string new2 = newData[10..18].ToString();
+                        string new1 = newData[18..26].ToString();
+                        string new0 = newData[26].ToString() + vanilla0[1..8];
+                        int new0Byte = Convert.ToInt32(new0, 2);
+                        int new1Byte = Convert.ToInt32(new1, 2);
+                        int new2Byte = Convert.ToInt32(new2, 2);
+                        int new3Byte = Convert.ToInt32(new3, 2);
+                        int new4Byte = Convert.ToInt32(new4, 2);
 
-                        sampleHeader[0] = (byte)byteZero;
-                        sampleHeader[1] = (byte)byteOne;
-                        sampleHeader[2] = (byte)byteTwo;
-                        sampleHeader[3] = (byte)byteThree;
-                        sampleHeader[4] = (byte)byteFour;
+                        sampleHeader[0] = (byte)new0Byte;
+                        sampleHeader[1] = (byte)new1Byte;
+                        sampleHeader[2] = (byte)new2Byte;
+                        sampleHeader[3] = (byte)new3Byte;
+                        sampleHeader[4] = (byte)new4Byte;
 
                         newSampleHeadersBytes.AddRange(sampleHeader);
                     }
@@ -735,39 +634,34 @@ namespace KotHModLoaderGUI
                 byte[] fsbHeaderBytes = new byte[fsbBank.Header.SampleHeadersSize];
                 Buffer.BlockCopy(fsbBytes, (int)fsbBank.Header.ThisHeaderSize, fsbHeaderBytes, 0, (int)fsbBank.Header.SampleHeadersSize);
 
-                string fsbZero = Convert.ToString(fsbHeaderBytes[0], 2).PadLeft(8, '0');
-                string fsbOne = Convert.ToString(fsbHeaderBytes[1], 2).PadLeft(8, '0');
-                string fsbTwo = Convert.ToString(fsbHeaderBytes[2], 2).PadLeft(8, '0');
-                string fsbThree = Convert.ToString(fsbHeaderBytes[3], 2).PadLeft(8, '0');
-                string fsbFour = Convert.ToString(fsbHeaderBytes[4], 2).PadLeft(8, '0');
-                string fsbFull = fsbFour[6].ToString() + fsbFour[7].ToString() + fsbThree + fsbTwo + fsbOne + fsbZero[0].ToString();
+                string fsb0 = Convert.ToString(fsbHeaderBytes[0], 2).PadLeft(8, '0');
+                string fsb1 = Convert.ToString(fsbHeaderBytes[1], 2).PadLeft(8, '0');
+                string fsb2 = Convert.ToString(fsbHeaderBytes[2], 2).PadLeft(8, '0');
+                string fsb3 = Convert.ToString(fsbHeaderBytes[3], 2).PadLeft(8, '0');
+                string fsb4 = Convert.ToString(fsbHeaderBytes[4], 2).PadLeft(8, '0');
+                string fsbFull = fsb4[6].ToString() + fsb4[7].ToString() + fsb3 + fsb2 + fsb1 + fsb0[0].ToString();
                 int fsbDataOffset = Convert.ToInt32(fsbFull, 2) * 32;
                 fsbDataOffset = newStreamingIndex / 32;
                 string fsbNewData = Convert.ToString(fsbDataOffset, 2).PadLeft(27, '0');
-                string fsbNewFour = fsbFour[0..6] + fsbNewData[0].ToString() + fsbNewData[1].ToString();
-                string fsbNewThree = fsbNewData[2..10].ToString();
-                string fsbNewTwo = fsbNewData[10..18].ToString();
-                string fsbNewOne = fsbNewData[18..26].ToString();
-                string fsbNewZero = fsbNewData[26].ToString() + fsbZero[1..8];
-                int fsbByteZero = Convert.ToInt32(fsbNewZero, 2);
-                int fsbByteOne = Convert.ToInt32(fsbNewOne, 2);
-                int fsbByteTwo = Convert.ToInt32(fsbNewTwo, 2);
-                int fsbByteThree = Convert.ToInt32(fsbNewThree, 2);
-                int fsbByteFour = Convert.ToInt32(fsbNewFour, 2);
+                string fsb4New = fsb4[0..6] + fsbNewData[0].ToString() + fsbNewData[1].ToString();
+                string fsb3New = fsbNewData[2..10].ToString();
+                string fsb2New = fsbNewData[10..18].ToString();
+                string fsb1New = fsbNewData[18..26].ToString();
+                string fsb0New = fsbNewData[26].ToString() + fsb0[1..8];
+                int fsb0Byte = Convert.ToInt32(fsb0New, 2);
+                int fsb1Byte = Convert.ToInt32(fsb1New, 2);
+                int fsb2Byte = Convert.ToInt32(fsb2New, 2);
+                int fsb3Byte = Convert.ToInt32(fsb3New, 2);
+                int fsb4Byte = Convert.ToInt32(fsb4New, 2);
 
-                fsbHeaderBytes[0] = (byte)fsbByteZero;
-                fsbHeaderBytes[1] = (byte)fsbByteOne;
-                fsbHeaderBytes[2] = (byte)fsbByteTwo;
-                fsbHeaderBytes[3] = (byte)fsbByteThree;
-                fsbHeaderBytes[4] = (byte)fsbByteFour;
+                fsbHeaderBytes[0] = (byte)fsb0Byte;
+                fsbHeaderBytes[1] = (byte)fsb1Byte;
+                fsbHeaderBytes[2] = (byte)fsb2Byte;
+                fsbHeaderBytes[3] = (byte)fsb3Byte;
+                fsbHeaderBytes[4] = (byte)fsb4Byte;
 
-                if(lastReplacerIndex == -1)
+                if (lastReplacerIndex == -1)
                     newSampleHeadersBytes.AddRange(vanillaHeaderBytesBefore);
-
-                //TESTSTTSTS
-               // fsbHeaderBytes = 
-
-                //FIN TESTSTS
 
                 newSampleHeadersBytes.AddRange(fsbHeaderBytes);
 
@@ -785,9 +679,8 @@ namespace KotHModLoaderGUI
             {
                 byte[] vanillaHeadersBytesToEnd = new byte[_fmodSounds.Header.SampleHeadersSize - lastHeaderReplacementIndex];
                 Buffer.BlockCopy(vanillaSampleHeadersBytes, lastHeaderReplacementIndex, vanillaHeadersBytesToEnd, 0, (int)_fmodSounds.Header.SampleHeadersSize - lastHeaderReplacementIndex);
-                //newSampleHeadersBytes.AddRange(vanillaHeadersBytesToEnd);
 
-                //go through all headers before and change the dataoffset
+                //go through all headers upto the end of the sample headers data
                 for (int h = _sortedReplacers.Keys.ToArray()[lastReplacerIndex] + 1; h < _fmodSounds.Samples.Count; h++)
                 {
                     int size = h + 1 < _sampleHeadersIndexes.Length ? _sampleHeadersIndexes[h + 1] - _sampleHeadersIndexes[h] : vanillaSampleHeadersBytes.Length - _sampleHeadersIndexes[h];
@@ -835,7 +728,7 @@ namespace KotHModLoaderGUI
 
             JArray indexes = (JArray)_indexesByNames[filename.Replace(".ogg", "")];
 
-            ReadMasterFileHeaders(_bankFilePath, out var masterBank, out var vanillaMasterBytes);
+            ReadMasterFileHeaders(_bankVanilla, out var masterBank, out var vanillaMasterBytes);
             int headerIndex = vanillaMasterBytes.AsSpan().IndexOf(System.Text.Encoding.ASCII.GetBytes("FSB5"));
             byte[] masterSampleHeadersBytes = new byte[masterBank.Header.SampleHeadersSize];
             Buffer.BlockCopy(vanillaMasterBytes, headerIndex + 60, masterSampleHeadersBytes, 0, (int)masterBank.Header.SampleHeadersSize);
@@ -885,46 +778,6 @@ namespace KotHModLoaderGUI
             }
 
             return replaced;
-        }
-        private static byte[] RebuildOggSample(byte[] fileBytes)
-        {
-            //Need to rebuild the vorbis header, which requires reading the known blobs from the json file.
-            //This requires knowing the crc32 of the data, which is in a VORBISDATA chunk.
-            //var dataChunk = sample.Metadata.Chunks.FirstOrDefault(f => f.ChunkType == FmodSampleChunkType.VORBISDATA);
-
-            //if (dataChunk == null)
-            //{
-            //    throw new Exception("Rebuilding Vorbis data requires a VORBISDATA chunk, which wasn't found");
-            //}
-
-            //var chunkData = (VorbisChunkData)dataChunk.ChunkData;
-            //var crc32 = chunkData.Crc32;
-
-            //Ok, we have the crc32, now we need to find the header data.
-            //if (headers == null)
-            //    LoadVorbisHeaders();
-            //var vorbisData = headers![crc32];
-
-            //vorbisData.InitBlockFlags();
-
-            //var infoPacket = BuildInfoPacket((byte)sample.Metadata.Channels, sample.Metadata.Frequency);
-            //var commentPacket = BuildCommentPacket("Fmod5Sharp (Samboy063)");
-            //var setupPacket = new OggPacket(vorbisData.HeaderBytes, false, 0, 2);
-
-            //Begin building the final stream
-            //var oggStream = new OggStream(1);
-            //using var outputStream = new MemoryStream();
-
-            //oggStream.PacketIn(infoPacket);
-            //oggStream.PacketIn(commentPacket);
-            //oggStream.PacketIn(setupPacket);
-
-            //oggStream.FlushAndCopyTo(outputStream, true);
-
-            //CopySampleData(vorbisData, sample.SampleBytes, oggStream, outputStream);
-
-            //return outputStream.ToArray();
-            return null;
         }
 
         private byte[] GetSampleBytes(FileInfo file)
