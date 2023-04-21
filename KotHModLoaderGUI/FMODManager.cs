@@ -680,6 +680,7 @@ namespace KotHModLoaderGUI
             int lastHeaderReplacementIndex = 0;
             int lastReplacerIndex = -1;
             int streamOffset = 0;
+            int newStreamingIndex = 0;
 
             foreach (KeyValuePair<int, string> replacement in _sortedReplacers)
             {
@@ -707,6 +708,8 @@ namespace KotHModLoaderGUI
                 //newStreamingDataBytes.Clear();
                 //newStreamingDataBytes.AddRange(newStream);
 
+
+                newStreamingIndex = newStreamingDataBytes.Count;
                 newStreamingDataBytes.AddRange(fsbBank.Samples[0].SampleBytes);
                 //newStreamingDataBytes.AddRange(newStream);
 
@@ -730,6 +733,7 @@ namespace KotHModLoaderGUI
                         string full = four[6].ToString() + four[7].ToString() + three + two + one + zero[0].ToString();
                         int dataOffset = Convert.ToInt32(full, 2) * 32;
                         dataOffset += streamOffset;
+                        //dataOffset = newStreamingDataBytes.Count;
                         dataOffset /= 32;
                         string newData = Convert.ToString(dataOffset, 2).PadLeft(27, '0');
                         string newFour = four[0..6] + newData[0].ToString() + newData[1].ToString();
@@ -771,7 +775,7 @@ namespace KotHModLoaderGUI
                 string fsbFour = Convert.ToString(fsbHeaderBytes[4], 2).PadLeft(8, '0');
                 string fsbFull = fsbFour[6].ToString() + fsbFour[7].ToString() + fsbThree + fsbTwo + fsbOne + fsbZero[0].ToString();
                 int fsbDataOffset = Convert.ToInt32(fsbFull, 2) * 32;
-                fsbDataOffset = vanillaStreamingIndex / 32;
+                fsbDataOffset = newStreamingIndex / 32;
                 string fsbNewData = Convert.ToString(fsbDataOffset, 2).PadLeft(27, '0');
                 string fsbNewFour = fsbFour[0..6] + fsbNewData[0].ToString() + fsbNewData[1].ToString();
                 string fsbNewThree = fsbNewData[2..10].ToString();
