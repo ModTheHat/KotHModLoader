@@ -244,6 +244,11 @@ namespace KotHModLoaderGUI
 
         private void ReadMasterFileHeaders(string file, out FmodSoundBank masterBank, out byte[] masterBytes)
         {
+            masterBank = null;
+            masterBytes = null;
+
+            if (!File.Exists(file)) return;
+
             //VANILLA MASTER.BANK FULL FILE DATA
             masterBytes = File.ReadAllBytes(file);
 
@@ -502,7 +507,8 @@ namespace KotHModLoaderGUI
             _alreadyModded = new List<string>();
             _replacers = new Dictionary<int, string>();
 
-            ReadModdedMasterFile(out var moddedFileByte, out var moddedSoundBank);
+            //ReadModdedMasterFile(out var moddedFileByte, out var moddedSoundBank);
+            ReadMasterFileHeaders("Master.modded.bank", out var moddedSoundBank, out var moddedFileByte);
 
             ReadMasterFileHeaders("Master.FMODBANKTOOL.bank", out var fbtMasterBank, out var fbtMasterBytes);
             int fbtMasterHeaderIndex = fbtMasterBytes.AsSpan().IndexOf(System.Text.Encoding.ASCII.GetBytes("FSB5"));
@@ -614,6 +620,7 @@ namespace KotHModLoaderGUI
             newHeaderBytes[1856507] = (byte)noHeaderFour;
 
             //BANK HEADER (60-64 bytes)
+
                 //sample header (12-15)
             string newBankLength = Convert.ToString(newSampleHeader.Count, 2).PadLeft(32, '0');
             string newBank12 = newBankLength[24..32];
@@ -629,8 +636,22 @@ namespace KotHModLoaderGUI
             newBankHeader[13] = newBank13Byte;
             newBankHeader[14] = newBank14Byte;
             newBankHeader[15] = newBank15Byte;
-            //size of data  (20-23)
-            //newBankHeader
+
+                //size of data  (20-23)
+            string newStreamingDataLength = Convert.ToString(newStreamingData.Count, 2).PadLeft(32, '0');
+            string newBank20 = newStreamingDataLength[24..32];
+            string newBank21 = newStreamingDataLength[16..24];
+            string newBank22 = newStreamingDataLength[8..16];
+            string newBank23 = newStreamingDataLength[0..8];
+            byte newBank20Byte = (byte)Convert.ToInt32(newBank20, 2);
+            byte newBank21Byte = (byte)Convert.ToInt32(newBank21, 2);
+            byte newBank22Byte = (byte)Convert.ToInt32(newBank22, 2);
+            byte newBank23Byte = (byte)Convert.ToInt32(newBank23, 2);
+
+            newBankHeader[20] = newBank20Byte;
+            newBankHeader[21] = newBank21Byte;
+            newBankHeader[22] = newBank22Byte;
+            newBankHeader[23] = newBank23Byte;
 
             newMaster.AddRange(newHeaderBytes);
             newMaster.AddRange(newBankHeader);
@@ -769,7 +790,8 @@ namespace KotHModLoaderGUI
                 fsbHeaderBytes[3] = (byte)fsbByteThree;
                 fsbHeaderBytes[4] = (byte)fsbByteFour;
 
-                newSampleHeadersBytes.AddRange(vanillaHeaderBytesBefore);
+                if(lastReplacerIndex == -1)
+                    newSampleHeadersBytes.AddRange(vanillaHeaderBytesBefore);
 
                 //TESTSTTSTS
                // fsbHeaderBytes = 
