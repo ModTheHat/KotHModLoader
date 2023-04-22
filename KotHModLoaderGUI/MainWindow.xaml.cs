@@ -940,7 +940,32 @@ namespace KotHModLoaderGUI
 
         private void AssignVanillaAudio(object sender, RoutedEventArgs e)
         {
+            Mod selectedMod = _modManager.FindMod(lstNames.SelectedItem.ToString().Replace(".DISABLED", ""));
+            ModFile modFile = selectedMod.ModFiles[lstModInfo.Items.Count + lstModAudioInfo.SelectedIndex];
 
+            if (_currentAssetDisplayed != AssetType.FMOD)
+            {
+                MessageBox.Show("You selected an asset that is not an audio file.\n" +
+                    "Select a vanilla audio in the Vanilla Audio Tab and then assign it to the mod asset.");
+                return;
+            }
+
+            int index = _displayedIndexes != null ? _displayedIndexes[lstVanilla.SelectedIndex] : lstVanilla.SelectedIndex;
+
+            //AssetTypeValueField vanillaFile = _resMgr.GetAssetInfo(index);
+            FmodSample vanillaFile = _fmodManager.GetAssetSample(index);
+
+            AssignedVanillaAssets assigned = new AssignedVanillaAssets();
+            assigned.index = index;
+            assigned.name = vanillaFile.Name;
+            assigned.path = modFile.File.FullName.Substring(modFile.File.FullName.IndexOf(selectedMod.Name) + selectedMod.Name.Length);
+
+            dynamic modJson = LoadJson(selectedMod.MetaFile.FullName);
+            modJson["AssignedVanillaAssets"][assigned.path] = JToken.FromObject(assigned);
+
+            File.WriteAllText(selectedMod.MetaFile.FullName, modJson.ToString());
+
+            DisplaySelectedModAudioInfo();
         }
     }
 }

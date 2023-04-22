@@ -81,6 +81,7 @@ namespace KotHModLoaderGUI
 
             return assets;
         }
+
         public List<string> GetAssetInfo(int index)
         {
             List<string> infos = new List<string>();
@@ -99,6 +100,15 @@ namespace KotHModLoaderGUI
             PlayOgg(null, data);
 
             return infos;
+        }
+
+        public FmodSample GetAssetSample(int index)
+        {
+            List<string> infos = new List<string>();
+
+            byte[] data = GetSampleData(index, out var sample);
+
+            return sample;
         }
 
         //Play from path if data is null, play from data in any other case
