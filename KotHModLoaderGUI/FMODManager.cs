@@ -458,8 +458,13 @@ namespace KotHModLoaderGUI
                                         
                     byte[] bytes = GetSampleBytes(file);
 
-                    if (blacklistedAssets.Contains(file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)) || assignedAsset != null) continue;
+                    if (blacklistedAssets.Contains(file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length))) continue;
                     
+                    if(assignedAsset != null)
+                    {
+
+                    }
+
                     if (ModVanillaFMODAudioFromFileName(file.Name, bytes, 0, 0, blacklistedAssets, file))
                         _alreadyModded.Add(file.Name);
                 }
