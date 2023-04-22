@@ -777,6 +777,15 @@ namespace KotHModLoaderGUI
                 Buffer.BlockCopy(dataModFile, 0, theseBytes, 0, dataModFile.Length > sampleLength ? sampleLength : dataModFile.Length);
                 int headerLength = headerIndex - (int)_fmodSounds.Header.ThisHeaderSize - (int)_fmodSounds.Header.SampleHeadersSize;
 
+                var infos = GetOggFileInfos(modFile.FullName);
+                bool isStereo = infos[2].Contains("2 channels");
+
+                if (isStereo != _fmodSounds.Samples[index].Metadata.IsStereo)
+                {
+                    MainWindow.Warning(filename + " has not the same number of Channels as the sample it's trying to modify. It will not be modded.");
+                    continue;
+                }
+
                 _replacers.Add(index, modFile.FullName);
                 replaced = true;
                 _alreadyModdedAsset.Add(index);

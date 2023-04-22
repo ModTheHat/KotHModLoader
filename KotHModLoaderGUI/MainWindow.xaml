@@ -79,6 +79,11 @@
                             <Button x:Name="CandidateAudioButton2" Click="PlayOgg">Play</Button>
                         </StackPanel>
                     </StackPanel>
+                    <TextBlock x:Name="AssignVanillaAudioText" TextWrapping="WrapWithOverflow" />
+                    <Button x:Name="AddAssignedButtonAudio" Content="Assign" Click="AssignVanillaAudio" Width="40" HorizontalAlignment="Left"/>
+                    <StackPanel x:Name="AssignedAudioStack1" Grid.Row="1" Grid.Column="2">
+                        <Image x:Name="AssignedAudioViewer1" MaxHeight="120" Height="Auto" Width="Auto" MouseUp="RemoveAssignedVanillaAudio" />
+                    </StackPanel>
                 </StackPanel>
 
             </StackPanel>

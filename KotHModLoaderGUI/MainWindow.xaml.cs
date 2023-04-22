@@ -372,7 +372,6 @@ namespace KotHModLoaderGUI
 
                 CloseModFilesUI(AssetType.FMOD);
 
-                int candidateQty = 0;
                 List<VanillaAudioAssetCandidate> candidates = modFile.VanillaAudioCandidates;
 
                 //nom du fichier du mod
@@ -426,6 +425,21 @@ namespace KotHModLoaderGUI
                     }
 
                     i++;
+                }
+                switch(candidates.Count)
+                {
+                    case 0:
+                        CandidateAudioStack1.Visibility = Visibility.Collapsed;
+                        CandidateAudioStack2.Visibility = Visibility.Collapsed;
+                        break;
+                    case 1:
+                        CandidateAudioStack1.Visibility = Visibility.Visible;
+                        CandidateAudioStack2.Visibility = Visibility.Collapsed;
+                        break;
+                    case 2:
+                        CandidateAudioStack1.Visibility = Visibility.Visible;
+                        CandidateAudioStack2.Visibility = Visibility.Visible;
+                        break;
                 }
 
                 //vanilla assignés manuellement
@@ -912,6 +926,21 @@ namespace KotHModLoaderGUI
 
             File.Copy("..\\KingOfTheHat_Data\\resources.assets.VANILLA", "..\\KingOfTheHat_Data\\resources.assets");
             console.Text = "The game data has been reset to original.";
+        }
+
+        public static void Warning(string message)
+        {
+            MessageBox.Show(message);
+        }
+
+        private void RemoveAssignedVanillaAudio(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+
+        }
+
+        private void AssignVanillaAudio(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

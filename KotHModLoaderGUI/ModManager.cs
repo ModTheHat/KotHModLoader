@@ -260,8 +260,8 @@ namespace KotHModLoaderGUI
         private static FileInfo[] GetAudioFilesInfo(DirectoryInfo folder)
         {
             FileInfo[] files = folder.GetFiles("*.ogg", SearchOption.AllDirectories);
-            files = files.Concat(folder.GetFiles("*.wav", SearchOption.AllDirectories)).ToArray();
-            files = files.Concat(folder.GetFiles("*.mp3", SearchOption.AllDirectories)).ToArray();
+            //files = files.Concat(folder.GetFiles("*.wav", SearchOption.AllDirectories)).ToArray();
+            //files = files.Concat(folder.GetFiles("*.mp3", SearchOption.AllDirectories)).ToArray();
 
             return files;
         }
