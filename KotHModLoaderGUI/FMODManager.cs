@@ -463,6 +463,7 @@ namespace KotHModLoaderGUI
                 foreach (FileInfo file in mod.AudioFiles)
                 {
                     var assignedAsset = modJson["AssignedVanillaAssets"][file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length)];
+                    int assignedIndex = assignedAsset == null ? -1 : assignedAsset["index"];
 
                     if (disabledAssets.Contains(@"\" + file.FullName.Substring(file.FullName.IndexOf(mod.Name))) || _alreadyModded.Contains(file.Name)) continue;
                                         
@@ -470,12 +471,7 @@ namespace KotHModLoaderGUI
 
                     if (blacklistedAssets.Contains(file.FullName.Substring(file.FullName.IndexOf(mod.Name) + mod.Name.Length))) continue;
                     
-                    if(assignedAsset != null)
-                    {
-
-                    }
-
-                    if (ModVanillaFMODAudioFromFileName(file.Name, bytes, 0, 0, blacklistedAssets, file))
+                    if (ModVanillaFMODAudioFromFileName(file.Name, bytes, 0, 0, blacklistedAssets, file, assignedIndex))
                         _alreadyModded.Add(file.Name);
                 }
             }
@@ -736,7 +732,7 @@ namespace KotHModLoaderGUI
         string _alreadyModdedWarning = "";
         List<int> _alreadyModdedAsset;
         byte[] _resSData;
-        private bool ModVanillaFMODAudioFromFileName(string filename, byte[] dataAudio, int width, int height, List<string> blacklisted, FileInfo modFile)
+        private bool ModVanillaFMODAudioFromFileName(string filename, byte[] dataAudio, int width, int height, List<string> blacklisted, FileInfo modFile, int assignedIndex = -1)
         {
             bool replaced = false;
             _alreadyModdedAsset = new List<int>();
@@ -750,7 +746,15 @@ namespace KotHModLoaderGUI
 
             int streamDataIndex = vanillaMasterBytes.Length - (int)_fmodSounds.Header.DataSize;
 
-            if (indexes == null) return replaced;
+            if (indexes == null && assignedIndex != -1) 
+            { 
+                indexes = new JArray();
+                indexes.Add(assignedIndex);
+            } 
+            else if(assignedIndex != -1)
+                indexes.Add(assignedIndex);
+
+            if (!indexes.HasValues) return replaced;
 
             foreach (int index in indexes)
             {

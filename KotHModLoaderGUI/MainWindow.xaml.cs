@@ -441,8 +441,36 @@ namespace KotHModLoaderGUI
                         CandidateAudioStack2.Visibility = Visibility.Visible;
                         break;
                 }
+                VanillaAudioLabel.Text = "\nBelow are vanilla assets automatically found that will be replaced by the mod file.\n" +
+                    "Click a sound name to toggle between red background and normal.\n" +
+                    "Reded out sounds won't be replaced by mod sound and will stay vanilla.";
 
                 //vanilla assignés manuellement
+
+                AssignVanillaAudioText.Text = "\nBelow are vanilla assets that are manually assigned to be replaced by the mod file.\n" +
+                        "Select an sound in the Vanilla Sounds tab and click the Assign button below to assign it to the mod file.\n" +
+                        "Click on the assigned sound to unassign it.\n" +
+                        "If a mod file has an assigned sound, only the assigned image will be modded.";
+                if (modJson["AssignedVanillaAssets"]["\\" + fileName] != null)
+                {
+                    int ind = modJson["AssignedVanillaAssets"]["\\" + fileName]["index"];
+                    string vanillaName = modJson["AssignedVanillaAssets"]["\\" + fileName]["name"];
+                    string path = modJson["AssignedVanillaAssets"]["\\" + fileName]["path"];
+
+                    if (ind > 0 && path != null)
+                    {
+                        //AssetTypeValueField assignedValues = _resMgr.GetAssetInfo(ind);
+                        FmodSample assignedValues = _fmodManager.GetAssetSample(ind);
+
+                        //Image<Bgra32> textureImage = _resMgr.GetTextureFromField(assignedValues);
+                        //ImageSource imageSource = textureImage != null ? _resMgr.ToBitmapImage(ImageSharpExtensions.ToBitmap(textureImage)) : null;
+
+                        //AssignedAudioViewer1.Source = audioSource;
+                        AssignedAudioName1.Text = assignedValues.Name;
+                    }
+                }
+
+
             }
         }
 

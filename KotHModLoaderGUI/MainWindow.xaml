@@ -70,6 +70,7 @@
                     <Button x:Name="btnPlayAudio" Click="PlayOgg">Play</Button>
                     <ListBox x:Name="lstModAudioFileInfo"/>
                     <StackPanel>
+                        <TextBlock x:Name="VanillaAudioLabel" TextWrapping="WrapWithOverflow" />
                         <StackPanel x:Name="CandidateAudioStack1">
                             <TextBlock x:Name="CandidateAudioText1" MouseDown="ToggleAssignVanillaAudio"></TextBlock>
                             <Button x:Name="CandidateAudioButton1" Click="PlayOgg">Play</Button>
@@ -82,7 +83,7 @@
                     <TextBlock x:Name="AssignVanillaAudioText" TextWrapping="WrapWithOverflow" />
                     <Button x:Name="AddAssignedButtonAudio" Content="Assign" Click="AssignVanillaAudio" Width="40" HorizontalAlignment="Left"/>
                     <StackPanel x:Name="AssignedAudioStack1" Grid.Row="1" Grid.Column="2">
-                        <Image x:Name="AssignedAudioViewer1" MaxHeight="120" Height="Auto" Width="Auto" MouseUp="RemoveAssignedVanillaAudio" />
+                        <TextBlock x:Name="AssignedAudioName1" TextWrapping="WrapWithOverflow" MouseUp="RemoveAssignedVanillaAudio" />
                     </StackPanel>
                 </StackPanel>
 
