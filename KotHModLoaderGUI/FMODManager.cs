@@ -754,7 +754,7 @@ namespace KotHModLoaderGUI
             else if(assignedIndex != -1)
                 indexes.Add(assignedIndex);
 
-            if (!indexes.HasValues) return replaced;
+            if (indexes == null) return replaced;
 
             foreach (int index in indexes)
             {

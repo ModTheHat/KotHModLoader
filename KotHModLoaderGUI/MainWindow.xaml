@@ -84,6 +84,7 @@
                     <Button x:Name="AddAssignedButtonAudio" Content="Assign" Click="AssignVanillaAudio" Width="40" HorizontalAlignment="Left"/>
                     <StackPanel x:Name="AssignedAudioStack1" Grid.Row="1" Grid.Column="2">
                         <TextBlock x:Name="AssignedAudioName1" TextWrapping="WrapWithOverflow" MouseUp="RemoveAssignedVanillaAudio" />
+                        <Button x:Name="AssignedAudioButton1" Click="PlayOgg">Play</Button>
                     </StackPanel>
                 </StackPanel>
 

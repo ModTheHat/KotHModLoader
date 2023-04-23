@@ -451,26 +451,23 @@ namespace KotHModLoaderGUI
                         "Select an sound in the Vanilla Sounds tab and click the Assign button below to assign it to the mod file.\n" +
                         "Click on the assigned sound to unassign it.\n" +
                         "If a mod file has an assigned sound, only the assigned image will be modded.";
-                if (modJson["AssignedVanillaAssets"]["\\" + fileName] != null)
+                string metaName = modFile.File.FullName.Substring(modFile.File.FullName.IndexOf(mod.MetaFile.FullName.Substring(0, mod.MetaFile.FullName.IndexOf("\\packmeta.json"))) + mod.MetaFile.FullName.IndexOf("\\packmeta.json"));
+                if (modJson["AssignedVanillaAssets"][metaName] != null)
                 {
-                    int ind = modJson["AssignedVanillaAssets"]["\\" + fileName]["index"];
-                    string vanillaName = modJson["AssignedVanillaAssets"]["\\" + fileName]["name"];
-                    string path = modJson["AssignedVanillaAssets"]["\\" + fileName]["path"];
+                    int ind = modJson["AssignedVanillaAssets"][metaName]["index"];
+                    string vanillaName = modJson["AssignedVanillaAssets"][metaName]["name"];
+                    string path = modJson["AssignedVanillaAssets"][metaName]["path"];
 
                     if (ind > 0 && path != null)
                     {
-                        //AssetTypeValueField assignedValues = _resMgr.GetAssetInfo(ind);
                         FmodSample assignedValues = _fmodManager.GetAssetSample(ind);
-
-                        //Image<Bgra32> textureImage = _resMgr.GetTextureFromField(assignedValues);
-                        //ImageSource imageSource = textureImage != null ? _resMgr.ToBitmapImage(ImageSharpExtensions.ToBitmap(textureImage)) : null;
-
-                        //AssignedAudioViewer1.Source = audioSource;
-                        AssignedAudioName1.Text = assignedValues.Name;
+                                                
+                        AssignedAudioName1.Text = assignedValues.Name + "\n" + assignedValues.Metadata.Frequency + "Hz, " + assignedValues.Metadata.Channels + " channel" + (assignedValues.Metadata.Channels > 1 ? "s" : "");
                     }
+                    AssignedAudioStack1.Visibility = Visibility.Visible;
                 }
-
-
+                else
+                    AssignedAudioStack1.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -830,10 +827,11 @@ namespace KotHModLoaderGUI
             ModdedImageViewer.Source = null;
         }
 
-        private byte[] GetSampleData(string fileName, int index)
+        private byte[] GetSampleData(string fileName, int index, bool assigned = false)
         {
             ModFile modFile = _modManager.FindModFile(fileName.Replace(".DISABLED", ""));
-            FmodSample sample = _fmodManager.FmodSoundBank.Samples[modFile.VanillaAudioCandidates[index].index];
+            index = assigned ? index : modFile.VanillaAudioCandidates[index].index;
+            FmodSample sample = _fmodManager.FmodSoundBank.Samples[index];
 
             if (!sample.RebuildAsStandardFileFormat(out var data, out var extension))
             {
@@ -847,23 +845,57 @@ namespace KotHModLoaderGUI
         {
             System.Windows.Controls.Button btn = (System.Windows.Controls.Button)sender;
 
-            if (btn.Name == "CandidateAudioButton1" || btn.Name == "CandidateAudioButton2")
+            switch(btn.Name)
             {
-                if (lstModAudioInfo.SelectedIndex > -1 && lstNames.SelectedIndex > -1)
-                {
-                    string fileName = lstModAudioInfo.SelectedItem.ToString().Replace(".DISABLED", "");
-                    _fmodManager.PlayOgg(null, GetSampleData(fileName, (btn.Name == "CandidateAudioButton1" ? 0 : 1)));
-                }
-            }
-            else
-            {
-                if (lstModAudioInfo.SelectedIndex > -1)
-                {
-                    string path = _displayedModAudioFilesInfo[lstModAudioInfo.SelectedIndex].FullName;
+                case "CandidateAudioButton1":
+                case "CandidateAudioButton2":
+                    if (lstModAudioInfo.SelectedIndex > -1 && lstNames.SelectedIndex > -1)
+                    {
+                        string fileName = lstModAudioInfo.SelectedItem.ToString().Replace(".DISABLED", "");
+                        _fmodManager.PlayOgg(null, GetSampleData(fileName, (btn.Name == "CandidateAudioButton1" ? 0 : 1)));
+                    }
+                    break;
+                case "AssignedAudioButton1":
+                    if (lstModAudioInfo.SelectedIndex > -1 && lstNames.SelectedIndex > -1)
+                    {
+                        Mod mod = _modManager.FindMod(lstNames.SelectedItem.ToString().Replace(".DISABLED", ""));
+                        string fileName = lstModAudioInfo.SelectedItem.ToString().Replace(".DISABLED", "");
+                        ModFile modFile = _modManager.FindModFile(fileName);
+                        FileInfo metaFile = mod.MetaFile;
+                        dynamic modJson = LoadJson(metaFile.FullName);
+                        string metaName = modFile.File.FullName.Substring(modFile.File.FullName.IndexOf(mod.MetaFile.FullName.Substring(0, mod.MetaFile.FullName.IndexOf("\\packmeta.json"))) + mod.MetaFile.FullName.IndexOf("\\packmeta.json"));
+                        int index = modJson["AssignedVanillaAssets"][metaName]["index"];                        
 
-                    _fmodManager.PlayOgg(path);
-                }
+                        _fmodManager.PlayOgg(null, GetSampleData(fileName, index, true));
+                    }
+                    break;
+                default:
+                    if (lstModAudioInfo.SelectedIndex > -1)
+                    {
+                        string path = _displayedModAudioFilesInfo[lstModAudioInfo.SelectedIndex].FullName;
+
+                        _fmodManager.PlayOgg(path);
+                    }
+                    break;
             }
+
+            //if (btn.Name == "CandidateAudioButton1" || btn.Name == "CandidateAudioButton2")
+            //{
+            //    if (lstModAudioInfo.SelectedIndex > -1 && lstNames.SelectedIndex > -1)
+            //    {
+            //        string fileName = lstModAudioInfo.SelectedItem.ToString().Replace(".DISABLED", "");
+            //        _fmodManager.PlayOgg(null, GetSampleData(fileName, (btn.Name == "CandidateAudioButton1" ? 0 : 1)));
+            //    }
+            //}
+            //else
+            //{
+            //    if (lstModAudioInfo.SelectedIndex > -1)
+            //    {
+            //        string path = _displayedModAudioFilesInfo[lstModAudioInfo.SelectedIndex].FullName;
+
+            //        _fmodManager.PlayOgg(path);
+            //    }
+            //}
         }
 
         private void EditModInfo(object sender, System.Windows.Input.KeyEventArgs e)
@@ -963,7 +995,19 @@ namespace KotHModLoaderGUI
 
         private void RemoveAssignedVanillaAudio(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
+            Mod selectedMod = _modManager.FindMod(lstNames.SelectedItem.ToString().Replace(".DISABLED", ""));
+            ModFile modFile = selectedMod.ModFiles[lstModInfo.Items.Count + lstModAudioInfo.SelectedIndex];
 
+            string path = modFile.File.FullName.Substring(modFile.File.FullName.IndexOf(selectedMod.Name) + selectedMod.Name.Length);
+
+            dynamic modJson = LoadJson(selectedMod.MetaFile.FullName);
+            modJson["AssignedVanillaAssets"].Remove(path);
+
+            File.WriteAllText(selectedMod.MetaFile.FullName, modJson.ToString());
+
+            AssignedAudioStack1.Visibility = Visibility.Collapsed;
+
+            DisplaySelectedModFileInfo();
         }
 
         private void AssignVanillaAudio(object sender, RoutedEventArgs e)
