@@ -35,14 +35,15 @@
 - Mods browser and management
 - Vanilla texture browser for resources.assets file
 - Vanilla sound browser for master.bank file
-- Vanilla texture extraction for resources.assets file
-- Vanilla texture replacement for resources.assets file
+- Vanilla texture extraction for resources.assets file, in .png format
+- Vanilla texture replacement for resources.assets file, in .png format
 - Vanilla sound extraction for master.bank file, in Ogg vorbis format
 - Vanilla sound replacement for master.bank file, in Ogg vorbis format
 
 Upcoming
 - Vanilla code editing
 - More file types support, like bundles, for vanilla extraction and replacement
+- More texture file types support for extraction and replacement, like .jpg or .tiff
 - More audio file types support for extraction and replacement, like .wav or .mp3
 
 ## Bugs and feature requests
