@@ -22,7 +22,7 @@
 
 ## Install
 
-- Download the latest [zip file](https://github.com/ModTheHat/KotHModLoader/releases/tag/Alpha1.1)
+- Download the latest [zip file](https://github.com/ModTheHat/KotHModLoader/releases/download/Alpha1.2/KotHModLoaderGUI.zip)
 - Locate your King of the Hat game's folder
 - Unzip the content of the zip file to your game's folder
 - Navigate to your game's folder and then KotHModLoaderGUI folder
