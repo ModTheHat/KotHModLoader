@@ -983,8 +983,12 @@ namespace KotHModLoaderGUI
         {
             if (File.Exists("..\\KingOfTheHat_Data\\resources.assets"))
                 File.Delete("..\\KingOfTheHat_Data\\resources.assets");
-
             File.Copy("..\\KingOfTheHat_Data\\resources.assets.VANILLA", "..\\KingOfTheHat_Data\\resources.assets");
+
+            if (File.Exists("..\\KingOfTheHat_Data\\StreamingAssets\\Master.bank"))
+                File.Delete("..\\KingOfTheHat_Data\\StreamingAssets\\Master.bank");
+            File.Copy("..\\KingOfTheHat_Data\\StreamingAssets\\Master.bank.VANILLA", "..\\KingOfTheHat_Data\\StreamingAssets\\Master.bank");
+
             console.Text = "The game data has been reset to original.";
         }
 

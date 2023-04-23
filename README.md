@@ -37,12 +37,13 @@
 - Vanilla sound browser for master.bank file
 - Vanilla texture extraction for resources.assets file
 - Vanilla texture replacement for resources.assets file
-- Vanilla sound extraction for master.bank file
+- Vanilla sound extraction for master.bank file, in Ogg vorbis format
+- Vanilla sound replacement for master.bank file, in Ogg vorbis format
 
 Upcoming
-- Vanilla sound replacement for master.bank file
 - Vanilla code editing
-- More file type support, like bundles, for vanilla extraction and replacement
+- More file types support, like bundles, for vanilla extraction and replacement
+- More audio file types support for extraction and replacement, like .wav or .mp3
 
 ## Bugs and feature requests
 
