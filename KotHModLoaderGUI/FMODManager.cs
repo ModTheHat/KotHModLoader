@@ -32,6 +32,8 @@ namespace KotHModLoaderGUI
 
         private JObject _indexesByNames = new();
 
+        public JObject IndexesByNames => _indexesByNames;
+
         private FmodSoundBank _fmodSounds;
 
         public FmodSoundBank FmodSoundBank => _fmodSounds;
@@ -509,7 +511,7 @@ namespace KotHModLoaderGUI
             newHeaderBytes[1856506] = (byte)noHeader5Bytes;
             newHeaderBytes[1856507] = (byte)noHeader4Bytes;
 
-            //BANK HEADER (60-64 bytes)
+            //BANK HEADER (60 bytes)
 
                 //sample header (Bytes 12-15)
             string newBankLength = Convert.ToString(newSampleHeader.Count, 2).PadLeft(32, '0');

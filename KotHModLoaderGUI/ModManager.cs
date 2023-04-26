@@ -400,23 +400,31 @@ namespace KotHModLoaderGUI
 
         private static List<VanillaAudioAssetCandidate> AssignVanillaAudioFilesIndexes(FileInfo file)
         {
-            FmodSoundBank assetsValues = MainWindow.FMODManager.FmodSoundBank;
             List<VanillaAudioAssetCandidate> assigned = new List<VanillaAudioAssetCandidate>();
+            string fileName = file.Name.Substring(0, file.Name.IndexOf("."));
 
-            for (int i = 0; i < assetsValues.Samples.Count; i++)
-            {
-                FmodSample sample = assetsValues.Samples[i];
-
-                if(sample.Name.Contains(file.Name.Substring(0, file.Name.IndexOf("."))))
-                {
-                    VanillaAudioAssetCandidate assets = new VanillaAudioAssetCandidate();
-                    assets.index = i;
-                    assets.name = sample.Name;
-                    assigned.Add(assets);
-                }
-            }
+            if (MainWindow.FMODManager.IndexesByNames[fileName] != null)
+                AssignSample(in assigned, fileName);
+            else if (fileName.Contains("-"))
+                if (MainWindow.FMODManager.IndexesByNames[fileName.Substring(0, fileName.LastIndexOf("-"))] != null)
+                    AssignSample(in assigned, fileName.Substring(0, fileName.LastIndexOf("-")));
 
             return assigned;
+        }
+
+        private static void AssignSample(in List<VanillaAudioAssetCandidate> assigned, string fileName)
+        {
+            FmodSoundBank assetsValues = MainWindow.FMODManager.FmodSoundBank;
+            VanillaAudioAssetCandidate assets = new VanillaAudioAssetCandidate();
+            JToken indexes = MainWindow.FMODManager.IndexesByNames[fileName];
+
+            foreach (int index in indexes)
+            {
+                assets.index = index;
+                FmodSample sample = assetsValues.Samples[index];
+                assets.name = sample.Name;
+                assigned.Add(assets);
+            }
         }
 
         private bool IsDirectoryWritable(string dirPath, bool throwIfFails = false)

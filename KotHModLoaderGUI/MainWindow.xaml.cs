@@ -33,6 +33,7 @@ namespace KotHModLoaderGUI
         private string[] _folders;
         private static ModManager _modManager = new ModManager();
         private static FMODManager _fmodManager = new FMODManager();
+        private static AssemblyManager _assemblyManager = new AssemblyManager();
 
         public static ModManager ModManager => _modManager;
         public static ResourcesManager ResMgr => _resMgr;
