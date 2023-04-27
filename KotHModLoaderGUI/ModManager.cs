@@ -304,17 +304,6 @@ namespace KotHModLoaderGUI
             }
         }
 
-        private static bool ValidateNewMeta(DirectoryInfo folder)
-        {
-            DialogResult dialogResult = MessageBox.Show("No compatible meta file found in " + folder.Name + ", do you want to create one? Without one, options like Assigning assets manually won't be saved.", folder.Name + ": No meta file found", MessageBoxButtons.YesNo);
-            if (dialogResult == DialogResult.Yes)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
         private static FileInfo GetMetaFileInfo(DirectoryInfo folder)
         {
             bool createNewMeta = false; 
@@ -357,45 +346,33 @@ namespace KotHModLoaderGUI
             return info;
         }
 
-        private static List<AssetTypeValueField> AssignVanillaFiles(FileInfo file)
+        private static List<int> _assignedIndexes = new List<int>();
+        private static List<VanillaTextureAssetCandidate> AssignVanillaFilesIndexes(FileInfo file)
         {
-            List<AssetTypeValueField> unassigned = MainWindow.ResMgr.UnassignedTextureFiles;
-            List<AssetTypeValueField> assigned = new List<AssetTypeValueField>();
+            List<VanillaTextureAssetCandidate> assigned = new List<VanillaTextureAssetCandidate>();
+            string fileName = file.Name.Substring(0, file.Name.IndexOf("."));
 
-            for (int i = 0; i < unassigned.Count; i++)
-            {
-                AssetTypeValueField unassignedFile = unassigned[i];
-                if (file.Name.Contains(unassignedFile["m_Name"].AsString))
-                {
-                    MainWindow.ResMgr.UnassignedTextureFiles.Remove(unassignedFile);
-                    assigned.Add(unassignedFile);
-                }
-            }
+            if (MainWindow.ResMgr.IndexesByNames[fileName] != null)
+                AssignTexture(in assigned, fileName);
+            else if (fileName.Contains("-"))
+                if (MainWindow.ResMgr.IndexesByNames[fileName.Substring(0, fileName.LastIndexOf("-"))] != null)
+                    AssignTexture(in assigned, fileName.Substring(0, fileName.LastIndexOf("-")));
 
             return assigned;
         }
 
-        private static List<int> _assignedIndexes = new List<int>();
-        private static List<VanillaTextureAssetCandidate> AssignVanillaFilesIndexes(FileInfo file)
+        private static void AssignTexture(in List<VanillaTextureAssetCandidate> assigned, string fileName)
         {
             List<AssetTypeValueField> assetsValues = MainWindow.ResMgr.AFilesValueFields;
-            List<VanillaTextureAssetCandidate> assigned = new List<VanillaTextureAssetCandidate>();
+            VanillaTextureAssetCandidate assets = new VanillaTextureAssetCandidate();
+            JToken indexes = MainWindow.ResMgr.IndexesByNames[fileName];
 
-            for (int i = 0; i < assetsValues.Count; i++)
+            foreach (int index in indexes)
             {
-                AssetTypeValueField values = assetsValues[i];
-
-                if (file.Name.Contains(values["m_Name"].AsString) && !_assignedIndexes.Contains(i))
-                {
-                    VanillaTextureAssetCandidate assets = new VanillaTextureAssetCandidate();
-                    assets.index = i;
-                    assets.values = values;
-                    assigned.Add(assets);
-                    _assignedIndexes.Add(i);
-                }
+                assets.index = index;
+                assets.values = assetsValues[index];
+                assigned.Add(assets);
             }
-
-            return assigned;
         }
 
         private static List<VanillaAudioAssetCandidate> AssignVanillaAudioFilesIndexes(FileInfo file)
@@ -425,52 +402,6 @@ namespace KotHModLoaderGUI
                 assets.name = sample.Name;
                 assigned.Add(assets);
             }
-        }
-
-        private bool IsDirectoryWritable(string dirPath, bool throwIfFails = false)
-        {
-            try
-            {
-                using (FileStream fs = File.Create(
-                    Path.Combine(
-                        dirPath,
-                        Path.GetRandomFileName()
-                    ),
-                    1,
-                    FileOptions.DeleteOnClose)
-                )
-                { }
-                return true;
-            }
-            catch
-            {
-                if (throwIfFails)
-                    throw;
-                else
-                    return false;
-            }
-        }
-
-        private bool IsFileLocked(FileInfo file)
-        {
-            try
-            {
-                using (FileStream stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.None))
-                {
-                    stream.Close();
-                }
-            }
-            catch (IOException)
-            {
-                //the file is unavailable because it is:
-                //still being written to
-                //or being processed by another thread
-                //or does not exist (has already been processed)
-                return true;
-            }
-
-            //file is not locked
-            return false;
         }
 
         public void ToggleModActive(int index)

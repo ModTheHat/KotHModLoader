@@ -2,6 +2,7 @@
 using AssetsTools.NET.Extra;
 using AssetsTools.NET.Texture;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
@@ -11,6 +12,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Windows.Media.Imaging;
@@ -40,6 +42,9 @@ namespace KotHModLoaderGUI
             get { return _unassignedTextureFiles; }
             set { _unassignedTextureFiles = value; }
         }
+
+        private JObject _indexesByNames = new();
+        public JObject IndexesByNames => _indexesByNames;
 
         //Initialise paths to mods, resources and other needed files
         public void InitialisePaths()
@@ -108,12 +113,27 @@ namespace KotHModLoaderGUI
         {
             LoadVanillaManager();
 
-            foreach (var goInfo in _afileVanilla.GetAssetsOfType(AssetClassID.Texture2D))
+            List<AssetFileInfo> list = _afileVanilla.GetAssetsOfType(AssetClassID.Texture2D);
+            for (int i = 0; i < list.Count; i++)
             {
+                if(i == 128)
+                {
+
+                }
+                AssetFileInfo? goInfo = list[i];
                 var goBaseVanilla = _assetsManagerVanilla.GetBaseField(_afileInstVanilla, goInfo);
                 var name = goBaseVanilla["m_Name"].AsString;
                 _unassignedTextureFiles.Add(goBaseVanilla);
                 _afilesValueFields.Add(goBaseVanilla);
+
+                if (_indexesByNames[name] != null)
+                {
+                    JArray array = (JArray)_indexesByNames[name];
+                    array.Add(i);
+                    _indexesByNames[name] = array;
+                }
+                else
+                    _indexesByNames[name] = new JArray(i);
             }
 
             return null;
